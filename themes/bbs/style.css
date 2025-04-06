@@ -1,0 +1,897 @@
+/* 
+ * BBS Theme for BSSG
+ * Inspired by old-school Bulletin Board Systems
+ * Features ANSI colors, ASCII art aesthetics, and terminal feel
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;700&display=swap');
+
+:root {
+    /* ANSI color scheme */
+    --bg-color: #000000;
+    --text-color: #33ff33; /* ANSI green */
+    --bright-text: #ffffff;
+    --dim-text: #00aa00;
+    --link-color: #5555ff; /* ANSI blue */
+    --link-hover: #55ffff; /* ANSI cyan */
+    --header-bg: #000055; /* Dark blue background */
+    --header-fg: #ffff55; /* ANSI yellow */
+    --nav-bg: #000088;
+    --nav-fg: #ffffff;
+    --accent-1: #ff5555; /* ANSI red */
+    --accent-2: #aa00aa; /* ANSI magenta */
+    --border-color: #5555ff;
+    --title-color-start: #ffff55; /* ANSI yellow */
+    --title-color-end: #ff5555; /* ANSI red */
+    
+    /* Typography */
+    --font-main: 'VT323', monospace;
+    --font-mono: 'IBM Plex Mono', monospace;
+    
+    /* Sizing */
+    --content-width: 900px;
+}
+
+/* Base elements with terminal feel */
+body {
+    font-family: var(--font-main);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 10px;
+    line-height: 1.4;
+    font-size: 18px;
+    background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 0h1L0 6V5zM6 5v1H5z' fill='%23113311' fill-opacity='.2'/%3E%3C/svg%3E");
+}
+
+/* Container with BBS frame */
+.container {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    background-color: var(--bg-color);
+    border: 2px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 25px rgba(85, 85, 255, 0.3);
+}
+
+/* BBS-style header with ANSI art feel */
+header {
+    background-color: var(--header-bg);
+    color: var(--header-fg);
+    padding: 15px;
+    text-align: center;
+    border-bottom: 2px solid var(--border-color);
+    position: relative;
+}
+
+/* ASCII art border for header */
+header::before {
+    content: "+-------------------------------------[ BSSG BBS ]--------------------------------------+";
+    display: block;
+    color: var(--bright-text);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    margin-bottom: 10px;
+    margin-top: -5px;
+}
+
+header::after {
+    content: "+------------------------------------------------------------------------------------+";
+    display: block;
+    color: var(--bright-text);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    margin-top: 10px;
+    margin-bottom: -5px;
+}
+
+header h1 {
+    margin: 0;
+    padding: 0;
+    font-size: 2.2rem;
+    font-weight: normal;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* BBS-style site title with ANSI color gradient */
+.site-title {
+    margin: 0;
+    padding: 0;
+    font-size: 2.2rem;
+    font-weight: normal;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    /* Use ANSI color gradient that fits BBS aesthetic */
+    background: linear-gradient(90deg, var(--title-color-start) 0%, var(--title-color-end) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    display: inline-block;
+    position: relative;
+}
+
+.site-title a {
+    text-decoration: none;
+    /* Replicate the gradient for links */
+    background: linear-gradient(90deg, var(--title-color-start) 0%, var(--title-color-end) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    transition: all 0.3s;
+    display: inline-block;
+}
+
+/* BBS cursor blinking effect on hover */
+.site-title a:hover {
+    text-decoration: none;
+    background: linear-gradient(90deg, var(--title-color-end) 0%, var(--title-color-start) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.site-title a:hover::after {
+    content: "_";
+    position: relative;
+    display: inline-block;
+    animation: blink 1s step-end infinite;
+    color: var(--title-color-start);
+}
+
+/* BBS menu navigation */
+nav {
+    background-color: var(--nav-bg);
+    padding: 5px 15px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    border-bottom: 2px dashed var(--border-color);
+    white-space: nowrap;
+}
+
+nav a {
+    color: var(--nav-fg);
+    text-decoration: none;
+    padding: 5px 15px;
+    font-weight: bold;
+    position: relative;
+    display: inline-block;
+    margin-right: 2px;
+}
+
+/* BBS-style menu item with brackets and number */
+nav a::before {
+    content: "[";
+    color: var(--accent-1);
+    margin-right: 3px;
+}
+
+nav a::after {
+    content: "]";
+    color: var(--accent-1);
+    margin-left: 3px;
+}
+
+/* Number the menu items like in a BBS */
+nav a:nth-child(1)::before { content: "[1-"; }
+nav a:nth-child(2)::before { content: "[2-"; }
+nav a:nth-child(3)::before { content: "[3-"; }
+nav a:nth-child(4)::before { content: "[4-"; }
+nav a:nth-child(5)::before { content: "[5-"; }
+nav a:nth-child(6)::before { content: "[6-"; }
+nav a:nth-child(7)::before { content: "[7-"; }
+nav a:nth-child(8)::before { content: "[8-"; }
+nav a:nth-child(9)::before { content: "[9-"; }
+
+nav a:hover {
+    color: var(--accent-1);
+    background-color: var(--bg-color);
+}
+
+/* Active navigation item */
+nav a.active {
+    color: var(--accent-1);
+    background-color: var(--bg-color);
+}
+
+/* Special RSS button that looks like a BBS command */
+nav a:last-child {
+    color: var(--header-fg);
+}
+
+nav a:last-child::before {
+    content: "[R-";
+}
+
+/* Main content with scanlines */
+main {
+    padding: 20px;
+    position: relative;
+    background-color: var(--bg-color);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    color: var(--text-color);
+}
+
+/* Scanline effect */
+main::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15),
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 2px
+    );
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Terminal typography */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--header-fg);
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    font-weight: normal;
+    font-family: var(--font-main);
+}
+
+h1 {
+    font-size: 2rem;
+    text-transform: uppercase;
+}
+
+h2 {
+    font-size: 1.7rem;
+    color: var(--accent-1);
+    border-bottom: 1px dashed var(--accent-1);
+    padding-bottom: 5px;
+}
+
+h2::before {
+    content: "## ";
+}
+
+h3 {
+    font-size: 1.4rem;
+    color: var(--link-color);
+}
+
+h3::before {
+    content: ">>> ";
+}
+
+p {
+    margin-bottom: 1rem;
+}
+
+/* BBS-style links */
+a {
+    color: var(--link-color);
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+a:hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+}
+
+/* ASCII box for articles */
+article {
+    margin-bottom: 40px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    position: relative;
+}
+
+/* ASCII box top border */
+article::before {
+    content: "+-[ MESSAGE ]---------------------------------------------------+";
+    display: block;
+    color: var(--bright-text);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    margin: -15px -15px 15px -15px;
+    padding: 5px 15px;
+    background-color: var(--header-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* ASCII box bottom border */
+article::after {
+    content: "+---------------------------------------------------------------------+";
+    display: block;
+    color: var(--bright-text);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    margin: 15px -15px -15px -15px;
+    padding: 5px 15px;
+    background-color: var(--header-bg);
+    border-top: 1px solid var(--border-color);
+}
+
+article:last-child {
+    margin-bottom: 0;
+}
+
+article h1 {
+    font-size: 1.5rem;
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: var(--accent-1);
+    font-weight: bold;
+}
+
+/* BBS-style metadata with ANSI colors */
+article .meta {
+    font-size: 0.9rem;
+    color: var(--dim-text);
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed var(--dim-text);
+    font-family: var(--font-mono);
+}
+
+.reading-time {
+    color: var(--bright-text);
+}
+
+.reading-time::before {
+    content: "TIME: ";
+    color: var(--accent-1);
+}
+
+.date::before {
+    content: "DATE: ";
+    color: var(--accent-1);
+}
+
+/* BBS-style tags */
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tags::before {
+    content: "TAGS: ";
+    color: var(--accent-1);
+}
+
+.tags a {
+    color: var(--link-color);
+    text-decoration: none;
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+}
+
+.tags a:hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+}
+
+.tags-list {
+    list-style-type: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-family: var(--font-mono);
+}
+
+.tags-list li {
+    position: relative;
+    padding-left: 20px;
+}
+
+.tags-list li::before {
+    content: ">";
+    position: absolute;
+    left: 0;
+    color: var(--accent-1);
+}
+
+.tag-count {
+    color: var(--accent-2);
+    font-size: 0.9em;
+    margin-left: 10px;
+}
+
+/* BBS code blocks */
+code {
+    font-family: var(--font-mono);
+    background-color: rgba(0, 0, 0, 0.5);
+    color: var(--accent-1);
+    padding: 2px 5px;
+    font-size: 0.9em;
+    border: 1px solid var(--dim-text);
+}
+
+pre {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: var(--bright-text);
+    padding: 15px;
+    overflow-x: auto;
+    font-size: 0.9em;
+    border: 1px solid var(--border-color);
+    margin: 20px 0;
+    font-family: var(--font-mono);
+}
+
+pre code {
+    background-color: transparent;
+    padding: 0;
+    border: none;
+}
+
+/* BBS images with terminal border */
+img {
+    max-width: 100%;
+    height: auto;
+    border: 2px solid var(--border-color);
+    display: block;
+    margin: 20px auto;
+    image-rendering: pixelated;
+}
+
+/* Featured image with BBS ANSI art frame */
+.featured-image {
+    margin: 20px 0;
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+/* ASCII art top border */
+.featured-image::before {
+    content: "+==[ IMAGE FILE ]=============================================================+";
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--bright-text);
+    margin-bottom: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/* ASCII art bottom border */
+.featured-image::after {
+    content: "+============================================================================+";
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--bright-text);
+    margin-top: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.featured-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border: 1px dashed var(--accent-1);
+    image-rendering: pixelated;
+    margin: 0;
+}
+
+.featured-image .image-caption {
+    margin-top: 10px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--text-color);
+    padding-left: 5px;
+    border-left: 3px solid var(--accent-1);
+}
+
+.index-image {
+    margin: 20px 0;
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+/* ASCII art top border */
+.index-image::before {
+    content: "+==[ INDEX IMAGE ]===========================================================+";
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--accent-1);
+    margin-bottom: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/* ASCII art bottom border */
+.index-image::after {
+    content: "+============================================================================+";
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--accent-1);
+    margin-top: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.index-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border: 1px dashed var(--accent-1);
+    image-rendering: pixelated;
+    margin: 0;
+}
+
+.tag-image {
+    margin: 20px 0;
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+/* ASCII art top border */
+.tag-image::before {
+    content: "+==[ TAG IMAGE ]============================================================+";
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--link-color);
+    margin-bottom: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/* ASCII art bottom border */
+.tag-image::after {
+    content: "+============================================================================+";
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--link-color);
+    margin-top: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.tag-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border: 1px dashed var(--accent-1);
+    image-rendering: pixelated;
+    margin: 0;
+}
+
+.archive-image {
+    margin: 20px 0;
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+/* ASCII art top border */
+.archive-image::before {
+    content: "+==[ ARCHIVE IMAGE ]========================================================+";
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--accent-2);
+    margin-bottom: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/* ASCII art bottom border */
+.archive-image::after {
+    content: "+============================================================================+";
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--accent-2);
+    margin-top: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.archive-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border: 1px dashed var(--accent-1);
+    image-rendering: pixelated;
+    margin: 0;
+}
+
+/* BBS-style footer */
+footer {
+    background-color: var(--header-bg);
+    color: var(--dim-text);
+    padding: 15px;
+    font-size: 0.9rem;
+    text-align: center;
+    border-top: 2px solid var(--border-color);
+    font-family: var(--font-mono);
+    position: relative;
+}
+
+/* ASCII art border for footer */
+footer::before {
+    content: "+------------------------------[ END OF TRANSMISSION ]------------------------------+";
+    display: block;
+    color: var(--bright-text);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    margin-bottom: 10px;
+    margin-top: -5px;
+}
+
+footer a {
+    color: var(--link-color);
+    text-decoration: none;
+}
+
+footer a:hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+}
+
+/* BBS-style pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 30px 0;
+    gap: 15px;
+    font-family: var(--font-main);
+}
+
+.pagination a {
+    color: var(--link-color);
+    padding: 5px 10px;
+    text-decoration: none;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+    font-weight: bold;
+}
+
+.pagination a:hover {
+    background-color: var(--header-bg);
+    color: var(--link-hover);
+}
+
+.pagination .page-info {
+    color: var(--bright-text);
+    font-family: var(--font-mono);
+}
+
+/* Terminal cursor blinking effect */
+.cursor {
+    display: inline-block;
+    width: 10px;
+    height: 18px;
+    background-color: var(--text-color);
+    animation: blink 1s step-end infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* Horizontal rule as a BBS divider */
+hr {
+    border: none;
+    height: 1px;
+    background-color: var(--dim-text);
+    margin: 20px 0;
+    position: relative;
+}
+
+hr::before {
+    content: "---===[ * ]===---";
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--bg-color);
+    padding: 0 15px;
+    color: var(--accent-1);
+}
+
+/* BBS Command prompt */
+.bbs-prompt {
+    padding: 10px;
+    margin: 20px 0;
+    border: 1px solid var(--dim-text);
+    background-color: rgba(0, 0, 0, 0.5);
+    font-family: var(--font-mono);
+    color: var(--bright-text);
+}
+
+.bbs-prompt::before {
+    content: "BSSG>";
+    color: var(--accent-1);
+    margin-right: 8px;
+}
+
+/* ANSI color classes for text */
+.ansi-red { color: var(--accent-1); }
+.ansi-green { color: var(--text-color); }
+.ansi-yellow { color: var(--header-fg); }
+.ansi-blue { color: var(--link-color); }
+.ansi-magenta { color: var(--accent-2); }
+.ansi-cyan { color: var(--link-hover); }
+.ansi-white { color: var(--bright-text); }
+
+/* Media query for responsive design */
+@media (max-width: 768px) {
+    header::before, 
+    header::after,
+    article::before,
+    article::after,
+    footer::before {
+        font-size: 12px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        box-sizing: border-box;
+        content: "+-------------[ BSSG BBS ]-------------+";
+    }
+    
+    header::after,
+    article::after,
+    footer::before {
+        content: "+---------------------------------------+";
+    }
+    
+    .container {
+        margin: 10px;
+        width: auto;
+    }
+    
+    header, footer, main {
+        padding: 15px;
+    }
+    
+    nav {
+        flex-direction: column;
+        padding: 5px;
+        align-items: stretch;
+    }
+    
+    nav a {
+        margin: 2px 0;
+        text-align: left;
+        padding: 8px 15px;
+        border-bottom: 1px dashed var(--dim-text);
+        box-sizing: border-box;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    nav a:last-child {
+        border-bottom: none;
+    }
+    
+    article {
+        padding: 10px;
+    }
+    
+    pre {
+        max-width: 100%;
+        overflow-x: auto;
+        font-size: 14px;
+    }
+    
+    .featured-image,
+    .index-image,
+    .tag-image,
+    .archive-image {
+        margin: 10px 0;
+    }
+    
+    article .meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .site-title {
+        font-size: 1.8rem;
+    }
+    
+    h1 {
+        font-size: 1.8rem;
+    }
+    
+    h2 {
+        font-size: 1.5rem;
+    }
+    
+    h3 {
+        font-size: 1.3rem;
+    }
+    
+    .pagination {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        font-size: 16px;
+        padding: 5px;
+    }
+    
+    .container {
+        margin: 5px;
+    }
+    
+    header, footer, main {
+        padding: 10px;
+    }
+    
+    pre, code {
+        font-size: 13px;
+    }
+    
+    .featured-image::before,
+    .index-image::before,
+    .tag-image::before,
+    .archive-image::before,
+    .featured-image::after,
+    .index-image::after,
+    .tag-image::after,
+    .archive-image::after {
+        font-size: 11px;
+    }
+    
+    .site-title {
+        font-size: 1.5rem;
+    }
+    
+    h1 {
+        font-size: 1.5rem;
+    }
+    
+    h2 {
+        font-size: 1.3rem;
+    }
+    
+    h3 {
+        font-size: 1.2rem;
+    }
+    
+    .tags {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    nav a {
+        padding: 6px 10px;
+    }
+} 

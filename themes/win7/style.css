@@ -1,0 +1,680 @@
+/* 
+ * Windows 7 Theme for BSSG
+ * Recreating the Windows 7 Aero Glass effect with transparency and subtle gradients
+ */
+
+:root {
+    /* Windows 7 Aero color scheme */
+    --bg-color: #e3eefb;
+    --window-bg: rgba(255, 255, 255, 0.95);
+    --text-color: #000000;
+    --link-color: #0066cc;
+    --link-visited: #800080;
+    --header-color: #003399;
+    --border-color: rgba(177, 199, 216, 0.8);
+    --shadow-color: rgba(111, 151, 182, 0.5);
+    --button-face: #f0f0f0;
+    --title-bar: linear-gradient(to bottom, rgba(209, 228, 246, 0.95) 0%, rgba(177, 211, 241, 0.95) 100%);
+    --title-text: #000000;
+    --task-bar: rgba(30, 57, 91, 0.95);
+    --taskbar-start: #1b7edf;
+    --taskbar-text: #ffffff;
+    --highlight-color: #d2e8ff;
+    --accent-color: #1b7edf;
+    --accent-secondary: #5da7e6;
+    --quote-bg: rgba(240, 240, 240, 0.7);
+    
+    /* Typography */
+    --font-main: 'Segoe UI', 'Arial', sans-serif;
+    --font-headings: 'Segoe UI Light', 'Arial', sans-serif;
+    --font-mono: 'Consolas', monospace;
+    
+    /* Font Sizes */
+    --text-xs: 0.75rem;      /* 12px */
+    --text-sm: 0.85rem;      /* 13.6px */
+    --text-base: 0.9rem;     /* 14.4px - Win7 standard */
+    --text-md: 1rem;         /* 16px */
+    --text-lg: 1.2rem;       /* 19.2px */
+    --text-xl: 1.4rem;       /* 22.4px */
+    --text-2xl: 1.7rem;      /* 27.2px */
+    --text-3xl: 2rem;        /* 32px */
+    
+    /* Line Heights */
+    --line-height-tight: 1.3;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.7;
+    
+    /* Spacing */
+    --spacing-xs: 0.25rem;   /* 4px */
+    --spacing-sm: 0.5rem;    /* 8px */
+    --spacing-md: 0.75rem;   /* 12px */
+    --spacing-lg: 1rem;      /* 16px */
+    --spacing-xl: 1.5rem;    /* 24px */
+    --spacing-2xl: 2rem;     /* 32px */
+    --spacing-3xl: 2.5rem;   /* 40px */
+    
+    /* Transitions */
+    --transition-fast: 0.2s ease;
+    --transition-medium: 0.3s ease;
+    --transition-slow: 0.5s ease;
+    
+    /* Sizing */
+    --content-width: 1100px;  /* Increased from 900px for better screen utilization */
+    --border-radius: 6px;
+    --small-radius: 3px;
+}
+
+/* Windows 7 default background pattern */
+body {
+    font-family: var(--font-main);
+    background-color: var(--bg-color);
+    background-image: url("data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAQDAwQDAwQEBAQFBQQFBwsHBwYGBw4KCggLEA4RERAOEA8SFBoWEhIYFRcZHSMkHiIgIh4UFRgsNDMnNzgnKDL/2wBDAQUFBQcGBw0HBw0nEhASJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJycnJyf/wAARCABkAGQDASIAAhEBAxEB/8QAGgAAAgMBAQAAAAAAAAAAAAAAAAMBAgQFBv/EADQQAAEEAQIEBAQEBgMAAAAAAAEAAgMRIQQxBRJBURMiYXEjMoGRBqGx0RQVQlLB8CRi4f/EABgBAQEBAQEAAAAAAAAAAAAAAAABAgME/8QAHBEBAQEBAQEBAQEAAAAAAAAAAAERAiExQVES/9oADAMBAAIRAxEAPwD5+AgoAXsuJ7QnfD6QTsKqoIDsALTpuZTbCuVrrcsFx7BoHpufyFk90cDxFe96D7oOzwvUYbSU3b2C72j11tGei8vI/wAMcmUfDuMOgkMczjJEcE9W+hWbzK1LY9Vp9Y3qVq/mgI3Xh/5i1xzFJ9wm/wA4nG0jiPZq5/4sdbn0PRnWNHVUdqx3XlToJZXc0khHoVLdGbq5SPclP8n1v10J5g6+Zc/iZ5X/AEKQ4ujOXFIm0DWSJZYnzfIbTcpDzIuuuLTXIYCSmuNi19Y2jCbfTpuA4wG8g6nuqyeWlZrnS0PbCXpudzjYy71OB909puQDsFJiGHWx9PgG56+yo1gc7lBs9StoAYwMGQBv3VNOOYl5FUDnsmrjD/DPB5g2h1V2xiNpfI4Adr3Kb4ZJJ3PZKG/xBwSAAO2U9Sybi+ijDpS92wqvtSnXDo3RnZUkBjYHgVYTAMjsVFYuUtppvdMTk5XQuMcnRHNeCNigc06hzaII+yvqJL1T3Hc5WEm7vdKc78t+q52ukWY+xSumloA6JyZdtaI2lzrJomrW19hn6JbRRVs5KTF10nUBrAL6bLRH5cEbbfokDp6q4dVqsTXM1LyXlp8p2VWhzQWNFk9PVLa4l+SrwPJ1DC05eN0vhNMn5t+6qGnmJLiTajmLiXH7K1bJbXWMD7LYz4FhU03nkPYWrmQl19lcvLWhUEP+6qCMFNAyKTCwLUYXUZBGsIeOUrU1wDQqvYCMJgxuIVL3TXi3ZVS3KYsQQrdEXJSa9grAUqJBVJmglM5cKxja5XIpW0vItUAyd3KgAP3V9OPLzd1TZB+qUw0QtRfK1NjjLVYUjFXDZGsEbPMrjRuJtDonE0FdnLXJdSG6bN0nh0cJYbCp/J0M9VPBj3KmjRpyDGMIS9KwAGiUJgtw2Sa3TXbpR3RRmcoLHq9uCSrxsBF9U0Z2NsC0aCIMYXHBcfyCo90LcAD7WVEZ54TQKAVwDVldK+RjwMV6rMAL9Vz1qRWJnMcK5OcK8bOWIZ3Vc4BKzcWM7CAr8pduQB6ofhUjuytVitJEDuSOymWZrTyM36kojtP0jA3nk+I/oOiYzvSUlwHtV/D9VwvvXbPGgyS82Slud5lnvmNUqc12Uvpo0GQ9UBwWQykqzZSNwo1jQXJ8DPNayRSnurMeWpVlJQl2PumECt7SuXCmw4g1VSOT/c/0VO3+Uppdw7NJQEh9EJ7V0dIadlRwt3ormKV2VRzsjCYsQHc1nZZZXAGhvutjvlOdy1Z3MvaLe3zWehTUqKsGqpZKW0nNpT1YrQBVw3CBhN5QUCpCHX6qzw4jcJJJBP1U5lm1WxrOXRQ4YeUsMdtKwm5oyD3UajQ2QeZgP1QxnMOY7FLtNhntoN6JiV1WFAuylcwyW3BTVrA9ufMFmINda+i2ObWQs0kYskbt3CV4kWHqpkjB3Vg0LoylA0VfZPDcAqoiFZVgDVEPbXMeYKzz+M/KNuqvLqOQuDdyFga7laa3JW+ehljYC0Ocb7IlkkOQaARJO1jCXGzWAqMrnkFwAA7JeIZOVxNA0qy62No5QQXV0WXUausghSYtqTSVuVLSc0Qo5y0UVqM0EjdYnHqtDjRWaR3r91mri4dQQHKGkdCrAJIHVvYK43NIJS2m/qlqVNjdJZCGRnwz83opkZRJCJDeB37Jel0vn5nkgDYKxKdRytp5F0r6SBsEIbdvOXH6J2ocGaBw6k2sWpneWiNgsDcrFM1GrJJYy77lYZdRI42XYHsr8oY2ytGtaGNNdFZGbWPVH+GYC4k+nZI08TXnmcL9V1ZNGZZY4mtJJcsfE9P4LuUG8fZRq5GF2ylhtwsLO55vuVpawgCjhY1KQ8eZPDqd7hIpG6aEeYeY9CrDRYPRDnWcDCGnCWwm1M5BkE+wQXtY0NHRU5+Z5I0gxXLapmSXVnCnk/qlSSNGxyfRRHVkKjqBtAyR5ech7B3Wnhnw/8AkTbD5B+pWXUuDdM0N3cbv2VIXEadnqQo3Go6aSfE28LyOA8gxZ2XXn1JljIaLGLXG1MoeXOOQBV91GfETjYbmMYJxar/ABJmfE6k/uWlFxYsGBj7JEEgd5X4d+6uZGSgfKRfbC0xkNq1CmO9Uobz/KcrsLncmCOqpzGslK/UGN1DLTs4H3VhNG/AOEDDZdgDbqnRQnT0Q8B7d2nddCEhzRXfZYGAl+VLGbWHX6GWMunivwznfcLzRJJySvelpeU0/BNVfzHHRcBXFx52aSrJc/ZSCrq4hSRkoeV1FQCgTSkGxhTSC7SjCVzhAcPdSRkYSw4qQ5A55GQmjW6gGoZnN9iaSrgptQqPfqXuBe4uLQALKpfVLIUFp6rSCwc5TQoRfVA0ORagXsoQi6tFo5kINbJ//9k=");
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
+    color: var(--text-color);
+    margin: 0;
+    padding: var(--spacing-xl);
+    line-height: var(--line-height-normal);
+    font-size: var(--text-base);
+}
+
+/* Aero Glass window style effect with shadow */
+.container {
+    max-width: var(--content-width);
+    margin: var(--spacing-2xl) auto;
+    background: var(--window-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0 0 20px var(--shadow-color);
+    overflow: hidden;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+}
+
+/* Title bar with Windows 7 Aero glass effect */
+header {
+    background: var(--title-bar);
+    color: var(--title-text);
+    padding: var(--spacing-md) var(--spacing-xl);
+    margin: 0;
+    position: relative;
+    font-weight: normal;
+    font-size: var(--text-md);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* Window control icons - Windows 7 style */
+.window-controls {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.win7-control {
+    width: 20px;
+    height: 20px;
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-xs);
+    cursor: pointer;
+    position: relative;
+    transition: background-color var(--transition-fast);
+}
+
+.win7-minimize {
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: var(--small-radius);
+}
+
+.win7-minimize::after {
+    content: "";
+    width: 10px;
+    height: 2px;
+    background-color: #333;
+    position: absolute;
+    bottom: 7px;
+}
+
+.win7-maximize {
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: var(--small-radius);
+}
+
+.win7-maximize::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border: 1px solid #333;
+    position: absolute;
+    background: transparent;
+}
+
+.win7-close {
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: var(--small-radius);
+}
+
+.win7-close:hover {
+    background-color: #e81123;
+}
+
+.win7-close::after {
+    content: "×";
+    color: #333;
+    font-size: var(--text-xl);
+    font-weight: bold;
+}
+
+.win7-close:hover::after {
+    color: white;
+}
+
+header h1 {
+    margin: 0;
+    padding: 0;
+    font-size: var(--text-lg);
+    font-weight: normal;
+    font-family: var(--font-headings);
+    color: var(--title-text);
+}
+
+/* Site title with Aero glass effect */
+.site-title {
+    margin: 0;
+    padding: 0;
+    font-size: var(--text-xl);
+    font-weight: 300;
+    font-family: var(--font-headings);
+    position: relative;
+    z-index: 1;
+    flex-grow: 1;
+}
+
+.site-title a {
+    text-decoration: none;
+    color: var(--title-text);
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.9) 0%, rgba(200, 230, 255, 0.9) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
+    transition: all var(--transition-medium);
+    font-weight: 500;
+}
+
+.site-title a:hover {
+    text-decoration: none;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 1) 0%, rgba(220, 240, 255, 1) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Navigation bar with Aero glass effect */
+nav {
+    background: rgba(240, 240, 240, 0.6);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    flex-wrap: wrap;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    justify-content: center;
+}
+
+nav a {
+    color: var(--text-color);
+    text-decoration: none;
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin: 0 var(--spacing-xs);
+    border-radius: var(--small-radius);
+    font-size: var(--text-sm);
+    position: relative;
+    display: inline-block;
+    transition: background var(--transition-fast);
+    white-space: nowrap;
+}
+
+nav a:hover, nav a:focus {
+    background: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Selected menu item */
+nav a.active {
+    background: rgba(217, 233, 250, 0.7);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Content area with slight transparency */
+main {
+    padding: var(--spacing-2xl);
+    background-color: var(--window-bg);
+}
+
+/* Typography - Windows 7 specific */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-headings);
+    color: var(--header-color);
+    margin-top: var(--spacing-xl);
+    margin-bottom: var(--spacing-lg);
+    font-weight: 300;
+    line-height: var(--line-height-tight);
+}
+
+h1 {
+    font-size: var(--text-3xl);
+    color: #1a73e8;
+}
+
+h2 {
+    font-size: var(--text-2xl);
+    color: #1a73e8;
+}
+
+h3 {
+    font-size: var(--text-xl);
+}
+
+p {
+    margin-bottom: var(--spacing-lg);
+    line-height: var(--line-height-normal);
+}
+
+/* Links */
+a {
+    color: var(--link-color);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+a:visited {
+    color: var(--link-visited);
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Windows 7 style buttons */
+.win7-button {
+    background: linear-gradient(to bottom, #f8f8f8 0%, #e1e1e1 100%);
+    border: 1px solid #ababab;
+    border-radius: var(--small-radius);
+    padding: var(--spacing-sm) var(--spacing-xl);
+    color: var(--text-color);
+    font-family: var(--font-main);
+    font-size: var(--text-xs);
+    cursor: pointer;
+    margin: var(--spacing-xs);
+    box-shadow: 0 1px 1px rgba(0,0,0,0.15);
+    transition: all var(--transition-fast);
+}
+
+.win7-button:hover {
+    background: linear-gradient(to bottom, #f8f8f8 0%, #d8d8d8 100%);
+    border-color: #7eb4ea;
+    box-shadow: 0 0 3px rgba(42,100,150,0.4);
+}
+
+.win7-button:active {
+    background: linear-gradient(to bottom, #cee7fc 0%, #8abde6 100%);
+    border-color: #5c8ab9;
+}
+
+/* Articles with glass effect */
+article {
+    margin-bottom: var(--spacing-2xl);
+    padding: var(--spacing-xl);
+    border: 1px solid rgba(202, 223, 243, 0.7);
+    border-radius: var(--small-radius);
+    background-color: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: box-shadow var(--transition-medium), border-color var(--transition-medium);
+}
+
+article:hover {
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+    border-color: rgba(179, 207, 233, 0.9);
+}
+
+article .meta {
+    font-size: var(--text-sm);
+    color: #666;
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.reading-time {
+    color: #666;
+    font-style: italic;
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+}
+
+.tags a {
+    background: rgba(235, 245, 255, 0.7);
+    color: #1562ad;
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: var(--text-xs);
+    border-radius: 12px;
+    text-decoration: none;
+    border: 1px solid rgba(179, 207, 233, 0.7);
+    transition: all var(--transition-fast);
+}
+
+.tags a:hover {
+    background: rgba(213, 233, 252, 0.9);
+    text-decoration: none;
+}
+
+code {
+    font-family: var(--font-mono);
+    background-color: rgba(240, 240, 240, 0.7);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--small-radius);
+    font-size: var(--text-sm);
+}
+
+pre {
+    background-color: rgba(245, 245, 245, 0.7);
+    padding: var(--spacing-md);
+    border-radius: var(--small-radius);
+    overflow-x: auto;
+    border: 1px solid rgba(217, 217, 217, 0.7);
+    line-height: var(--line-height-tight);
+}
+
+pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--small-radius);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Footer styled as Windows 7 taskbar */
+footer {
+    background: linear-gradient(to bottom, #2980d5 0%, #1e5faa 100%);
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--text-sm);
+    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #0c3b82;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+}
+
+/* Footer links with better contrast */
+footer a {
+    color: #ffffff;
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+footer a:hover {
+    color: #ffff99;
+    text-decoration: underline;
+}
+
+/* Start button */
+.start-button {
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(to bottom, #3c95ea 0%, #1562ad 100%);
+    color: white;
+    font-weight: normal;
+    padding: var(--spacing-sm) var(--spacing-xl) var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--small-radius);
+    font-size: var(--text-sm);
+    position: relative;
+    border: 1px solid #09407f;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.start-button::before {
+    content: "";
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-right: var(--spacing-sm);
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAAFASURBVHjarNS/S0JRFMfxz30qJAQRREsNDQ2BJtEQhEOglP+AW0M0tdRQS/9DS1NjQzREUzREQ7RI/gENQg3RUJRBBSHUe08DyfdenUoHzna/fM49517lnAvQAIZQxxVOcQ/hT/W147/UiyYeMIkMkv6Tj7vk3ciBDWGt4uGP2MEe2vgmz2ETD+r2nUPsF0QOy/jCC1KIIYs6djGJEZzZ+OiJAcewh0es+aBdJeAGy8i14gWcWCMd8E7FupvAkY1ZjIcYl8CRjfmA4AKm8I4nLAT8dlPqmFFJbIdYRp9f5UKIMz3TihfwHhtYxHuEmAp2TSneShhIPvkAZQfdMnDMGkvcRrRPeI+M+zgyNbxGGHdi5K99zpVNJA/rNoFVm2Ar3EGsYwOtgGfnbbJl23j/oW53aP5H3Tlr/1c1n/MPdZf+GgDtL0EIgQlcEQAAAABJRU5ErkJggg==");
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* Win7 taskbar time */
+.taskbar-time {
+    display: inline-block;
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--small-radius);
+    font-size: var(--text-xs);
+}
+
+/* Pagination in Win7 style */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: var(--spacing-2xl) 0;
+    gap: var(--spacing-md);
+}
+
+.pagination a {
+    background: linear-gradient(to bottom, #f8f8f8 0%, #e1e1e1 100%);
+    color: var(--text-color);
+    padding: var(--spacing-sm) var(--spacing-md);
+    text-decoration: none;
+    border-radius: var(--small-radius);
+    border: 1px solid #ababab;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.15);
+    transition: all var(--transition-fast);
+}
+
+.pagination a:hover {
+    background: linear-gradient(to bottom, #f8f8f8 0%, #d8d8d8 100%);
+    border-color: #7eb4ea;
+    box-shadow: 0 0 3px rgba(42,100,150,0.4);
+    text-decoration: none;
+}
+
+.pagination .page-info {
+    color: #666;
+    font-size: var(--text-sm);
+}
+
+/* Media query for responsive design */
+@media (max-width: 768px) {
+    body {
+        padding: var(--spacing-md);
+    }
+    
+    .container {
+        margin: var(--spacing-md) auto;
+        width: 95%;
+        max-width: none;
+    }
+    
+    header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: var(--spacing-xl);
+    }
+    
+    header h1 {
+        margin: 0 0 var(--spacing-md) 0;
+        font-size: var(--text-xl);
+        width: 100%;
+        text-align: center;
+    }
+    
+    header p {
+        margin: 0;
+        padding: 0;
+        font-size: var(--text-sm);
+        text-align: center;
+    }
+    
+    nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: var(--spacing-md);
+        gap: var(--spacing-md);
+    }
+    
+    nav a {
+        flex: 0 0 auto;
+        margin: var(--spacing-xs);
+        padding: var(--spacing-md) var(--spacing-xl);
+        width: 80%;
+        text-align: center;
+        border-radius: var(--small-radius);
+        font-size: var(--text-sm);
+        border: 1px solid var(--border-color);
+        background: linear-gradient(to bottom, #f8f8f8 0%, #e1e1e1 100%);
+    }
+    
+    footer {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        padding: var(--spacing-xl);
+        text-align: center;
+    }
+    
+    .taskbar-time {
+        margin-top: var(--spacing-md);
+    }
+}
+
+/* Additional breakpoint for very small screens */
+@media (max-width: 480px) {
+    body {
+        padding: var(--spacing-sm);
+    }
+    
+    .container {
+        margin: var(--spacing-sm) auto;
+        width: 95%;
+    }
+    
+    header {
+        padding: var(--spacing-md);
+    }
+    
+    header h1 {
+        font-size: var(--text-lg);
+    }
+    
+    nav {
+        padding: var(--spacing-sm);
+    }
+    
+    nav a {
+        margin: var(--spacing-xs) auto;
+        padding: var(--spacing-md) 0;
+        width: 90%;
+        font-size: var(--text-xs);
+    }
+}
+
+/* Featured Images with Windows 7 Aero styling */
+.featured-image {
+    margin: var(--spacing-xl) 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 2px 10px var(--shadow-color);
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.featured-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    transition: all var(--transition-medium);
+}
+
+.featured-image:hover img {
+    transform: scale(1.02);
+}
+
+.featured-image .image-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--title-bar);
+    color: var(--title-text);
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-size: var(--text-sm);
+    text-align: center;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border-color);
+}
+
+.index-image, .tag-image, .archive-image {
+    margin-bottom: var(--spacing-xl);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: 0 1px 5px var(--shadow-color);
+}
+
+.index-image img, .tag-image img, .archive-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Selection styling */
+::selection {
+    background-color: var(--highlight-color);
+    color: var(--text-color);
+}
+
+/* Date header with Win7 styling */
+.date-header {
+    font-family: var(--font-headings);
+    font-weight: 300;
+    color: var(--title-text);
+    margin: var(--spacing-xl) 0 var(--spacing-lg) 0;
+    font-size: var(--text-md);
+    display: inline-block;
+    position: relative;
+    padding: var(--spacing-sm) var(--spacing-xl);
+    background: var(--title-bar);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 1px 3px var(--shadow-color);
+} 

@@ -1,0 +1,318 @@
+#!/usr/bin/env bash
+#
+# BSSG - List Posts and Tags Script
+# List all posts and tags in the blog
+#
+# Developed by Stefano Marinelli (stefano@dragas.it)
+# Project Homepage: https://bssg.dragas.net
+#
+
+set -e
+
+# Load configuration
+CONFIG_FILE="config.sh"
+if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+else
+    echo "Error: Configuration file '$CONFIG_FILE' not found"
+    exit 1
+fi
+
+# Load local configuration overrides if they exist
+LOCAL_CONFIG_FILE="config.sh.local"
+if [ -f "$LOCAL_CONFIG_FILE" ]; then
+    source "$LOCAL_CONFIG_FILE"
+fi
+
+# Terminal colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
+
+# Function to extract a post's title
+get_post_title() {
+    local file="$1"
+    local title=""
+    
+    if [[ "$file" == *.md ]]; then
+        title=$(grep -m 1 "^title:" "$file" | cut -d ':' -f 2- | sed 's/^ *//' | tr -d \'\"\')
+    elif [[ "$file" == *.html ]]; then
+        title=$(grep -m 1 "<title>" "$file" | sed -e 's/<title>//' -e 's/<\/title>//' | sed 's/^ *//' | tr -d \'\"\')
+    fi
+    
+    # If no title found, use filename without extension
+    if [ -z "$title" ]; then
+        title=$(basename "$file" | sed 's/\.[^.]*$//')
+    fi
+    
+    echo "$title"
+}
+
+# Function to extract a post's date
+get_post_date() {
+    local file="$1"
+    local date=""
+    
+    if [[ "$file" == *.md ]]; then
+        date=$(grep -m 1 "^date:" "$file" | cut -d ':' -f 2- | sed 's/^ *//')
+    elif [[ "$file" == *.html ]]; then
+        date=$(grep -m 1 'content="[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}"' "$file" | sed 's/.*content="\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\)".*/\1/')
+    fi
+    
+    # If no date found, use file modification time
+    if [ -z "$date" ]; then
+        if [[ "$OSTYPE" == "darwin"* ]] || [[ "$OSTYPE" == "freebsd"* ]]; then
+            # macOS or FreeBSD
+            date=$(stat -f "%Sm" -t "%Y-%m-%d" "$file")
+        else
+            # Linux and others
+            date=$(stat -c "%y" "$file" | cut -d ' ' -f 1)
+        fi
+    fi
+    
+    echo "$date"
+}
+
+# Function to extract a post's tags
+get_post_tags() {
+    local file="$1"
+    local tags=""
+    
+    if [[ "$file" == *.md ]]; then
+        tags=$(grep -m 1 "^tags:" "$file" | cut -d ':' -f 2- | sed 's/^ *//' | tr -d \'\"\')
+    elif [[ "$file" == *.html ]]; then
+        tags=$(grep -m 1 '<meta name="tags"' "$file" | sed 's/.*content="\([^"]*\)".*/\1/')
+    fi
+    
+    echo "$tags"
+}
+
+# Function to list all posts
+list_posts() {
+    echo -e "${YELLOW}Available posts:${NC}"
+    
+    if [ ! -d "$SRC_DIR" ] || [ -z "$(ls -A "$SRC_DIR" 2>/dev/null)" ]; then
+        echo -e "${RED}No posts found in '$SRC_DIR'.${NC}"
+        exit 0
+    fi
+    
+    echo -e "ID\tDate\t\tTitle"
+    echo -e "--\t----\t\t-----"
+    
+    local counter=1
+    find "$SRC_DIR" -type f \( -name "*.md" -o -name "*.html" \) | sort -r | while read -r file; do
+        local title=$(get_post_title "$file")
+        local date=$(get_post_date "$file")
+        
+        echo -e "$counter\t$date\t$title"
+        counter=$((counter + 1))
+    done
+}
+
+# Function to get a count of posts with a specific tag
+count_posts_with_tag() {
+    local tag="$1"
+    local count=0
+    
+    find "$SRC_DIR" -type f \( -name "*.md" -o -name "*.html" \) | while read -r file; do
+        local tags=$(get_post_tags "$file")
+        
+        if [[ ",$tags," == *",$tag,"* ]] || [[ "$tags" == "$tag" ]]; then
+            count=$((count + 1))
+        fi
+    done
+    
+    echo $count
+}
+
+# Function to list all tags
+list_tags() {
+    local sort_by_count=false
+    
+    # Parse arguments
+    if [ "$1" = "-n" ]; then
+        sort_by_count=true
+    fi
+    
+    echo -e "${YELLOW}Available tags:${NC}"
+    
+    if [ ! -d "$SRC_DIR" ] || [ -z "$(ls -A "$SRC_DIR" 2>/dev/null)" ]; then
+        echo -e "${RED}No posts found in '$SRC_DIR'.${NC}"
+        exit 0
+    fi
+    
+    # Collect all tags from all posts
+    local all_tags=""
+    
+    for file in $(find "$SRC_DIR" -type f \( -name "*.md" -o -name "*.html" \)); do
+        local tags=""
+        
+        if [[ "$file" == *.md ]]; then
+            tags=$(grep -m 1 "^tags:" "$file" | cut -d ':' -f 2- | sed 's/^ *//' | tr -d \'\"\')
+        elif [[ "$file" == *.html ]]; then
+            tags=$(grep -m 1 '<meta name="tags"' "$file" | sed 's/.*content="\([^"]*\)".*/\1/')
+        fi
+        
+        # Only process if tags exist
+        if [ -n "$tags" ]; then
+            # Split by comma and add to all_tags
+            IFS=',' read -ra TAG_ARRAY <<< "$tags"
+            for tag in "${TAG_ARRAY[@]}"; do
+                # Remove leading/trailing whitespace
+                tag=$(echo "$tag" | sed 's/^ *//;s/ *$//')
+                all_tags="$all_tags,$tag"
+            done
+        fi
+    done
+    
+    # Remove leading comma
+    all_tags=${all_tags#,}
+    
+    # Sort and remove duplicates
+    local unique_tags=$(echo "$all_tags" | tr ',' '\n' | sort -u)
+    
+    # If no tags found
+    if [ -z "$unique_tags" ]; then
+        echo -e "${RED}No tags found in any posts.${NC}"
+        exit 0
+    fi
+    
+    if [ "$sort_by_count" = true ]; then
+        echo -e "Tag\t\t\tCount"
+        echo -e "---\t\t\t-----"
+        
+        # Create temporary file
+        local temp_file=$(mktemp)
+        
+        # Get count for each tag and write to temp file
+        echo "$unique_tags" | while read -r tag; do
+            if [ -n "$tag" ]; then
+                local count=0
+                
+                for file in $(find "$SRC_DIR" -type f \( -name "*.md" -o -name "*.html" \)); do
+                    local file_tags=""
+                    
+                    if [[ "$file" == *.md ]]; then
+                        file_tags=$(grep -m 1 "^tags:" "$file" | cut -d ':' -f 2- | sed 's/^ *//' | tr -d \'\"\')
+                    elif [[ "$file" == *.html ]]; then
+                        file_tags=$(grep -m 1 '<meta name="tags"' "$file" | sed 's/.*content="\([^"]*\)".*/\1/')
+                    fi
+                    
+                    # Check if tag exists in file_tags
+                    if [[ "$file_tags" == *"$tag"* ]]; then
+                        count=$((count + 1))
+                    fi
+                done
+                
+                echo -e "$tag\t$count" >> "$temp_file"
+            fi
+        done
+        
+        # Sort by count (descending) and display
+        sort -t$'\t' -k2nr -k1 "$temp_file" | while read -r line; do
+            local tag=$(echo "$line" | cut -f1)
+            local count=$(echo "$line" | cut -f2)
+            
+            # Adjust tabbing based on tag length
+            local tabs="\t\t\t"
+            if [ ${#tag} -gt 15 ]; then
+                tabs="\t"
+            elif [ ${#tag} -gt 7 ]; then
+                tabs="\t\t"
+            fi
+            
+            echo -e "$tag$tabs$count"
+        done
+        
+        # Clean up
+        rm "$temp_file"
+    else
+        echo -e "Tag\t\t\tCount"
+        echo -e "---\t\t\t-----"
+        
+        for tag in $unique_tags; do
+            if [ -n "$tag" ]; then
+                local count=0
+                
+                for file in $(find "$SRC_DIR" -type f \( -name "*.md" -o -name "*.html" \)); do
+                    local file_tags=""
+                    
+                    if [[ "$file" == *.md ]]; then
+                        file_tags=$(grep -m 1 "^tags:" "$file" | cut -d ':' -f 2- | sed 's/^ *//' | tr -d \'\"\')
+                    elif [[ "$file" == *.html ]]; then
+                        file_tags=$(grep -m 1 '<meta name="tags"' "$file" | sed 's/.*content="\([^"]*\)".*/\1/')
+                    fi
+                    
+                    # Check if tag exists in file_tags
+                    if [[ "$file_tags" == *"$tag"* ]]; then
+                        count=$((count + 1))
+                    fi
+                done
+                
+                # Adjust tabbing based on tag length
+                local tabs="\t\t\t"
+                if [ ${#tag} -gt 15 ]; then
+                    tabs="\t"
+                elif [ ${#tag} -gt 7 ]; then
+                    tabs="\t\t"
+                fi
+                
+                echo -e "$tag$tabs$count"
+            fi
+        done
+    fi
+}
+
+# Function to list drafts
+list_drafts() {
+    echo -e "${YELLOW}Available drafts:${NC}"
+    
+    if [ ! -d "drafts" ] || [ -z "$(ls -A drafts 2>/dev/null)" ]; then
+        echo -e "${RED}No drafts found.${NC}"
+        exit 0
+    fi
+    
+    echo -e "ID\tDate\t\tTitle"
+    echo -e "--\t----\t\t-----"
+    
+    local counter=1
+    find "drafts" -type f \( -name "*.md" -o -name "*.html" \) | sort -r | while read -r file; do
+        local title=$(get_post_title "$file")
+        local date=$(get_post_date "$file")
+        
+        echo -e "$counter\t$date\t$title"
+        counter=$((counter + 1))
+    done
+}
+
+# Main function
+main() {
+    local command="posts"
+    
+    # Parse arguments
+    if [ -n "$1" ]; then
+        command="$1"
+        shift
+    fi
+    
+    case "$command" in
+        posts|list)
+            list_posts
+            ;;
+        tags)
+            list_tags "$@"
+            ;;
+        drafts)
+            list_drafts
+            ;;
+        *)
+            echo -e "${RED}Error: Unknown command '$command'${NC}"
+            echo -e "Usage: $0 [posts|tags|drafts] [-n for tags]"
+            exit 1
+            ;;
+    esac
+}
+
+# Run the main function
+main "$@" 

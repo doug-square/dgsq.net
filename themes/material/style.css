@@ -1,0 +1,847 @@
+/* 
+ * Android Material Design Theme for BSSG
+ * Modern, clean Material Design styling inspired by Google's design language
+ */
+
+:root {
+    /* Material Design color palette */
+    --primary-color: #6200ee;
+    --primary-variant: #3700b3;
+    --secondary-color: #03dac6;
+    --secondary-variant: #018786;
+    --background: #fafafa;
+    --surface: #ffffff;
+    --error: #b00020;
+    --on-primary: #ffffff;
+    --on-secondary: #000000;
+    --on-background: #000000;
+    --on-surface: #000000;
+    --on-error: #ffffff;
+    
+    /* Material elevation colors */
+    --dp1: rgba(0, 0, 0, 0.05);
+    --dp2: rgba(0, 0, 0, 0.07);
+    --dp4: rgba(0, 0, 0, 0.09);
+    --dp6: rgba(0, 0, 0, 0.11);
+    --dp8: rgba(0, 0, 0, 0.12);
+    --dp12: rgba(0, 0, 0, 0.14);
+    --dp16: rgba(0, 0, 0, 0.15);
+    --dp24: rgba(0, 0, 0, 0.16);
+    
+    /* Typography */
+    --font-main: 'Roboto', 'Segoe UI', 'Arial', sans-serif;
+    --font-headings: 'Roboto', 'Segoe UI', 'Arial', sans-serif;
+    --font-mono: 'Roboto Mono', monospace;
+    
+    /* Sizing */
+    --content-width: 1000px;
+    --border-radius: 4px;
+    --fab-radius: 28px;
+    --card-shadow: 0 2px 4px var(--dp2), 0 4px 8px var(--dp4);
+    --transition: 0.3s ease;
+    
+    /* Link aliases for compatibility with default theme */
+    --bg-color: var(--background);
+    --text-color: var(--on-background);
+    --link-color: var(--primary-color);
+    --header-color: var(--on-surface);
+    --border-color: var(--dp1);
+    --radius: var(--border-radius);
+}
+
+/* Material Design pattern for body */
+body {
+    font-family: var(--font-main);
+    background-color: var(--background);
+    color: var(--on-background);
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+    letter-spacing: 0.02em;
+    font-weight: 400;
+}
+
+/* Material Design card for the container */
+.container {
+    max-width: var(--content-width);
+    margin: 16px auto;
+    background-color: var(--surface);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 4px var(--dp2), 0 4px 8px var(--dp4);
+    overflow: hidden;
+}
+
+/* App bar with primary color */
+header {
+    background-color: var(--primary-color);
+    color: var(--on-primary);
+    padding: 16px;
+    position: relative;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 6px var(--dp4);
+    z-index: 2;
+}
+
+/* Site title with Material-style gradient */
+.site-title {
+    margin: 0;
+    padding: 0;
+    font-size: 1.5rem;
+    font-weight: 500;
+    font-family: var(--font-headings);
+    background: linear-gradient(120deg, var(--on-primary) 0%, rgba(255, 255, 255, 0.8) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.site-title a {
+    text-decoration: none;
+    background: linear-gradient(120deg, var(--on-primary) 0%, rgba(255, 255, 255, 0.8) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+    transition: all var(--transition);
+}
+
+.site-title a:hover {
+    text-decoration: none;
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0.9) 0%, var(--secondary-color) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    transform: translateY(-1px);
+}
+
+/* Menu icons for Material Design */
+.menu-controls {
+    display: flex;
+    gap: 16px;
+}
+
+.material-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--on-primary);
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.material-icon:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.material-menu::before {
+    content: "☰";
+    font-size: 18px;
+}
+
+.material-more::before {
+    content: "⋮";
+    font-size: 18px;
+}
+
+header h1 {
+    margin: 0;
+    padding: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+    font-family: var(--font-headings);
+    color: var(--on-primary);
+    background: linear-gradient(120deg, var(--on-primary) 0%, rgba(255, 255, 255, 0.8) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+/* Navigation in Material UI style */
+nav {
+    display: flex;
+    flex-wrap: nowrap;
+    background-color: var(--primary-color);
+    padding: 0;
+    overflow-x: auto;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+nav a {
+    color: var(--on-primary);
+    text-decoration: none;
+    padding: 15px 20px;
+    margin: 0;
+    font-weight: 500;
+    font-size: 0.95rem;
+    position: relative;
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    transition: all 0.3s;
+}
+
+nav a:hover, nav a:focus {
+    color: var(--on-primary);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Active tab with indicator */
+nav a.active {
+    color: var(--on-primary);
+}
+
+nav a.active::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--on-primary);
+}
+
+/* Media query for responsive design */
+@media (max-width: 768px) {
+    .container {
+        margin: 0;
+        max-width: 100%;
+        border-radius: 0;
+    }
+    
+    nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    nav a {
+        flex-grow: 1;
+        text-align: center;
+        padding: 12px 10px;
+    }
+    
+    main {
+        padding: 15px;
+    }
+    
+    footer {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .material-fab {
+        right: 10px;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+    
+    h2 {
+        font-size: 1.75rem;
+    }
+    
+    h3 {
+        font-size: 1.35rem;
+    }
+    
+    article .meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .pagination {
+        flex-wrap: wrap;
+    }
+    
+    .pagination .page-info {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 8px;
+    }
+    
+    .bottom-nav {
+        flex-wrap: wrap;
+    }
+}
+
+/* Medium-small screens */
+@media (max-width: 600px) {
+    main {
+        padding: 12px;
+    }
+    
+    h1 {
+        font-size: 1.75rem;
+    }
+    
+    h2 {
+        font-size: 1.5rem;
+    }
+    
+    h3 {
+        font-size: 1.25rem;
+    }
+    
+    article {
+        padding: 12px;
+        margin-bottom: 16px;
+    }
+    
+    .material-fab {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+        bottom: 16px;
+        right: 16px;
+    }
+    
+    .featured-image, 
+    .index-image, 
+    .tag-image,
+    .archive-image {
+        margin: 12px 0;
+    }
+    
+    .tags {
+        flex-wrap: wrap;
+    }
+    
+    .bottom-nav-item {
+        font-size: 0.7rem;
+        margin: 0 4px;
+    }
+}
+
+/* Small screens */
+@media (max-width: 480px) {
+    body {
+        font-size: 14px;
+    }
+    
+    header {
+        padding: 12px;
+    }
+    
+    .site-title {
+        font-size: 1.25rem;
+    }
+    
+    main {
+        padding: 10px;
+    }
+    
+    h1 {
+        font-size: 1.5rem;
+    }
+    
+    h2 {
+        font-size: 1.35rem;
+    }
+    
+    h3 {
+        font-size: 1.15rem;
+    }
+    
+    article {
+        padding: 10px;
+        margin-bottom: 12px;
+    }
+    
+    .material-button {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    
+    .pagination a {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .tags a {
+        padding: 3px 8px;
+        font-size: 0.7rem;
+    }
+    
+    .material-fab {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+        bottom: 12px;
+        right: 12px;
+    }
+    
+    .date-header {
+        font-size: 1.1rem;
+        margin: 24px 0 12px;
+    }
+    
+    pre, code {
+        font-size: 0.8rem;
+    }
+    
+    .tags-list .tag {
+        padding: 3px 8px;
+        font-size: 0.8rem;
+    }
+}
+
+/* Very small screens */
+@media (max-width: 360px) {
+    .site-title {
+        font-size: 1.1rem;
+    }
+    
+    main {
+        padding: 8px;
+    }
+    
+    nav {
+        gap: 0;
+    }
+    
+    nav a {
+        padding: 10px 6px;
+        font-size: 0.75rem;
+    }
+    
+    h1 {
+        font-size: 1.35rem;
+    }
+    
+    h2 {
+        font-size: 1.2rem;
+    }
+    
+    h3 {
+        font-size: 1.05rem;
+    }
+    
+    article {
+        padding: 8px;
+        margin-bottom: 10px;
+    }
+    
+    .bottom-nav {
+        flex-direction: column;
+        gap: 6px;
+    }
+    
+    .bottom-nav-item {
+        margin: 3px 0;
+    }
+    
+    .pagination {
+        flex-direction: column;
+        gap: 6px;
+    }
+    
+    .pagination a {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* Content area */
+main {
+    padding: 24px;
+    background-color: var(--surface);
+}
+
+/* Typography - Material Design specific */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-headings);
+    color: var(--on-surface);
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    font-weight: 400;
+    line-height: 1.2;
+}
+
+/* Decorative elements for headings */
+h1::before, h2::before, h3::before, h4::before {
+    content: "#";
+    display: inline-block;
+    margin-right: 0.4rem;
+    color: var(--primary-color);
+    opacity: 0.6;
+    font-weight: 400;
+    transition: all var(--transition);
+    transform: translateX(-5px);
+    opacity: 0;
+}
+
+h1:hover::before, h2:hover::before, h3:hover::before, h4:hover::before {
+    transform: translateX(0);
+    opacity: 0.6;
+}
+
+h1 {
+    font-size: 2.5rem;
+    letter-spacing: -0.02em;
+}
+
+h2 {
+    font-size: 2rem;
+    letter-spacing: -0.01em;
+}
+
+h3 {
+    font-size: 1.5rem;
+}
+
+h4 {
+    font-size: 1.25rem;
+}
+
+p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+/* Links */
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+a:visited {
+    color: var(--primary-variant);
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Material Design buttons */
+.material-button {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 4px;
+    background-color: var(--primary-color);
+    color: var(--on-primary);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: box-shadow 0.2s, background-color 0.2s;
+    box-shadow: 0 2px 4px var(--dp2);
+}
+
+.material-button:hover {
+    box-shadow: 0 4px 8px var(--dp4);
+    background-color: var(--primary-variant);
+}
+
+.material-button.secondary {
+    background-color: var(--secondary-color);
+    color: var(--on-secondary);
+}
+
+.material-button.secondary:hover {
+    background-color: var(--secondary-variant);
+}
+
+/* Floating action button */
+.material-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: var(--secondary-color);
+    color: var(--on-secondary);
+    box-shadow: 0 6px 10px var(--dp6), 0 1px 18px var(--dp2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    z-index: 10;
+    transition: box-shadow 0.2s, transform 0.2s;
+    cursor: pointer;
+}
+
+.material-fab::before {
+    content: "+";
+}
+
+.material-fab:hover {
+    box-shadow: 0 8px 12px var(--dp8), 0 3px 16px var(--dp4);
+    transform: translateY(-2px);
+}
+
+/* Articles in Material Design style */
+article {
+    margin-bottom: 24px;
+    padding: 16px;
+    border-radius: var(--border-radius);
+    background-color: var(--surface);
+    box-shadow: 0 1px 2px var(--dp1), 0 2px 4px var(--dp2);
+    transition: box-shadow 0.3s;
+}
+
+article:hover {
+    box-shadow: 0 2px 8px var(--dp4), 0 4px 12px var(--dp6);
+}
+
+article .meta {
+    font-size: 0.875rem;
+    color: rgba(0, 0, 0, 0.6);
+    margin-bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.reading-time {
+    color: rgba(0, 0, 0, 0.6);
+    font-style: normal;
+    display: flex;
+    align-items: center;
+}
+
+.reading-time::before {
+    content: "⏱️";
+    margin-right: 4px;
+}
+
+/* Featured Images in Material Design style */
+.featured-image {
+    margin: 16px 0;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 8px var(--dp4);
+}
+
+.featured-image img {
+    width: 100%;
+    transition: transform var(--transition);
+    display: block;
+    border-radius: 0;
+}
+
+.featured-image:hover img {
+    transform: scale(1.02);
+}
+
+.featured-image .image-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
+
+.index-image {
+    margin: 16px 0;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.index-image img {
+    width: 100%;
+    display: block;
+}
+
+.tag-image {
+    margin: 16px 0;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.tag-image img {
+    width: 100%;
+    display: block;
+}
+
+.archive-image {
+    margin: 16px 0;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.archive-image img {
+    width: 100%;
+    display: block;
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tags a {
+    display: inline-block;
+    background-color: rgba(98, 0, 238, 0.08);
+    color: var(--primary-color);
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    border-radius: 16px;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.tags a:hover {
+    background-color: rgba(98, 0, 238, 0.12);
+    text-decoration: none;
+}
+
+code {
+    font-family: var(--font-mono);
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 2px 4px;
+    border-radius: 2px;
+    font-size: 0.9em;
+}
+
+pre {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 16px;
+    border-radius: var(--border-radius);
+    overflow-x: auto;
+}
+
+pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 4px var(--dp2);
+}
+
+/* Bottom navigation bar - Material Design style */
+footer {
+    background-color: var(--surface);
+    color: var(--on-surface);
+    padding: 16px;
+    font-size: 0.875rem;
+    text-align: center;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Bottom nav bar items */
+.bottom-nav {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.bottom-nav-item {
+    color: rgba(0, 0, 0, 0.6);
+    margin: 0 8px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 500;
+}
+
+.bottom-nav-item:hover {
+    color: var(--primary-color);
+}
+
+/* Pagination in Material Design style */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 24px 0;
+    gap: 8px;
+}
+
+.pagination a {
+    background-color: transparent;
+    color: var(--primary-color);
+    padding: 8px 16px;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.pagination a:hover {
+    background-color: rgba(98, 0, 238, 0.08);
+    text-decoration: none;
+}
+
+.pagination .page-info {
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 0.875rem;
+}
+
+/* Chip component for tags list */
+.tags-list .tag {
+    display: inline-flex;
+    align-items: center;
+    background-color: rgba(98, 0, 238, 0.08);
+    color: var(--primary-color);
+    padding: 4px 12px;
+    border-radius: 16px;
+    margin: 4px;
+    font-size: 0.875rem;
+    transition: background-color 0.2s;
+}
+
+.tags-list .tag:hover {
+    background-color: rgba(98, 0, 238, 0.12);
+}
+
+.tag-count {
+    width: 20px;
+    height: 20px;
+    background-color: var(--primary-color);
+    color: var(--on-primary);
+    font-size: 0.75rem;
+    border-radius: 50%;
+    margin-left: 8px;
+}
+
+/* For posts lists in archives */
+.date-header {
+    color: rgba(0, 0, 0, 0.7);
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin: 32px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--dp1);
+    position: relative;
+}
+
+.date-header::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    border-radius: var(--border-radius);
+}
+
+.posts-list article {
+    margin-bottom: 16px;
+    padding: 16px;
+} 

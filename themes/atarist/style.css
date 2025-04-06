@@ -1,0 +1,670 @@
+/* 
+ * Atari ST GEM Theme for BSSG
+ * Recreating the Atari ST's Graphical Environment Manager interface from the 1980s
+ */
+
+:root {
+    /* Atari ST GEM color scheme */
+    --bg-color: #c0c0c0;
+    --window-bg: #ffffff;
+    --text-color: #000000;
+    --link-color: #0000aa;
+    --link-visited: #550055;
+    --header-color: #000000;
+    --border-color: #000000;
+    --title-bar: #000080;
+    --title-text: #ffffff;
+    --dropdown-bg: #c0c0c0;
+    --icon-color: #000000;
+    --menu-highlight: #000080;
+    --menu-text: #ffffff;
+    --title-gradient-start: #ffffff;
+    --title-gradient-end: #aaaaff;
+    
+    /* Typography */
+    --font-main: 'Courier New', monospace;
+    --font-headings: 'Courier New', monospace;
+    --font-mono: 'Courier New', monospace;
+    
+    /* Sizing */
+    --content-width: 800px;
+    --border-width: 1px;
+    --border-radius: 0;
+}
+
+/* Base elements */
+body {
+    font-family: var(--font-main);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 15px;
+    line-height: 1.4;
+    font-size: 14px;
+}
+
+/* GEM window style with border */
+.container {
+    max-width: var(--content-width);
+    margin: 20px auto;
+    border: var(--border-width) solid var(--border-color);
+    background-color: var(--window-bg);
+    position: relative;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Title bar in classic GEM style */
+header {
+    background-color: var(--title-bar);
+    color: var(--title-text);
+    padding: 2px 10px 15px 10px;
+    margin: 0;
+    position: relative;
+    font-weight: bold;
+    font-size: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+/* Window control icons */
+.window-controls {
+    display: flex;
+    gap: 5px;
+}
+
+.gem-control {
+    width: 16px;
+    height: 16px;
+    background-color: var(--window-bg);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.gem-close::after {
+    content: "×";
+    color: black;
+    font-weight: bold;
+}
+
+.gem-minimize::after {
+    content: "_";
+    color: black;
+    position: relative;
+    top: -3px;
+}
+
+.gem-maximize::after {
+    content: "□";
+    color: black;
+}
+
+header h1 {
+    margin: 0;
+    padding: 0;
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--title-text);
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+
+header p {
+    margin: 2px 0 0 0;
+    padding: 0;
+    font-size: 0.9rem;
+    font-weight: normal;
+    color: var(--title-text);
+}
+
+/* Navigation as GEM menu bar */
+nav {
+    background-color: var(--dropdown-bg);
+    border: var(--border-width) solid var(--border-color);
+    display: flex;
+    flex-wrap: nowrap;
+    padding: 0;
+    overflow-x: visible;
+    justify-content: center;
+    position: relative;
+    min-height: 30px;
+    width: fit-content;
+    margin: 10px auto 0 auto;
+    align-self: center;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+nav a {
+    color: var(--text-color);
+    text-decoration: none;
+    padding: 3px 12px;
+    margin: 0;
+    font-size: 0.9rem;
+    position: relative;
+    display: inline-block;
+    border-right: var(--border-width) solid var(--border-color);
+    white-space: nowrap;
+}
+
+nav a:first-child {
+    border-left: none;
+}
+
+nav a:last-child {
+    border-right: none;
+}
+
+nav a:hover, nav a:focus {
+    background-color: var(--menu-highlight);
+    color: var(--menu-text);
+}
+
+/* Selected menu item */
+nav a.active {
+    background-color: var(--menu-highlight);
+    color: var(--menu-text);
+}
+
+/* Content area */
+main {
+    padding: 15px;
+    background-color: var(--window-bg);
+    min-height: 300px;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-headings);
+    color: var(--header-color);
+    margin-top: 1.2rem;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+h1 {
+    font-size: 1.6rem;
+}
+
+h2 {
+    font-size: 1.4rem;
+}
+
+h3 {
+    font-size: 1.2rem;
+}
+
+article h1 {
+    font-size: 1.4rem;
+    border-bottom: var(--border-width) solid var(--border-color);
+    padding-bottom: 5px;
+}
+
+p {
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+/* Links */
+a {
+    color: var(--link-color);
+    text-decoration: none;
+}
+
+a:visited {
+    color: var(--link-visited);
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* GEM style button */
+.gem-button {
+    background-color: var(--dropdown-bg);
+    border: var(--border-width) solid var(--border-color);
+    padding: 3px 10px;
+    color: var(--text-color);
+    font-family: var(--font-main);
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: inline-block;
+}
+
+.gem-button:active {
+    background-color: var(--menu-highlight);
+    color: var(--menu-text);
+}
+
+/* Articles with borders */
+article {
+    margin-bottom: 20px;
+    padding: 10px;
+    border: var(--border-width) solid var(--border-color);
+    background-color: var(--window-bg);
+}
+
+article:last-child {
+    margin-bottom: 0;
+}
+
+article .meta {
+    font-size: 0.85rem;
+    color: #333;
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.reading-time {
+    font-style: italic;
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.tags a {
+    background-color: var(--dropdown-bg);
+    color: var(--text-color);
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    border: var(--border-width) solid var(--border-color);
+    text-decoration: none;
+}
+
+.tags a:hover {
+    background-color: var(--menu-highlight);
+    color: var(--menu-text);
+}
+
+.tags-list {
+    list-style-type: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.tag-count {
+    color: #666;
+    font-size: 0.85em;
+    margin-left: 5px;
+}
+
+/* Code formatting */
+code {
+    font-family: var(--font-mono);
+    background-color: #eaeaea;
+    padding: 2px 4px;
+    font-size: 0.9em;
+    border: var(--border-width) solid #a0a0a0;
+}
+
+pre {
+    background-color: #eaeaea;
+    padding: 10px;
+    overflow-x: auto;
+    font-size: 0.9em;
+    border: var(--border-width) solid #a0a0a0;
+}
+
+pre code {
+    background-color: transparent;
+    padding: 0;
+    border: none;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    border: var(--border-width) solid var(--border-color);
+}
+
+/* Footer styled like GEM status bar */
+footer {
+    background-color: var(--dropdown-bg);
+    color: var(--text-color);
+    padding: 3px 10px;
+    font-size: 0.9rem;
+    text-align: center;
+    border-top: var(--border-width) solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* GEM style scrollbar (simulated with CSS) */
+.gem-scrollbar {
+    width: 15px;
+    background-color: var(--dropdown-bg);
+    border-left: var(--border-width) solid var(--border-color);
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.gem-scrollbar-thumb {
+    width: 13px;
+    height: 40px;
+    background-color: var(--dropdown-bg);
+    border: var(--border-width) solid var(--border-color);
+    margin: 1px;
+}
+
+/* GEM-style resize handle */
+.gem-resize {
+    width: 15px;
+    height: 15px;
+    background-color: var(--dropdown-bg);
+    border-top: var(--border-width) solid var(--border-color);
+    border-left: var(--border-width) solid var(--border-color);
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    cursor: se-resize;
+}
+
+/* Pagination in GEM style */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+    gap: 5px;
+}
+
+.pagination a {
+    background-color: var(--dropdown-bg);
+    color: var(--text-color);
+    padding: 3px 10px;
+    text-decoration: none;
+    border: var(--border-width) solid var(--border-color);
+    font-size: 0.9rem;
+}
+
+.pagination a:hover {
+    background-color: var(--menu-highlight);
+    color: var(--menu-text);
+}
+
+.pagination .page-info {
+    margin: 0 10px;
+    font-size: 0.9rem;
+}
+
+/* Media query for responsive design */
+@media (max-width: 768px) {
+    .container {
+        margin: 10px;
+        width: auto;
+        max-width: none;
+    }
+    
+    nav {
+        flex-direction: column;
+        width: 90%;
+    }
+    
+    nav a {
+        border-right: none;
+        border-bottom: var(--border-width) solid var(--border-color);
+        padding: 8px 12px;
+        text-align: center;
+    }
+    
+    nav a:last-child {
+        border-bottom: none;
+    }
+    
+    article {
+        padding: 15px;
+    }
+    
+    .featured-image,
+    .index-image,
+    .tag-image,
+    .archive-image {
+        margin: 10px auto;
+    }
+    
+    footer {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+        align-items: center;
+    }
+    
+    .pagination {
+        flex-direction: column;
+        gap: 15px;
+        align-items: center;
+    }
+    
+    main {
+        padding: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 8px;
+    }
+    
+    .container {
+        margin: 5px;
+    }
+    
+    header {
+        padding: 2px 8px 10px 8px;
+    }
+    
+    h1 {
+        font-size: 1.3rem;
+    }
+    
+    h2 {
+        font-size: 1.2rem;
+    }
+    
+    h3 {
+        font-size: 1.1rem;
+    }
+    
+    .featured-image::before,
+    .index-image::before,
+    .tag-image::before,
+    .archive-image::before {
+        font-size: 0.8rem;
+        padding: 2px 5px;
+    }
+    
+    article .meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .site-title {
+        font-size: 0.9rem;
+    }
+    
+    article h1 {
+        font-size: 1.2rem;
+    }
+}
+
+/* Site title with GEM-style gradient */
+.site-title {
+    margin: 0;
+    padding: 0;
+    font-size: 1rem;
+    font-weight: bold;
+    font-family: var(--font-headings);
+    /* Gradient that matches Atari ST GEM aesthetic */
+    background: linear-gradient(90deg, var(--title-gradient-start), var(--title-gradient-end));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+    display: inline-block;
+}
+
+.site-title a {
+    text-decoration: none;
+    background: linear-gradient(90deg, var(--title-gradient-start), var(--title-gradient-end));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+    transition: all 0.2s ease;
+    display: inline-block;
+}
+
+.site-title a:hover {
+    text-decoration: none;
+    background: linear-gradient(90deg, var(--title-gradient-end), var(--title-gradient-start));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+/* Featured image styles for Atari ST GEM */
+.featured-image {
+    margin: 15px 0;
+    border: var(--border-width) solid var(--border-color);
+    background-color: var(--window-bg);
+    position: relative;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
+    padding-top: 20px; /* Space for the title bar */
+}
+
+.featured-image::before {
+    content: "IMAGE VIEWER";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--title-bar);
+    color: var(--title-text);
+    font-size: 0.9rem;
+    padding: 2px 10px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.featured-image img {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+}
+
+.featured-image .image-caption {
+    padding: 5px 10px;
+    background-color: var(--dropdown-bg);
+    border-top: var(--border-width) solid var(--border-color);
+    font-size: 0.9rem;
+}
+
+.index-image {
+    margin: 15px 0;
+    border: var(--border-width) solid var(--border-color);
+    background-color: var(--window-bg);
+    position: relative;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
+    padding-top: 20px; /* Space for the title bar */
+}
+
+.index-image::before {
+    content: "INDEX IMAGE";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--title-bar);
+    color: var(--title-text);
+    font-size: 0.9rem;
+    padding: 2px 10px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.index-image img {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+}
+
+.tag-image {
+    margin: 15px 0;
+    border: var(--border-width) solid var(--border-color);
+    background-color: var(--window-bg);
+    position: relative;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
+    padding-top: 20px; /* Space for the title bar */
+}
+
+.tag-image::before {
+    content: "TAG IMAGE";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--title-bar);
+    color: var(--title-text);
+    font-size: 0.9rem;
+    padding: 2px 10px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.tag-image img {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+}
+
+.archive-image {
+    margin: 15px 0;
+    border: var(--border-width) solid var(--border-color);
+    background-color: var(--window-bg);
+    position: relative;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
+    padding-top: 20px; /* Space for the title bar */
+}
+
+.archive-image::before {
+    content: "ARCHIVE IMAGE";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--title-bar);
+    color: var(--title-text);
+    font-size: 0.9rem;
+    padding: 2px 10px;
+    font-weight: bold;
+    text-align: center;
+} 

@@ -1,0 +1,666 @@
+/* 
+ * Game Boy Theme for BSSG
+ * A clean retro theme inspired by the original Nintendo Game Boy,
+ * with high readability while maintaining the nostalgic feel
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+:root {
+    /* Classic Game Boy palette */
+    --gb-darkest: #0f380f;
+    --gb-dark: #306230;
+    --gb-light: #8bac0f;
+    --gb-lightest: #9bbc0f;
+    
+    /* Theme color assignments with enhanced readability */
+    --bg-color: #e8f0e8; /* Light green background for readability */
+    --container-bg: #f5f8f5; /* Even lighter container background */
+    --text-color: #0f380f; /* Dark green text for contrast */
+    --heading-color: #0f380f;
+    --link-color: #306230; /* Darker green for links */
+    --link-hover: #0f380f;
+    --accent-color: #8bac0f;
+    --border-color: #8bac0f;
+    
+    /* Typography */
+    --font-main: 'Press Start 2P', monospace;
+    --font-headings: 'Press Start 2P', monospace;
+    --font-mono: monospace;
+    
+    /* Sizing */
+    --content-width: 90%;
+    --max-content-width: 900px;
+    --content-padding: 2rem;
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 0.75rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    
+    /* Game Boy specific */
+    --pixel-size: 2px;
+    --screen-border: 10px;
+    --animation-speed: 0.3s;
+}
+
+/* Base elements */
+html {
+    font-size: 14px; /* Smaller base font size for pixelated font */
+    background-color: var(--gb-darkest);
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--font-main);
+    line-height: 1.5;
+    color: var(--text-color);
+    background-color: var(--bg-color);
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.container {
+    width: var(--content-width);
+    max-width: var(--max-content-width);
+    margin: 2rem auto;
+    padding: var(--content-padding);
+    background-color: var(--container-bg);
+    border: var(--screen-border) solid #8b9478; /* Game Boy screen border */
+    border-radius: 4px;
+    box-shadow: 
+        0 0 0 4px #373c36,
+        0 10px 25px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden; /* Ensure contained elements don't break the Game Boy screen */
+}
+
+/* Enhanced header styling */
+header {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 4px dashed var(--accent-color);
+    position: relative;
+}
+
+header::after {
+    content: "";
+    display: block;
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: var(--gb-dark);
+    opacity: 0.5;
+}
+
+.site-title {
+    font-size: 1.5rem;
+    letter-spacing: -1px;
+    margin: 0 0 var(--spacing-md) 0;
+    padding: var(--spacing-sm) 0;
+    color: var(--heading-color);
+    text-shadow: 2px 2px 0 rgba(15, 56, 15, 0.2);
+    position: relative;
+    display: inline-block;
+}
+
+.site-title::before,
+.site-title::after {
+    content: "〓";
+    color: var(--gb-light);
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1rem;
+}
+
+.site-title::before {
+    left: -1.5rem;
+}
+
+.site-title::after {
+    right: -1.5rem;
+}
+
+.site-title a {
+    color: var(--heading-color);
+    text-decoration: none;
+    transition: color var(--animation-speed) ease;
+    position: relative;
+    z-index: 1;
+}
+
+.site-title a:hover {
+    color: var(--link-hover);
+    transform: scale(1.05);
+}
+
+/* Site description */
+header p {
+    color: var(--text-color);
+    font-size: 0.7rem;
+    margin: 0 auto;
+    max-width: 85%;
+    opacity: 0.9;
+    line-height: 1.8;
+}
+
+/* Improved Navigation buttons */
+nav {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin: var(--spacing-lg) 0;
+    padding: var(--spacing-sm);
+    background-color: rgba(155, 188, 15, 0.1);
+    border-radius: 4px;
+}
+
+nav a {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--gb-light);
+    color: var(--gb-darkest);
+    text-decoration: none;
+    font-size: 0.7rem;
+    border: 2px solid var(--gb-dark);
+    border-radius: 0;
+    box-shadow: 2px 2px 0 var(--gb-dark);
+    transform: translateY(0);
+    transition: all var(--animation-speed) ease-in-out;
+    text-align: center;
+    min-width: 80px;
+    position: relative;
+    overflow: hidden;
+}
+
+nav a::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--gb-darkest);
+    transform: translateX(-100%);
+    transition: transform var(--animation-speed) ease-in-out;
+}
+
+nav a:hover::after {
+    transform: translateX(0);
+}
+
+nav a:hover, 
+nav a.active {
+    background-color: var(--gb-dark);
+    color: var(--bg-color);
+    transform: translateY(2px);
+    box-shadow: 0 0 0 var(--gb-dark);
+}
+
+nav a.active {
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-headings);
+    color: var(--heading-color);
+    margin: var(--spacing-lg) 0 var(--spacing-md);
+    line-height: 1.3;
+    text-align: center; /* Center all headings */
+}
+
+h1 {
+    font-size: 1.3rem;
+    border-bottom: 2px solid var(--accent-color);
+    padding-bottom: var(--spacing-xs);
+}
+
+h2 {
+    font-size: 1.1rem;
+}
+
+h3 {
+    font-size: 1rem;
+}
+
+p {
+    margin: var(--spacing-md) 0;
+    font-size: 0.8rem;
+    line-height: 1.7;
+}
+
+/* Links */
+a {
+    color: var(--link-color);
+    text-decoration: underline;
+    transition: color var(--animation-speed) ease;
+    position: relative;
+}
+
+a:hover {
+    color: var(--link-hover);
+}
+
+/* Article styling */
+article {
+    margin-bottom: var(--spacing-xl);
+    text-align: justify; /* Justify text for cleaner appearance */
+}
+
+article h1 {
+    margin-top: 0;
+    text-align: center; /* Center article titles */
+}
+
+.page-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-md);
+    font-size: 0.7rem;
+    margin: var(--spacing-md) 0 var(--spacing-lg);
+    text-align: center;
+    color: var(--text-color);
+    opacity: 0.7;
+}
+
+/* Lists */
+ul, ol {
+    padding-left: 1.5rem;
+    margin: var(--spacing-md) 0;
+    font-size: 0.8rem;
+}
+
+li {
+    margin-bottom: var(--spacing-xs);
+}
+
+/* Code blocks */
+pre, code {
+    font-family: var(--font-mono);
+    background-color: var(--gb-lightest);
+    color: var(--gb-darkest);
+    border-radius: 2px;
+    font-size: 0.8rem;
+}
+
+code {
+    padding: 0.1em 0.3em;
+}
+
+pre {
+    padding: var(--spacing-sm);
+    overflow-x: auto;
+    margin: var(--spacing-md) 0;
+}
+
+pre code {
+    padding: 0;
+    background: transparent;
+}
+
+/* Blockquotes */
+blockquote {
+    margin: var(--spacing-md) 0;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-left: 4px solid var(--accent-color);
+    background-color: rgba(139, 172, 15, 0.1);
+    font-style: italic;
+}
+
+blockquote p:first-child {
+    margin-top: 0;
+}
+
+blockquote p:last-child {
+    margin-bottom: 0;
+}
+
+/* Enhanced images and figures */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: var(--spacing-md) auto;
+    border: 2px solid var(--border-color);
+    image-rendering: pixelated; /* Enhance the retro feel for images */
+    border-radius: 2px;
+}
+
+figcaption,
+.caption {
+    text-align: center;
+    font-size: 0.7rem;
+    margin-top: var(--spacing-sm);
+    padding: var(--spacing-xs);
+    background-color: var(--gb-lightest);
+    color: var(--gb-darkest);
+    border-radius: 2px;
+    display: inline-block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Post list styling */
+.posts-list article {
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 2px dotted var(--accent-color);
+    text-align: center; /* Center list content */
+}
+
+.posts-list article:last-child {
+    border-bottom: none;
+}
+
+.posts-list h2 {
+    margin-top: 0;
+    font-size: 1.1rem;
+    text-align: center; /* Ensure post titles are centered */
+}
+
+.posts-list h2 a {
+    color: var(--heading-color);
+    text-decoration: none;
+}
+
+.posts-list h2 a:hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+}
+
+/* Improved tags */
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    margin: var(--spacing-md) 0;
+    justify-content: center;
+}
+
+.tags a {
+    display: inline-block;
+    padding: var(--spacing-xs);
+    font-size: 0.65rem;
+    background-color: var(--gb-lightest);
+    color: var(--gb-darkest);
+    text-decoration: none;
+    border: 1px solid var(--gb-dark);
+    border-radius: 0;
+    transition: all var(--animation-speed) ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.tags a:hover {
+    background-color: var(--gb-dark);
+    color: var(--gb-lightest);
+    transform: translateY(1px);
+}
+
+/* Enhanced footer */
+footer {
+    text-align: center;
+    padding-top: var(--spacing-lg);
+    margin-top: var(--spacing-xl);
+    border-top: 3px solid var(--accent-color);
+    font-size: 0.7rem;
+    position: relative;
+}
+
+/* Improved pagination */
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-xl);
+}
+
+.pagination a {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--gb-light);
+    color: var(--bg-color);
+    text-decoration: none;
+    font-size: 0.7rem;
+    border: 2px solid var(--gb-dark);
+    box-shadow: 2px 2px 0 var(--gb-dark);
+    transform: translateY(0);
+    transition: all var(--animation-speed) ease-in-out;
+    min-width: 80px;
+    text-align: center;
+}
+
+.pagination a:hover {
+    background-color: var(--gb-dark);
+    transform: translateY(2px);
+    box-shadow: 0 0 0 var(--gb-dark);
+}
+
+/* Screen scanlines effect */
+.container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        linear-gradient(
+            to bottom,
+            rgba(139, 172, 15, 0.02) 1px,
+            transparent 1px
+        );
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Enhanced reading time indicator */
+.reading-time {
+    display: inline-block;
+    font-size: 0.65rem;
+    margin: var(--spacing-sm) 0;
+    color: var(--gb-dark);
+    padding: var(--spacing-xs);
+    background-color: rgba(155, 188, 15, 0.1);
+    border-radius: 2px;
+}
+
+.reading-time::before {
+    content: "⏲";
+    margin-right: var(--spacing-xs);
+}
+
+/* Better game boy hover effects */
+a:not(.site-title a):not(nav a):not(.pagination a):not(.tags a)::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background-color: var(--gb-dark);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform var(--animation-speed) ease;
+}
+
+a:not(.site-title a):not(nav a):not(.pagination a):not(.tags a):hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+    .container {
+        width: 95%;
+        margin: 1rem auto;
+        padding: var(--spacing-md);
+        border-width: 8px;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    
+    body {
+        overflow-x: hidden;
+        width: 100%;
+    }
+    
+    nav {
+        padding: var(--spacing-xs);
+        gap: var(--spacing-xs);
+        flex-wrap: wrap;
+    }
+    
+    nav a {
+        min-width: 70px;
+        font-size: 0.65rem;
+        margin-bottom: 5px;
+    }
+    
+    .site-title {
+        font-size: 1.3rem;
+    }
+    
+    .site-title::before,
+    .site-title::after {
+        display: none;
+    }
+    
+    h1 {
+        font-size: 1.2rem;
+    }
+    
+    h2 {
+        font-size: 1.05rem;
+    }
+    
+    .pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .pagination a {
+        flex: 1 1 40%;
+    }
+}
+
+@media (max-width: 480px) {
+    html {
+        font-size: 13px;
+    }
+    
+    .container {
+        width: 100%;
+        margin: 0;
+        padding: var(--spacing-sm);
+        border-width: 6px;
+        box-sizing: border-box;
+    }
+    
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+    
+    pre, code {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+    
+    .content-padding {
+        padding: var(--spacing-xs);
+    }
+    
+    header {
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .site-title {
+        font-size: 1.1rem;
+        letter-spacing: -0.5px;
+    }
+    
+    nav {
+        margin: var(--spacing-md) 0;
+    }
+    
+    nav a {
+        padding: var(--spacing-xs) var(--spacing-xs);
+        min-width: 60px;
+        font-size: 0.6rem;
+    }
+    
+    h1 {
+        font-size: 1.1rem;
+    }
+    
+    h2 {
+        font-size: 1rem;
+    }
+    
+    h3 {
+        font-size: 0.9rem;
+    }
+    
+    p, li {
+        font-size: 0.75rem;
+        line-height: 1.6;
+    }
+    
+    .page-meta {
+        font-size: 0.65rem;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+    
+    .pagination {
+        margin-top: var(--spacing-lg);
+    }
+    
+    .pagination a {
+        font-size: 0.65rem;
+        padding: var(--spacing-xs);
+    }
+    
+    pre, code {
+        font-size: 0.7rem;
+    }
+    
+    pre {
+        padding: var(--spacing-xs);
+    }
+    
+    .tags a {
+        font-size: 0.6rem;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #1e3a1e;
+        --container-bg: #0f280f;
+        --text-color: #9bbc0f;
+        --heading-color: #9bbc0f;
+        --link-color: #8bac0f;
+        --link-hover: #ffffff;
+    }
+    
+    pre, code {
+        background-color: #0b220b;
+        color: #9bbc0f;
+    }
+    
+    blockquote {
+        background-color: rgba(15, 56, 15, 0.5);
+    }
+} 

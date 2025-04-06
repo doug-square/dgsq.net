@@ -1,0 +1,813 @@
+/* 
+ * Y2K Theme for BSSG
+ * Turn of the millennium aesthetic with bold colors and digital futurism
+ * Featuring bubble effects, gradients, and elements from early 2000s web design
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=Titillium+Web:wght@400;700&display=swap');
+
+:root {
+    /* Y2K color scheme - bold and digital */
+    --bg-color: #CCCCFF;
+    --bg-secondary: #FFCCFF;
+    --text-color: #333366;
+    --text-light: #666699;
+    --link-color: #FF3399;
+    --link-hover: #FF66CC;
+    --accent-blue: #33CCFF;
+    --accent-pink: #FF66FF;
+    --accent-yellow: #FFFF66;
+    --header-color: #6633CC;
+    --border-color: #9999CC;
+    --nav-bg: #EEEEFF;
+    --bubble-gradient-1: rgba(255, 102, 255, 0.5);
+    --bubble-gradient-2: rgba(102, 204, 255, 0.5);
+    --highlight-color: #EEDDFF;
+    --accent-color: var(--accent-blue);
+    --accent-secondary: var(--accent-pink);
+    --quote-bg: #EEEEFF;
+    
+    /* Typography */
+    --font-main: 'Titillium Web', 'Arial', sans-serif;
+    --font-digital: 'VT323', monospace;
+    --font-mono: 'Courier New', monospace;
+    
+    /* Font Sizes */
+    --text-xs: 0.8rem;
+    --text-sm: 0.9rem;
+    --text-base: 1rem;
+    --text-md: 1.2rem;
+    --text-lg: 1.5rem;
+    --text-xl: 1.8rem;
+    --text-2xl: 2.2rem;
+    --text-3xl: 2.5rem;
+    
+    /* Line Heights */
+    --line-height-tight: 1.2;
+    --line-height-base: 1.5;
+    --line-height-relaxed: 1.8;
+    
+    /* Spacing */
+    --spacing-xs: 3px;
+    --spacing-sm: 5px;
+    --spacing-md: 10px;
+    --spacing-lg: 15px;
+    --spacing-xl: 20px;
+    --spacing-2xl: 30px;
+    --spacing-3xl: 40px;
+    
+    /* Transitions */
+    --transition-fast: 0.1s;
+    --transition-base: 0.2s;
+    --transition-slow: 0.3s;
+    
+    /* Sizing */
+    --content-width: 960px;
+    --border-radius: 20px;
+    --button-radius: 25px;
+}
+
+/* Base elements with background gradient */
+body {
+    font-family: var(--font-main);
+    background: linear-gradient(135deg, var(--bg-color) 0%, var(--bg-secondary) 100%);
+    color: var(--text-color);
+    margin: 0;
+    padding: var(--spacing-xl);
+    line-height: var(--line-height-base);
+    font-size: var(--text-base);
+    background-attachment: fixed;
+}
+
+/* Container with early 2000s styling */
+.container {
+    max-width: var(--content-width);
+    margin: var(--spacing-xl) auto;
+    background-color: rgba(255, 255, 255, 0.7);
+    border: 3px solid var(--border-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: 0 0 var(--spacing-xl) rgba(102, 102, 204, 0.3);
+    position: relative;
+}
+
+/* Digital stars in the background */
+.container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M20 0L20 40M0 20L40 20M8 8L32 32M32 8L8 32' stroke='%239999CC' stroke-width='0.5' stroke-dasharray='1,4' stroke-linecap='round'/%3E%3C/svg%3E");
+    opacity: 0.2;
+    pointer-events: none;
+}
+
+/* Y2K header with gradient */
+header {
+    background: linear-gradient(to right, var(--header-color), var(--accent-blue));
+    color: white;
+    padding: var(--spacing-xl) var(--spacing-2xl);
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    border-bottom: 3px solid var(--border-color);
+}
+
+/* Bubble effect behind header */
+header::before {
+    content: "";
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--bubble-gradient-1) 0%, var(--bubble-gradient-2) 100%);
+    top: -100px;
+    right: -50px;
+    opacity: 0.6;
+    z-index: 0;
+}
+
+header h1 {
+    margin: 0;
+    padding: 0;
+    font-size: var(--text-3xl);
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 1;
+}
+
+/* Site title with Y2K futuristic styling */
+.site-title {
+    margin: 0;
+    padding: 0;
+    font-size: var(--text-3xl);
+    font-weight: bold;
+    position: relative;
+    z-index: 1;
+    letter-spacing: 1px;
+}
+
+.site-title a {
+    text-decoration: none;
+    background: linear-gradient(45deg, 
+        var(--accent-blue) 0%, 
+        var(--accent-pink) 30%, 
+        var(--link-color) 60%, 
+        var(--accent-yellow) 100%
+    );
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);
+    display: inline-block;
+    animation: y2k-gradient 5s ease infinite;
+    transition: all var(--transition-slow);
+}
+
+.site-title a:hover {
+    transform: scale(1.05) rotate(-1deg);
+    text-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+@keyframes y2k-gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Y2K-style bubble buttons navigation */
+nav {
+    background-color: var(--nav-bg);
+    padding: var(--spacing-md);
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: center;
+    position: relative;
+    gap: var(--spacing-md);
+    border-bottom: 3px solid var(--border-color);
+}
+
+nav a {
+    color: var(--text-color);
+    text-decoration: none;
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-size: var(--text-sm);
+    font-weight: bold;
+    position: relative;
+    display: inline-block;
+    background: linear-gradient(to bottom, white, #f0f0ff);
+    border-radius: var(--button-radius);
+    border: 2px solid var(--border-color);
+    white-space: nowrap;
+    box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.1);
+    transition: all var(--transition-base);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+nav a:hover {
+    background: linear-gradient(to bottom, white, var(--accent-yellow));
+    transform: scale(1.05);
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Active navigation item */
+nav a.active {
+    background: linear-gradient(to bottom, var(--accent-pink), var(--link-color));
+    color: white;
+    border-color: var(--link-color);
+}
+
+/* Special RSS button */
+nav a:last-child {
+    background: linear-gradient(to bottom, var(--accent-blue), #0099cc);
+    color: white;
+    border-color: #0099cc;
+}
+
+nav a:last-child:hover {
+    background: linear-gradient(to bottom, #66ddff, #00aadd);
+}
+
+/* Content area with subtle pattern */
+main {
+    padding: var(--spacing-2xl);
+    position: relative;
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Y2K-style typography */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--header-color);
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    line-height: var(--line-height-tight);
+}
+
+h1 {
+    font-size: var(--text-2xl);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+h2 {
+    font-size: var(--text-xl);
+    background: linear-gradient(to right, var(--header-color), var(--accent-blue));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 2px dotted var(--border-color);
+}
+
+h3 {
+    font-size: var(--text-lg);
+    color: var(--accent-blue);
+}
+
+p {
+    margin-bottom: 1rem;
+    line-height: var(--line-height-base);
+}
+
+/* Y2K-style links with hover effect */
+a {
+    color: var(--link-color);
+    text-decoration: none;
+    font-weight: bold;
+    transition: all var(--transition-base);
+}
+
+a:hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+}
+
+/* Digital counter effect */
+.digital-counter {
+    font-family: var(--font-digital);
+    background-color: #000033;
+    color: #00FF00;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--spacing-sm);
+    font-size: var(--text-md);
+    display: inline-block;
+    margin: var(--spacing-md) 0;
+    border: 2px solid #333366;
+    box-shadow: inset 0 0 5px rgba(0, 255, 0, 0.5);
+}
+
+/* Y2K-style articles with bubble corners */
+article {
+    margin-bottom: var(--spacing-3xl);
+    background-color: rgba(255, 255, 255, 0.7);
+    border: 2px solid var(--border-color);
+    border-radius: 15px;
+    padding: var(--spacing-xl);
+    position: relative;
+    box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+/* Decorative Y2K corner bubbles */
+article::before {
+    content: "";
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 102, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
+    top: -50px;
+    left: -50px;
+}
+
+article::after {
+    content: "";
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(102, 204, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
+    bottom: -40px;
+    right: -40px;
+}
+
+article:last-child {
+    margin-bottom: 0;
+}
+
+article h1 {
+    font-size: var(--text-xl);
+    margin-top: 0;
+    margin-bottom: var(--spacing-md);
+    color: var(--link-color);
+}
+
+article .meta {
+    font-size: var(--text-sm);
+    color: var(--text-light);
+    margin-bottom: var(--spacing-xl);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 2px dotted var(--border-color);
+}
+
+.reading-time {
+    font-family: var(--font-digital);
+    background-color: var(--header-color);
+    color: white;
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--spacing-md);
+    font-size: var(--text-xs);
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.tags a {
+    background: linear-gradient(to bottom, white, #f0f0ff);
+    color: var(--text-color);
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: var(--text-xs);
+    text-decoration: none;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-base);
+}
+
+.tags a:hover {
+    background: linear-gradient(to bottom, white, var(--accent-yellow));
+    transform: scale(1.05);
+}
+
+.tags-list {
+    list-style-type: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.tag-count {
+    background-color: var(--accent-pink);
+    color: white;
+    font-size: 0.75em;
+    margin-left: 5px;
+    padding: 0 5px;
+    border-radius: 8px;
+}
+
+/* Y2K code blocks */
+code {
+    font-family: var(--font-mono);
+    background-color: #000033;
+    color: #00FF00;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--text-sm);
+    border-radius: 3px;
+}
+
+pre {
+    background-color: #000033;
+    color: #00FF00;
+    padding: var(--spacing-lg);
+    overflow-x: auto;
+    font-size: var(--text-sm);
+    border-radius: var(--spacing-md);
+    margin: var(--spacing-xl) 0;
+    border: 2px solid #333366;
+    font-family: var(--font-mono);
+}
+
+pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+/* Y2K images with bubbly border */
+img {
+    max-width: 100%;
+    height: auto;
+    border: 3px solid var(--accent-blue);
+    border-radius: var(--spacing-lg);
+    padding: var(--spacing-sm);
+    background-color: white;
+    box-shadow: 3px 3px var(--spacing-md) rgba(0, 0, 0, 0.2);
+}
+
+/* Y2K-style footer */
+footer {
+    background: linear-gradient(to right, var(--header-color), var(--accent-blue));
+    color: white;
+    padding: var(--spacing-xl) var(--spacing-2xl);
+    font-size: var(--text-sm);
+    text-align: center;
+    border-top: 3px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Bubble decoration for footer */
+footer::before {
+    content: "";
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--bubble-gradient-1) 0%, transparent 70%);
+    bottom: -80px;
+    left: 10%;
+    opacity: 0.3;
+}
+
+footer::after {
+    content: "";
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--bubble-gradient-2) 0%, transparent 70%);
+    top: -60px;
+    right: 10%;
+    opacity: 0.3;
+}
+
+footer a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    position: relative;
+    z-index: 1;
+}
+
+footer a:hover {
+    color: var(--accent-yellow);
+    text-decoration: underline;
+}
+
+/* Y2K-style pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: var(--spacing-2xl) 0;
+    gap: var(--spacing-md);
+}
+
+.pagination a {
+    background: linear-gradient(to bottom, var(--accent-blue), #0099cc);
+    color: white;
+    padding: var(--spacing-md) var(--spacing-lg);
+    text-decoration: none;
+    border-radius: var(--button-radius);
+    border: 2px solid #0099cc;
+    font-weight: bold;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    transition: all var(--transition-base);
+}
+
+.pagination a:hover {
+    background: linear-gradient(to bottom, #66ddff, #00aadd);
+    transform: scale(1.05);
+    text-decoration: none;
+}
+
+.pagination .page-info {
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--spacing-lg);
+    border: 2px solid var(--border-color);
+    font-family: var(--font-digital);
+    color: var(--header-color);
+    font-size: var(--text-sm);
+}
+
+/* Y2K-style horizontal rule with stars */
+hr {
+    border: none;
+    height: 20px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M10 0l2.4 7.4H20l-6.2 4.5 2.4 7.4-6.2-4.5-6.2 4.5 2.4-7.4L0 7.4h7.6z' fill='%239999CC'/%3E%3C/svg%3E");
+    background-repeat: repeat-x;
+    background-position: center;
+    margin: var(--spacing-xl) 0;
+}
+
+/* Y2K-style divider */
+.y2k-divider {
+    display: flex;
+    align-items: center;
+    margin: var(--spacing-xl) 0;
+}
+
+.y2k-divider::before,
+.y2k-divider::after {
+    content: "";
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--accent-pink), transparent);
+}
+
+.y2k-divider span {
+    padding: 0 var(--spacing-md);
+    font-size: var(--text-md);
+    color: var(--accent-pink);
+}
+
+/* Marquee effect - classic Y2K */
+.marquee {
+    background-color: var(--accent-blue);
+    color: white;
+    padding: var(--spacing-md) 0;
+    overflow: hidden;
+    white-space: nowrap;
+    font-family: var(--font-digital);
+    margin: var(--spacing-xl) 0;
+    border-top: 2px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
+    font-size: var(--text-sm);
+}
+
+.marquee-content {
+    display: inline-block;
+    animation: marquee 15s linear infinite;
+}
+
+@keyframes marquee {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+}
+
+/* Media query for responsive design */
+@media (max-width: 768px) {
+    .container {
+        margin: var(--spacing-md);
+    }
+    
+    header, footer, main {
+        padding: var(--spacing-xl);
+    }
+    
+    nav {
+        justify-content: center;
+        flex-wrap: wrap;
+        overflow-x: visible;
+        padding: var(--spacing-md);
+        gap: var(--spacing-md);
+    }
+    
+    nav a {
+        padding: var(--spacing-md) var(--spacing-lg);
+        font-size: var(--text-xs);
+        margin: var(--spacing-sm);
+        min-width: 120px;
+        text-align: center;
+    }
+    
+    article {
+        padding: var(--spacing-lg);
+    }
+    
+    footer {
+        flex-direction: column;
+        gap: var(--spacing-lg);
+    }
+}
+
+/* Additional breakpoint for very small screens */
+@media (max-width: 480px) {
+    body {
+        padding: var(--spacing-sm);
+    }
+    
+    .container {
+        margin: var(--spacing-sm);
+        border-radius: var(--spacing-md);
+    }
+    
+    header h1, .site-title {
+        font-size: var(--text-xl);
+    }
+    
+    nav {
+        padding: var(--spacing-md);
+        gap: var(--spacing-sm);
+    }
+    
+    nav a {
+        width: calc(50% - var(--spacing-xl));
+        margin: var(--spacing-xs);
+        padding: var(--spacing-md) var(--spacing-sm);
+        font-size: var(--text-xs);
+        min-width: 0;
+    }
+    
+    main {
+        padding: var(--spacing-md);
+    }
+    
+    h1 {
+        font-size: var(--text-xl);
+    }
+    
+    h2 {
+        font-size: var(--text-lg);
+    }
+    
+    h3 {
+        font-size: var(--text-md);
+    }
+    
+    .y2k-divider, .marquee {
+        margin: var(--spacing-md) 0;
+    }
+}
+
+/* Featured Images with Y2K styling */
+.featured-image {
+    margin: 1.5rem 0;
+    border: 3px solid var(--border-color);
+    border-radius: var(--spacing-lg);
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 var(--spacing-lg) rgba(102, 102, 204, 0.4);
+    background: linear-gradient(135deg, var(--bubble-gradient-1), var(--bubble-gradient-2));
+    padding: var(--spacing-sm);
+}
+
+.featured-image::before {
+    content: "";
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 70%);
+    top: -50px;
+    left: -50px;
+    opacity: 0.5;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.featured-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--spacing-md);
+    transition: all var(--transition-slow);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.featured-image:hover img {
+    transform: scale(1.02);
+    filter: brightness(1.05);
+}
+
+.featured-image .image-caption {
+    position: absolute;
+    bottom: var(--spacing-lg);
+    left: var(--spacing-lg);
+    right: var(--spacing-lg);
+    background: linear-gradient(to right, var(--accent-blue), var(--accent-pink));
+    color: white;
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--text-sm);
+    text-align: center;
+    border-radius: var(--spacing-md);
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 var(--spacing-md) rgba(102, 102, 204, 0.3);
+    z-index: 2;
+}
+
+.index-image {
+    margin-bottom: 1.5rem;
+    border: 3px solid var(--border-color);
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(102, 102, 204, 0.3);
+    padding: 3px;
+    background: linear-gradient(45deg, var(--bubble-gradient-1), var(--bubble-gradient-2));
+}
+
+.index-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.tag-image {
+    margin-bottom: 1.5rem;
+    border: 3px solid var(--border-color);
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(102, 102, 204, 0.3);
+    padding: 3px;
+    background: linear-gradient(45deg, var(--bubble-gradient-2), var(--bubble-gradient-1));
+}
+
+.tag-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.archive-image {
+    margin-bottom: 1.5rem;
+    border: 3px solid var(--border-color);
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(102, 102, 204, 0.3);
+    padding: 3px;
+    background: linear-gradient(45deg, var(--accent-yellow), var(--bubble-gradient-1));
+}
+
+.archive-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+/* Selection styling */
+::selection {
+    background-color: var(--highlight-color);
+    color: var(--text-color);
+}
+
+/* Date header with Y2K styling */
+.date-header {
+    font-family: var(--font-main);
+    font-weight: bold;
+    color: white;
+    margin: var(--spacing-xl) 0 var(--spacing-lg) 0;
+    font-size: var(--text-md);
+    display: inline-block;
+    position: relative;
+    padding: var(--spacing-md) var(--spacing-xl);
+    background: linear-gradient(to right, var(--accent-blue), var(--accent-pink));
+    border-radius: var(--button-radius);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.7);
+} 

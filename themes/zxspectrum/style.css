@@ -1,0 +1,615 @@
+/* 
+ * ZX Spectrum Theme for BSSG
+ * Bold colors with black background inspired by the iconic home computer
+ */
+
+:root {
+    /* ZX Spectrum color palette */
+    --black: #000000;
+    --blue: #0000d8;
+    --red: #d80000;
+    --magenta: #d800d8;
+    --green: #00d800;
+    --cyan: #00d8d8;
+    --yellow: #d8d800;
+    --white: #d8d8d8;
+    --bright-blue: #0000ff;
+    --bright-red: #ff0000;
+    --bright-magenta: #ff00ff;
+    --bright-green: #00ff00;
+    --bright-cyan: #00ffff;
+    --bright-yellow: #ffff00;
+    --bright-white: #ffffff;
+    
+    /* Theme color assignments */
+    --bg-color: var(--black);
+    --text-color: var(--white);
+    --header-color: var(--bright-cyan);
+    --link-color: var(--bright-yellow);
+    --link-visited: var(--yellow);
+    --border-color: var(--cyan);
+    --highlight-color: var(--blue);
+    --accent-color: var(--bright-cyan);
+    --accent-secondary: var(--bright-magenta);
+    --quote-bg: var(--black);
+    
+    /* Typography */
+    --font-main: 'ZXSpectrumFont', 'Courier New', monospace;
+    --font-headings: 'ZXSpectrumFont', 'Courier New', monospace;
+    --font-mono: 'ZXSpectrumFont', 'Courier New', monospace;
+    
+    /* Sizing and spacing system */
+    --content-width: 820px;
+    --spacing-xs: 0.375rem;
+    --spacing-sm: 0.75rem;
+    --spacing-md: 1.25rem;
+    --spacing-lg: 1.75rem;
+    --spacing-xl: 2.5rem;
+    --spacing-xxl: 3.5rem;
+    
+    /* Typography sizing */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-md: 1.125rem;
+    --font-size-lg: 1.25rem;
+    --font-size-xl: 1.5rem;
+    --font-size-xxl: 1.75rem;
+    
+    /* Line heights */
+    --line-height-tight: 1.2;
+    --line-height-normal: 1.4;
+    --line-height-loose: 1.6;
+    
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
+    --transition-slow: 0.4s ease;
+    
+    /* Border width */
+    --border-thin: 1px;
+    --border-normal: 2px;
+    --border-thick: 4px;
+}
+
+/* Pixelated effect for the entire document */
+@font-face {
+    font-family: 'ZXSpectrumFont';
+    src: url('data:application/font-woff;charset=utf-8;base64,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') format('woff');
+}
+
+body, input, button, select, textarea {
+    font-family: var(--font-main);
+}
+
+/* Base elements */
+body {
+    font-family: var(--font-main);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: var(--spacing-md);
+    line-height: var(--line-height-normal);
+    text-shadow: 0 0 2px var(--text-color);
+}
+
+/* Pixel effect overlay */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+    background-size: 100% 4px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* Container styling */
+.container {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    border: var(--border-normal) solid var(--border-color);
+    padding: var(--spacing-sm);
+    position: relative;
+    box-shadow: 0 0 var(--spacing-md) rgba(0, 215, 215, 0.3);
+}
+
+/* ZX Spectrum header with border */
+header {
+    border-bottom: var(--border-normal) solid var(--bright-cyan);
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    color: var(--bright-white);
+}
+
+header h1 {
+    font-size: var(--font-size-xl);
+    margin: 0 0 var(--spacing-xs) 0;
+    color: var(--bright-cyan);
+}
+
+/* Site title with ZX Spectrum flashing effect */
+.site-title {
+    font-size: var(--font-size-xl);
+    margin: 0;
+    padding: 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.site-title a {
+    color: var(--bright-cyan);
+    text-decoration: none;
+    display: inline-block;
+    transition: color var(--transition-normal), text-shadow var(--transition-normal);
+    text-shadow: 0 0 3px var(--bright-cyan);
+    animation: border-color-change 4s infinite alternate;
+}
+
+.site-title a:hover {
+    color: var(--bright-white);
+    background-color: transparent;
+    text-shadow: 0 0 8px var(--bright-white), 0 0 15px var(--bright-cyan);
+}
+
+/* Navigation with ZX Spectrum colors */
+nav {
+    margin: var(--spacing-md) 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+nav a {
+    color: var(--black);
+    background-color: var(--bright-yellow);
+    text-decoration: none;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    margin-right: var(--spacing-xs);
+    margin-bottom: var(--spacing-xs);
+    border: var(--border-thin) solid var(--bright-white);
+    transition: all var(--transition-fast);
+    box-sizing: border-box;
+}
+
+nav a:hover, nav a:focus {
+    background-color: var(--bright-cyan);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 0 var(--bright-white);
+}
+
+/* Selected menu item */
+nav a.active {
+    background-color: var(--bright-magenta);
+    color: var(--bright-white);
+    position: relative;
+}
+
+nav a.active::after {
+    content: "";
+    position: absolute;
+    bottom: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 2px;
+    background-color: var(--bright-white);
+}
+
+/* Content area */
+main {
+    min-height: 300px;
+    padding: var(--spacing-xs) 0;
+}
+
+/* Typography with ZX Spectrum style */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-headings);
+    color: var(--header-color);
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-sm);
+    text-transform: uppercase;
+    line-height: var(--line-height-tight);
+}
+
+h1 {
+    font-size: var(--font-size-xl);
+    color: var(--bright-cyan);
+    margin-top: var(--spacing-lg);
+}
+
+h2 {
+    font-size: var(--font-size-lg);
+    color: var(--bright-yellow);
+    position: relative;
+    padding-left: var(--spacing-sm);
+}
+
+h2::before {
+    content: ">";
+    position: absolute;
+    left: 0;
+    color: var(--bright-yellow);
+}
+
+h3 {
+    font-size: var(--font-size-md);
+    color: var(--bright-green);
+}
+
+p {
+    margin-bottom: var(--spacing-md);
+    line-height: var(--line-height-normal);
+}
+
+/* Links */
+a {
+    color: var(--link-color);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+
+a:visited {
+    color: var(--link-visited);
+}
+
+a:hover {
+    color: var(--bright-white);
+    background-color: var(--blue);
+    text-shadow: 0 0 4px var(--bright-white);
+}
+
+/* Articles with ZX Spectrum border */
+article {
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md);
+    border: var(--border-normal) solid var(--bright-blue);
+    position: relative;
+    transition: border-color var(--transition-normal);
+}
+
+article:hover {
+    border-color: var(--bright-cyan);
+}
+
+article:last-child {
+    margin-bottom: 0;
+}
+
+article .meta {
+    font-size: var(--font-size-sm);
+    color: var(--bright-green);
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    border-bottom: 1px dashed var(--bright-blue);
+    padding-bottom: var(--spacing-sm);
+}
+
+.reading-time {
+    color: var(--bright-green);
+    display: inline-flex;
+    align-items: center;
+}
+
+.reading-time::before {
+    content: "T:";
+    margin-right: var(--spacing-xs);
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.tags a {
+    color: var(--black);
+    background-color: var(--cyan);
+    padding: 2px 5px;
+    font-size: var(--font-size-xs);
+    text-decoration: none;
+    border: 1px solid var(--bright-cyan);
+    transition: all var(--transition-fast);
+}
+
+.tags a:hover {
+    background-color: var(--bright-cyan);
+    transform: translateY(-2px);
+}
+
+code {
+    font-family: var(--font-mono);
+    background-color: var(--blue);
+    color: var(--bright-white);
+    padding: 2px 4px;
+}
+
+pre {
+    background-color: var(--blue);
+    color: var(--bright-white);
+    padding: var(--spacing-sm);
+    overflow-x: auto;
+    margin: var(--spacing-md) 0;
+    border-left: var(--border-normal) solid var(--bright-blue);
+}
+
+pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    border: var(--border-normal) solid var(--bright-magenta);
+    image-rendering: pixelated;
+    display: block;
+    margin: var(--spacing-md) auto;
+}
+
+/* Footer with ZX Spectrum border */
+footer {
+    border-top: var(--border-normal) solid var(--bright-yellow);
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    color: var(--bright-white);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Pagination in ZX Spectrum style */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: var(--spacing-lg) 0;
+    gap: var(--spacing-sm);
+}
+
+.pagination a {
+    color: var(--black);
+    background-color: var(--bright-yellow);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    text-decoration: none;
+    border: var(--border-thin) solid var(--bright-white);
+    transition: all var(--transition-fast);
+}
+
+.pagination a:hover {
+    background-color: var(--bright-cyan);
+    transform: translateY(-2px);
+}
+
+.pagination .page-info {
+    color: var(--bright-white);
+    background-color: var(--blue);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border: var(--border-thin) solid var(--bright-blue);
+}
+
+/* Loading animation with ZX Spectrum border effect */
+@keyframes border-color-change {
+    0% { border-color: var(--bright-blue); }
+    20% { border-color: var(--bright-red); }
+    40% { border-color: var(--bright-magenta); }
+    60% { border-color: var(--bright-green); }
+    80% { border-color: var(--bright-cyan); }
+    100% { border-color: var(--bright-blue); }
+}
+
+.zx-loading {
+    border: var(--border-normal) solid var(--bright-blue);
+    animation: border-color-change 2s infinite;
+    padding: var(--spacing-sm);
+    text-align: center;
+    margin: var(--spacing-md) 0;
+}
+
+/* Media query for responsive design */
+@media (max-width: 768px) {
+    .container {
+        margin: var(--spacing-sm);
+        width: auto;
+        padding: var(--spacing-xs);
+    }
+    
+    nav {
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    nav a {
+        margin: var(--spacing-xs) 0;
+        width: 100%;
+        text-align: center;
+        box-sizing: border-box;
+        max-width: 100%;
+    }
+    
+    footer {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        text-align: center;
+    }
+    
+    .pagination {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: var(--spacing-xs);
+    }
+    
+    .container {
+        margin: var(--spacing-xs);
+        padding: var(--spacing-xs);
+    }
+    
+    nav a {
+        font-size: 0.9rem;
+        padding: var(--spacing-xs) var(--spacing-xs);
+    }
+}
+
+/* Featured Images with ZX Spectrum styling */
+.featured-image {
+    margin: var(--spacing-lg) 0;
+    border: var(--border-normal) solid var(--bright-cyan);
+    padding: var(--spacing-xs);
+    background-color: var(--black);
+    position: relative;
+    image-rendering: pixelated;
+    box-shadow: 0 0 var(--spacing-md) rgba(0, 255, 255, 0.2);
+}
+
+.featured-image::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 3px);
+    background-size: 100% 6px;
+    background-repeat: repeat;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.featured-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    image-rendering: pixelated;
+    border: var(--border-thin) solid var(--bright-blue);
+    margin: 0;
+}
+
+.featured-image .image-caption {
+    margin-top: var(--spacing-xs);
+    padding: var(--spacing-xs);
+    color: var(--bright-white);
+    text-align: center;
+    background-color: var(--blue);
+    border: var(--border-thin) solid var(--bright-blue);
+    font-size: var(--font-size-sm);
+}
+
+.index-image {
+    margin-bottom: var(--spacing-md);
+    border: var(--border-normal) solid var(--bright-yellow);
+    padding: var(--spacing-xs);
+    background-color: var(--black);
+    image-rendering: pixelated;
+    transition: transform var(--transition-normal);
+}
+
+.index-image:hover {
+    transform: scale(1.02);
+}
+
+.index-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    image-rendering: pixelated;
+    border: var(--border-thin) solid var(--yellow);
+    margin: 0;
+}
+
+.tag-image {
+    margin-bottom: var(--spacing-md);
+    border: var(--border-normal) solid var(--bright-green);
+    padding: var(--spacing-xs);
+    background-color: var(--black);
+    image-rendering: pixelated;
+    transition: transform var(--transition-normal);
+}
+
+.tag-image:hover {
+    transform: scale(1.02);
+}
+
+.tag-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    image-rendering: pixelated;
+    border: var(--border-thin) solid var(--green);
+    margin: 0;
+}
+
+.archive-image {
+    margin-bottom: var(--spacing-md);
+    border: var(--border-normal) solid var(--bright-magenta);
+    padding: var(--spacing-xs);
+    background-color: var(--black);
+    image-rendering: pixelated;
+    transition: transform var(--transition-normal);
+}
+
+.archive-image:hover {
+    transform: scale(1.02);
+}
+
+.archive-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    image-rendering: pixelated;
+    border: var(--border-thin) solid var(--magenta);
+    margin: 0;
+}
+
+/* Selection styling */
+::selection {
+    background-color: var(--bright-blue);
+    color: var(--bright-white);
+    text-shadow: none;
+}
+
+/* Date header with ZX Spectrum styling */
+.date-header {
+    font-family: var(--font-headings);
+    font-weight: normal;
+    color: var(--black);
+    background-color: var(--bright-green);
+    margin: var(--spacing-lg) 0 var(--spacing-md) 0;
+    font-size: var(--font-size-base);
+    display: inline-block;
+    position: relative;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border: var(--border-normal) solid var(--bright-white);
+    text-transform: uppercase;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Blockquote styling */
+blockquote {
+    border-left: var(--border-normal) solid var(--bright-cyan);
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin: var(--spacing-md) 0;
+    background-color: rgba(0, 0, 210, 0.2);
+    color: var(--bright-white);
+}
+
+/* List styling */
+ul, ol {
+    margin: var(--spacing-md) 0;
+    padding-left: var(--spacing-lg);
+}
+
+li {
+    margin-bottom: var(--spacing-xs);
+} 

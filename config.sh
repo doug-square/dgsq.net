@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+#
+# BSSG - Configuration File
+# Version 0.9
+# Contains all configurable parameters for the static site generator
+# Developed by Stefano Marinelli (stefano@dragas.it)
+#
+# =======================================================================
+# IMPORTANT: DO NOT MODIFY THIS FILE DIRECTLY
+# For local configuration changes, create config.sh.local with your 
+# custom settings. Those settings will override the ones in this file.
+# This file is part of the git repository and your changes may be lost.
+# =======================================================================
+
+# Directory configuration
+SRC_DIR="src"
+PAGES_DIR="pages"  # Directory for static pages
+OUTPUT_DIR="output"
+TEMPLATES_DIR="templates"
+THEMES_DIR="themes"
+STATIC_DIR="static"
+THEME="default"
+
+# Build configuration
+CLEAN_OUTPUT=false
+
+# Site information
+SITE_TITLE="My new BSSG site"
+SITE_DESCRIPTION="A complete SSG - written in bash"
+SITE_URL="http://localhost:8000"
+AUTHOR_NAME="Anonymous" 
+AUTHOR_EMAIL="anonymous@example.com"
+
+# Content configuration
+DATE_FORMAT="%Y-%m-%d %H:%M:%S"
+TIMEZONE="local"  # Options: "local", "GMT", or a specific timezone like "America/New_York"
+POSTS_PER_PAGE=10
+ENABLE_ARCHIVES=true  # Enable or disable archive pages
+URL_SLUG_FORMAT="Year/Month/Day/slug"  # Format for post URLs: Year/Month/Day/slug will create Year/Month/Day/slug/index.html
+
+# Page configuration
+PAGE_URL_FORMAT="pages/slug"  # Format for page URLs: pages/slug will create pages/slug/index.html
+
+# Markdown processing configuration
+MARKDOWN_PROCESSOR="commonmark" # Options: "pandoc", "commonmark", or "markdown.pl"
+
+# Language Configuration
+SITE_LANG="en"  # Default language code (e.g., en, es, fr). See locales/ directory.
+
+# Terminal colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color 
