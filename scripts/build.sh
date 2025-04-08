@@ -3882,9 +3882,9 @@ EOF
         if [ $current_page -gt 1 ]; then
             local prev_page=$((current_page - 1))
             if [ $prev_page -eq 1 ]; then
-                echo "    <a href=\"/\" class=\"prev\">&laquo; ${MSG_OLDER_POSTS:-Previous}</a>" >> "$output_file"
+                echo "    <a href=\"/\" class=\"prev\">&laquo; ${MSG_NEWER_POSTS:-Newer}</a>" >> "$output_file"
             else
-                echo "    <a href=\"/page/$prev_page/\" class=\"prev\">&laquo; ${MSG_OLDER_POSTS:-Previous}</a>" >> "$output_file"
+                echo "    <a href=\"/page/$prev_page/\" class=\"prev\">&laquo; ${MSG_NEWER_POSTS:-Newer}</a>" >> "$output_file"
             fi
         fi
         
@@ -3895,7 +3895,7 @@ EOF
         
         if [ $current_page -lt $total_pages ]; then
             local next_page=$((current_page + 1))
-            echo "    <a href=\"/page/$next_page/\" class=\"next\">${MSG_NEWER_POSTS:-Next} &raquo;</a>" >> "$output_file"
+            echo "    <a href=\"/page/$next_page/\" class=\"next\">${MSG_OLDER_POSTS:-Older} &raquo;</a>" >> "$output_file"
         fi
         
         # Close pagination and add footer

@@ -733,4 +733,15 @@ footer a:hover {
     article, blockquote, ul, ol, pre {
         break-inside: avoid;
     }
+}
+
+/* Center images within the main content */
+.page-content img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 100%; /* Keep images responsive */
+    height: auto;    /* Maintain aspect ratio */
+    margin-top: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
 } 
