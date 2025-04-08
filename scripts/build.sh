@@ -237,7 +237,8 @@ preload_templates() {
     local footer_items="<a href=\"${SITE_URL}/\">${MSG_HOME:-"Home"}</a> &middot;"
     
     # Arrays to store primary and secondary pages
-    local primary_pages=()
+    # Ensure we reset the global arrays before populating
+    primary_pages=() # Operate on the global array
     SECONDARY_PAGES=()  # Reset global array
     
     # Scan pages directory for markdown and HTML files
@@ -251,15 +252,17 @@ preload_templates() {
                 continue
             fi
             
-            # Extract title, slug, and secondary flag
-            local title slug secondary
+            # Extract title, slug, date, and secondary flag
+            local title slug date secondary
             if [[ "$file" == *.html ]]; then
                 title=$(grep -m 1 '<title>' "$file" | sed 's/<[^>]*>//g')
                 slug=$(grep -m 1 'meta name="slug"' "$file" | sed 's/.*content="\([^"]*\)".*/\1/')
+                date=$(grep -m 1 'meta name="date"' "$file" | sed 's/.*content="\([^"]*\)".*/\1/') # Extract date from meta
                 secondary=$(grep -m 1 'meta name="secondary"' "$file" | sed 's/.*content="\([^"]*\)".*/\1/')
             else
                 title=$(parse_metadata "$file" "title")
                 slug=$(parse_metadata "$file" "slug")
+                date=$(parse_metadata "$file" "date") # Extract date from frontmatter
                 secondary=$(parse_metadata "$file" "secondary")
             fi
             
@@ -271,18 +274,18 @@ preload_templates() {
             # Create URL based on PAGE_URL_FORMAT
             local url="/${PAGE_URL_FORMAT//slug/$slug}/"
             
-            # Store page info based on secondary flag
+            # Store page info based on secondary flag (include date)
             if [ "$secondary" = "true" ]; then
-                SECONDARY_PAGES+=("$title|${SITE_URL}$url")
+                SECONDARY_PAGES+=("$title|${SITE_URL}$url|$date")
             else
-                primary_pages+=("$title|${SITE_URL}$url")
+                primary_pages+=("$title|${SITE_URL}$url|$date")
             fi
         done
     fi
     
     # Add primary pages to menu
     for page in "${primary_pages[@]}"; do
-        IFS='|' read -r title url <<< "$page"
+        IFS='|' read -r title url _ <<< "$page" # Ignore date for menu
         menu_items+=" <a href=\"$url\">$title</a>"
         footer_items+=" <a href=\"$url\">$title</a> &middot;"
     done
@@ -330,6 +333,8 @@ preload_templates() {
 
 # Global array for secondary pages
 declare -a SECONDARY_PAGES=()
+# Global array for primary pages (used for sitemap)
+declare -a primary_pages=()
 
 # File locking function
 lock_file() {
@@ -2000,36 +2005,40 @@ EOF
         local file filename title date tags slug image image_caption description
         IFS='|' read -r file filename title date tags slug image image_caption description <<< "$line"
 
+        # Skip if essential fields are missing or if it's not a post (e.g., might be a page accidentally indexed)
+        # We rely on the date field being present for posts. Pages typically don't have a date.
+        if [ -z "$file" ] || [ -z "$title" ] || [ -z "$date" ]; then
+            continue
+        fi
+
         # Create output path based on slug format
         # Extract year, month, day from the date
-        local year month day
+        local year month day post_date_only
         if [[ "$date" =~ ^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2}) ]]; then
             year="${BASH_REMATCH[1]}"
             month="${BASH_REMATCH[2]}"
             day="${BASH_REMATCH[3]}"
-            # Remove leading zeros before using printf
-            month=$(echo "$month" | sed 's/^0*//')
-            day=$(echo "$day" | sed 's/^0*//')
             # Ensure month and day have leading zeros
-            month=$(printf "%02d" "$month")
-            day=$(printf "%02d" "$day")
+            month=$(printf "%02d" "$(echo "$month" | sed 's/^0*//')")
+            day=$(printf "%02d" "$(echo "$day" | sed 's/^0*//')")
+            post_date_only="$year-$month-$day" # Use the extracted date for lastmod
         else
-            # Default to current date if date format is unrecognized
+            # Default to current date if date format is unrecognized - less ideal
             if command -v date >/dev/null 2>&1; then
-                if date --version >/dev/null 2>&1; then
-                    # GNU date (Linux)
+                if date --version >/dev/null 2>&1; then # GNU date
                     year=$(date -I | cut -d'-' -f1)
                     month=$(date -I | cut -d'-' -f2)
                     day=$(date -I | cut -d'-' -f3)
-                else
-                    # BSD date (MacOS, FreeBSD, etc.)
+                    post_date_only=$(date -I)
+                else # BSD date
                     year=$(date "+%Y")
                     month=$(date "+%m")
                     day=$(date "+%d")
+                    post_date_only=$(date "+%Y-%m-%d")
                 fi
             else
-                echo -e "${RED}Error: date command not found${NC}"
-                return 1
+                echo -e "${RED}Error: date command not found, cannot determine post date${NC}"
+                post_date_only="$current_date" # Fallback to build date
             fi
         fi
         
@@ -2039,35 +2048,80 @@ EOF
         formatted_path="${formatted_path//Day/$day}"
         formatted_path="${formatted_path//slug/$slug}"
 
-        # Get file modification time in a portable way
-        local mod_time
-        if command -v stat >/dev/null 2>&1; then
-            if stat --version >/dev/null 2>&1; then
-                # GNU stat (Linux)
-                mod_time=$(date -I -d @$(stat -c "%Y" "$file"))
-            else
-                # BSD stat (MacOS, FreeBSD, etc.)
-                mod_time=$(stat -f "%Sm" -t "%Y-%m-%d" "$file")
-            fi
-        else
-            # Fallback to perl if available
-            if command -v perl >/dev/null 2>&1; then
-                mod_time=$(perl -e "print scalar(localtime((stat('$file'))[9])), \"\n\";" | awk '{print $4"-"$2"-"$3}')
-            else
-                # Last resort: use current date
-                mod_time="$current_date"
-            fi
-        fi
-
+        # Use the post's date (YYYY-MM-DD) for lastmod
         cat >> "$sitemap" << EOF
     <url>
         <loc>${SITE_URL}/${formatted_path}/</loc>
-        <lastmod>${mod_time}</lastmod>
+        <lastmod>${post_date_only}</lastmod> 
         <changefreq>monthly</changefreq>
-        <priority>0.5</priority>
+        <priority>0.7</priority> 
     </url>
 EOF
     done
+
+    # Add Primary Pages (Ensure the array is populated before this function runs)
+    if [ ${#primary_pages[@]} -gt 0 ]; then
+        echo -e "Adding ${#primary_pages[@]} primary pages to sitemap..."
+        for page_info in "${primary_pages[@]}"; do
+            local title url page_date page_mod_time
+            IFS='|' read -r title url page_date <<< "$page_info"
+
+            # Try to use page_date, fallback to current_date
+            if [[ "$page_date" =~ ^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2}) ]]; then
+                 local year="${BASH_REMATCH[1]}"
+                 local month="${BASH_REMATCH[2]}"
+                 local day="${BASH_REMATCH[3]}"
+                 month=$(printf "%02d" "$(echo "$month" | sed 's/^0*//')")
+                 day=$(printf "%02d" "$(echo "$day" | sed 's/^0*//')")
+                 page_mod_time="$year-$month-$day"
+            else
+                 page_mod_time="$current_date" # Fallback to build date
+            fi
+
+            cat >> "$sitemap" << EOF
+    <url>
+        <loc>${url}</loc>
+        <lastmod>${page_mod_time}</lastmod> 
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority> 
+    </url>
+EOF
+        done
+    else
+        echo -e "${YELLOW}No primary pages found to add to sitemap.${NC}"
+    fi
+
+    # Add Secondary Pages (Ensure the array is populated before this function runs)
+    if [ ${#SECONDARY_PAGES[@]} -gt 0 ]; then
+        echo -e "Adding ${#SECONDARY_PAGES[@]} secondary pages to sitemap..."
+        for page_info in "${SECONDARY_PAGES[@]}"; do
+            local title url page_date page_mod_time
+            IFS='|' read -r title url page_date <<< "$page_info"
+
+            # Try to use page_date, fallback to current_date
+            if [[ "$page_date" =~ ^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2}) ]]; then
+                 local year="${BASH_REMATCH[1]}"
+                 local month="${BASH_REMATCH[2]}"
+                 local day="${BASH_REMATCH[3]}"
+                 month=$(printf "%02d" "$(echo "$month" | sed 's/^0*//')")
+                 day=$(printf "%02d" "$(echo "$day" | sed 's/^0*//')")
+                 page_mod_time="$year-$month-$day"
+            else
+                 page_mod_time="$current_date" # Fallback to build date
+            fi
+
+            cat >> "$sitemap" << EOF
+    <url>
+        <loc>${url}</loc>
+        <lastmod>${page_mod_time}</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority> 
+    </url>
+EOF
+        done
+    else
+        echo -e "${YELLOW}No secondary pages found to add to sitemap.${NC}"
+    fi
 
     # Add tag pages
     find "$OUTPUT_DIR/tags" -type f -name "*.html" | grep -v "index.html" | while read -r file; do
@@ -2098,8 +2152,8 @@ EOF
     <url>
         <loc>${SITE_URL}/${rel_path}</loc>
         <lastmod>${mod_time}</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.4</priority>
+        <changefreq>weekly</changefreq> 
+        <priority>0.4</priority> 
     </url>
 EOF
     done
@@ -2134,8 +2188,8 @@ EOF
     <url>
         <loc>${SITE_URL}/${rel_path}</loc>
         <lastmod>${mod_time}</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.4</priority>
+        <changefreq>weekly</changefreq> 
+        <priority>0.4</priority> 
     </url>
 EOF
         done
@@ -2265,26 +2319,42 @@ EOF
         # Format date for RSS
         local rss_date=""
         if [ -n "$date" ]; then
-            # Convert to RFC 822 format for RSS
+            # Check if date includes time (e.g., YYYY-MM-DD HH:MM:SS or YYYY-MM-DDTHH:MM:SS)
+            local date_with_time="$date"
+            if ! [[ "$date" =~ [0-9]{4}-[0-9]{1,2}-[0-9]{1,2}[[:space:]T][0-9]{1,2}:[0-9]{1,2}(:[0-9]{1,2})? ]]; then
+                # If no time is present, default to midnight (00:00:00)
+                date_with_time="$date 00:00:00"
+            fi
+
+            # Convert to RFC 822 format for RSS, trying different input formats
             if command -v date > /dev/null 2>&1; then
+                local format_string="" 
                 if [ "$TIMEZONE" = "local" ]; then
-                    # Use local timezone with English locale
-                    rss_date=$(LC_TIME=C date -d "$date" "+%a, %d %b %Y %H:%M:%S %z" 2>/dev/null || \
-                             LC_TIME=C date -j -f "%Y-%m-%d %H:%M:%S" "$date" "+%a, %d %b %Y %H:%M:%S %z" 2>/dev/null || \
-                             echo "$now")
+                    format_string="+%a, %d %b %Y %H:%M:%S %z"
                 elif [ "$TIMEZONE" = "GMT" ]; then
-                    # Use GMT timezone with English locale
-                    rss_date=$(LC_TIME=C date -d "$date" -u "+%a, %d %b %Y %H:%M:%S GMT" 2>/dev/null || \
-                             LC_TIME=C date -j -f "%Y-%m-%d %H:%M:%S" "$date" -u "+%a, %d %b %Y %H:%M:%S GMT" 2>/dev/null || \
-                             echo "$now")
+                    format_string="+%a, %d %b %Y %H:%M:%S GMT"
+                    export TZ=GMT # Ensure GMT is used for conversion
                 else
-                    # Use specified timezone with TZ environment variable and English locale
-                    LC_TIME=C TZ="$TIMEZONE" rss_date=$(date -d "$date" "+%a, %d %b %Y %H:%M:%S %z" 2>/dev/null || \
-                                           LC_TIME=C TZ="$TIMEZONE" date -j -f "%Y-%m-%d %H:%M:%S" "$date" "+%a, %d %b %Y %H:%M:%S %z" 2>/dev/null || \
-                                           echo "$now")
+                    format_string="+%a, %d %b %Y %H:%M:%S %z"
+                    export TZ="$TIMEZONE"
                 fi
+
+                # Try converting with GNU date options first, then BSD
+                # Use English locale (LC_TIME=C) for consistent month abbreviations
+                rss_date=$(LC_TIME=C date -d "$date_with_time" "$format_string" 2>/dev/null || \
+                           LC_TIME=C date -j -f "%Y-%m-%d %H:%M:%S" "$date_with_time" "$format_string" 2>/dev/null || \
+                           echo "$now") # Fallback to build time
+                
+                # Unset TZ if it was set
+                if [ "$TIMEZONE" != "local" ]; then
+                    unset TZ
+                fi
+            else
+                # Fallback if date command is not available
+                rss_date="$now"
             fi
         else
+            # If no date in frontmatter, use build time
             rss_date="$now"
         fi
         
@@ -4279,7 +4349,7 @@ EOF
     
     # Add all secondary pages to the index
     for page in "${SECONDARY_PAGES[@]}"; do
-        IFS='|' read -r title url <<< "$page"
+        IFS='|' read -r title url _ <<< "$page" # Ignore date for menu
         cat >> "$pages_index" << EOF
     <article>
         <h3><a href="$url">$title</a></h3>
