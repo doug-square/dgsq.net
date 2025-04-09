@@ -1755,7 +1755,7 @@ EOF
     if [ -n "$image" ]; then
         cat >> "$output_base_path/index.html" << EOF
 <div class="featured-image">
-    <img src="$image" alt="${title}" />
+    <img src="$image" alt="${image_caption:-$title}" title="${image_caption:-$title}" />
     ${image_caption:+<div class="image-caption">$image_caption</div>}
 </div>
 EOF
@@ -2381,11 +2381,8 @@ EOF
             
             # Add image to description if available
             if [ -n "$image" ]; then
-                local img_html="<p><img src=\"$img_url\" alt=\"$title\""
-                if [ -n "$image_caption" ]; then
-                    img_html+=" title=\"$image_caption\""
-                fi
-                img_html+=" /></p>"
+                local img_html="<p><img src=\"$img_url\" alt=\"${image_caption:-$title}\" title=\"${image_caption:-$title}\" /></p>"
+                # Add caption below image if available
                 if [ -n "$image_caption" ]; then
                     img_html+="<p><em>$image_caption</em></p>"
                 fi
@@ -3131,7 +3128,7 @@ EOF
                 cat >> "$month_file" << EOF
         <div class="featured-image">
             <a href="${SITE_URL}/$formatted_path/">
-                <img src="$image_url" alt="${title}" />
+                <img src="$image_url" alt="${image_caption:-$title}" title="${image_caption:-$title}" />
                 ${image_caption:+<div class="image-caption">$image_caption</div>}
             </a>
         </div>
@@ -3411,7 +3408,7 @@ EOF
                         cat >> "$tag_file" << EOF
         <div class="featured-image tag-image">
             <a href="${SITE_URL}/$formatted_path/">
-                <img src="$image_url" alt="${title}" />
+                <img src="$image_url" alt="${image_caption:-$title}" title="${image_caption:-$title}" />
                 ${image_caption:+<div class="image-caption">$image_caption</div>}
             </a>
         </div>
@@ -3831,7 +3828,7 @@ EOF
                 cat >> "$output_file" << EOF
         <div class="featured-image index-image">
             <a href="${SITE_URL}/$formatted_path/">
-                <img src="$image" alt="${title}" />
+                <img src="$image" alt="${image_caption:-$title}" title="${image_caption:-$title}" />
             </a>
         </div>
 EOF
@@ -4244,7 +4241,7 @@ EOF
     if [ -n "$image" ]; then
         cat >> "$output_base_path/index.html" << EOF
 <div class="featured-image">
-    <img src="$image" alt="${title}" />
+    <img src="$image" alt="${image_caption:-$title}" title="${image_caption:-$title}" />
     ${image_caption:+<div class="image-caption">$image_caption</div>}
 </div>
 EOF
