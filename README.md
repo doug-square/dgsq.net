@@ -827,3 +827,4 @@ This project is licensed under the BSD 3-Clause License - see the LICENSE file f
 - **Templates**: Learn how to create custom templates in the `templates` directory.
 - **Themes**: Explore the available themes in the `themes` directory.
 - **Backup & Restore**: Use `./bssg.sh backup` and `./bssg.sh restore` to manage content backups. 
+- **Development Blog**: Stay up-to-date with the latest release notes, development progress, and announcements on the official BSSG Dev Blog: [https://blog.bssg.dragas.net](https://blog.bssg.dragas.net)
