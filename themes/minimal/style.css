@@ -194,6 +194,14 @@ article .meta {
     flex-wrap: wrap;
 }
 
+/* Post Meta Information */
+.page-meta {
+    color: var(--date-color);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    display: block;
+}
+
 .reading-time {
     display: inline;
 }
