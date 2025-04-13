@@ -173,7 +173,7 @@ restore_backup() {
     
     # Build site
     echo -e "${GREEN}Rebuilding site with restored content...${NC}"
-    ./scripts/build.sh
+    ./scripts/build/main.sh
     
     echo -e "${GREEN}Restoration completed successfully.${NC}"
 }

@@ -23,6 +23,8 @@ THEME="default"
 
 # Build configuration
 CLEAN_OUTPUT=false
+REBUILD_AFTER_POST=true # Build site automatically after creating a new post (scripts/post.sh)
+REBUILD_AFTER_EDIT=true # Build site automatically after editing a post (scripts/edit.sh)
 
 # Site information
 SITE_TITLE="My new BSSG site"
@@ -32,9 +34,11 @@ AUTHOR_NAME="Anonymous"
 AUTHOR_EMAIL="anonymous@example.com"
 
 # Content configuration
-DATE_FORMAT="%Y-%m-%d %H:%M:%S"
+DATE_FORMAT="%Y-%m-%d %H:%M:%S %z"
 TIMEZONE="local"  # Options: "local", "GMT", or a specific timezone like "America/New_York"
+SHOW_TIMEZONE="false" # Options: "true", "false". Whether to display the timezone in rendered dates.
 POSTS_PER_PAGE=10
+RSS_ITEM_LIMIT=15 # Number of items to include in the RSS feed.
 ENABLE_ARCHIVES=true  # Enable or disable archive pages
 URL_SLUG_FORMAT="Year/Month/Day/slug"  # Format for post URLs: Year/Month/Day/slug will create Year/Month/Day/slug/index.html
 

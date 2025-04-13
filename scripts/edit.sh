@@ -30,10 +30,22 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
-# Check if EDITOR is set
+# Flag to track if vi is used as fallback
+VI_FALLBACK=false
+
+# Check if EDITOR is set, otherwise default to nano or vi
 if [ -z "$EDITOR" ]; then
-    echo -e "${YELLOW}EDITOR environment variable not set. Using nano as default.${NC}"
-    EDITOR="nano"
+    if command -v nano &> /dev/null; then
+        echo -e "${YELLOW}EDITOR environment variable not set. Using nano as default.${NC}"
+        EDITOR="nano"
+    elif command -v vi &> /dev/null; then
+        echo -e "${YELLOW}EDITOR environment variable not set and nano not found. Using vi as default.${NC}"
+        EDITOR="vi"
+        VI_FALLBACK=true
+    else
+        echo -e "${RED}Error: EDITOR environment variable not set, and neither nano nor vi could be found.${NC}"
+        exit 1
+    fi
 fi
 
 # Function to generate a slug from a title
@@ -45,7 +57,6 @@ generate_slug() {
 # Function to edit a post
 edit_post() {
     local rename_mode=false
-    local full_mode=false
     local post_file=""
     
     # Parse arguments
@@ -53,10 +64,6 @@ edit_post() {
         case "$1" in
             -n|--new-name)
                 rename_mode=true
-                shift
-                ;;
-            -f|--full)
-                full_mode=true
                 shift
                 ;;
             *)
@@ -69,7 +76,7 @@ edit_post() {
     # Check if post file is provided
     if [ -z "$post_file" ]; then
         echo -e "${RED}Error: No post file specified${NC}"
-        echo -e "Usage: $0 [-n|--new-name] [-f|--full] <post_file>"
+        echo -e "Usage: $0 [-n|--new-name] <post_file>"
         exit 1
     fi
     
@@ -79,18 +86,15 @@ edit_post() {
         exit 1
     fi
     
-    # Get original timestamp for preserving file modification time
-    local original_timestamp
-    if [[ "$OSTYPE" == "darwin"* ]] || [[ "$OSTYPE" == "freebsd"* ]]; then
-        # macOS or FreeBSD
-        original_timestamp=$(stat -f "%m" "$post_file")
-    else
-        # Linux and others
-        original_timestamp=$(stat -c "%Y" "$post_file")
-    fi
-    
     # Store the original filename
     local original_file="$post_file"
+    
+    # If vi is the fallback, show the easter egg message and wait for user
+    if [ "$VI_FALLBACK" = true ]; then
+        local vi_message="Looks like you're using vi because nano wasn't around. Don't panic!\nTo save and exit: Press Esc, then type :wq and press Enter.\nTo exit without saving: Press Esc, then type :q! and press Enter.\nGood luck!"
+        echo -e "${YELLOW}${vi_message}${NC}"
+        read -p "Press Enter to open the file in vi..." </dev/tty
+    fi
     
     # Edit the file
     $EDITOR "$post_file"
@@ -151,20 +155,20 @@ edit_post() {
         fi
     fi
     
-    # Restore the original timestamp
-    if [[ "$OSTYPE" == "darwin"* ]] || [[ "$OSTYPE" == "freebsd"* ]]; then
-        # macOS or FreeBSD
-        touch -t $(date -r "$original_timestamp" +"%Y%m%d%H%M.%S") "$post_file"
-    else
-        # Linux and other Unix-like systems
-        touch --date="@$original_timestamp" "$post_file"
-    fi
-    
     echo -e "${GREEN}File saved: $post_file${NC}"
     
-    # Build site
-    echo -e "${GREEN}Building site...${NC}"
-    ./scripts/build.sh
+    # Build site if REBUILD_AFTER_EDIT is true
+    if [ "$REBUILD_AFTER_EDIT" = true ]; then
+        echo "Rebuilding the site (REBUILD_AFTER_EDIT=true)..."
+        if ! ./scripts/build/main.sh; then
+            echo -e "${RED}Error: Failed to rebuild the site after editing the post.${NC}"
+            # Consider exiting or just warning
+            exit 1
+        fi
+        echo -e "${GREEN}Site rebuilt successfully.${NC}"
+    else
+        echo -e "${YELLOW}Rebuild skipped (REBUILD_AFTER_EDIT=false).${NC}"
+    fi
 }
 
 # Run the edit post function

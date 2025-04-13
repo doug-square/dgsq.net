@@ -30,10 +30,22 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
-# Check if EDITOR is set
+# Flag to track if vi is used as fallback
+VI_FALLBACK=false
+
+# Check if EDITOR is set, otherwise default to nano or vi
 if [ -z "$EDITOR" ]; then
-    echo -e "${YELLOW}EDITOR environment variable not set. Using nano as default.${NC}"
-    EDITOR="nano"
+    if command -v nano &> /dev/null; then
+        echo -e "${YELLOW}EDITOR environment variable not set. Using nano as default.${NC}"
+        EDITOR="nano"
+    elif command -v vi &> /dev/null; then
+        echo -e "${YELLOW}EDITOR environment variable not set and nano not found. Using vi as default.${NC}"
+        EDITOR="vi"
+        VI_FALLBACK=true
+    else
+        echo -e "${RED}Error: EDITOR environment variable not set, and neither nano nor vi could be found.${NC}"
+        exit 1
+    fi
 fi
 
 # Function to generate a slug from a title
@@ -126,8 +138,23 @@ create_post() {
         exit 1
     fi
     
+    # Define the vi easter egg message with actual newlines
+    local vi_message=$(cat <<-EOM
+Looks like you're using vi because nano wasn't around. Don't panic!
+To save and exit: Press Esc, then type :wq and press Enter.
+To exit without saving: Press Esc, then type :q! and press Enter.
+Good luck!
+
+EOM
+    )
+
     # Create template based on format
     if [ "$html_mode" = true ]; then
+        local initial_content="<p>Your content here...</p>"
+        if [ "$VI_FALLBACK" = true ]; then
+             # Embed the message directly within pre tags
+            initial_content="<pre>${vi_message}</pre>"
+        fi
         cat > "$output_path" << EOF
 <!DOCTYPE html>
 <html>
@@ -139,33 +166,47 @@ create_post() {
 </head>
 <body>
     <h1>$title</h1>
-    <p>Your content here...</p>
+    $initial_content
 </body>
 </html>
 EOF
     else
+        local initial_content="Your content here..."
+        if [ "$VI_FALLBACK" = true ]; then
+            # Assign the message directly
+            initial_content="$vi_message"
+        fi
         cat > "$output_path" << EOF
 ---
 title: $title
 date: $display_date
-tags: 
+tags:
 slug: $slug
 image:
 image_caption:
-description: 
+description:
 ---
 
-Your content here...
+$initial_content
 EOF
     fi
     
     # Open in editor
     edit_file "$output_path"
     
-    # Build site if not a draft
-    if [ "$draft_mode" = false ]; then
-        echo -e "${GREEN}Building site...${NC}"
-        ./scripts/build.sh
+    # Build site if not a draft and REBUILD_AFTER_POST is true
+    if [ "$draft_mode" = false ] && [ "$REBUILD_AFTER_POST" = true ]; then
+        echo "Building the site (REBUILD_AFTER_POST=true)..."
+        if ! ./scripts/build/main.sh; then
+            echo -e "${RED}Error: Failed to build the site after creating the post.${NC}"
+            # Consider if we should exit here or just warn
+            exit 1
+        fi
+        echo -e "${GREEN}Post '$title' created successfully and site rebuilt.${NC}"
+    elif [ "$draft_mode" = false ]; then
+        echo -e "${GREEN}Post '$title' created successfully. Rebuild skipped (REBUILD_AFTER_POST=false).${NC}"
+    else
+        echo -e "${GREEN}Draft '$title' saved successfully.${NC}" # Message for draft saving
     fi
 }
 

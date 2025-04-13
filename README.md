@@ -24,6 +24,7 @@
 
 - Generates HTML from Markdown using pandoc, commonmark, or markdown.pl (configurable)
 - Supports post metadata (title, date, tags)
+- Supports `lastmod` timestamp in frontmatter for tracking content updates (used in sitemap, RSS feed, and optionally displayed on posts).
 - Full date and time support with timezone awareness
 - Post descriptions/summaries for previews, OpenGraph, and RSS
 - Admin interface for managing posts and scheduling publications
@@ -71,6 +72,7 @@
    ```bash
    ./bssg.sh build
    ```
+   *(This command now invokes the modular build process located in `scripts/build/`)*
 
 4. View your site in the `output` directory or serve it locally:
    ```bash
@@ -148,8 +150,22 @@ Commonmark provides a stricter and more standardized Markdown implementation and
 BSSG/
 ├── bssg.sh                        # Main command interface script
 ├── generate_theme_previews.sh     # Script to generate previews of all themes
-├── scripts/                       # Scripts for site generation
-│   ├── build.sh                   # Main build script
+├── scripts/                       # Supporting scripts
+│   ├── build/                     # Modular build scripts
+│   │   ├── main.sh                # Main build orchestrator
+│   │   ├── utils.sh               # Utility functions (colors, formatting, etc.)
+│   │   ├── cli.sh                 # Command-line argument parsing
+│   │   ├── config_loader.sh       # Loads default and user configuration
+│   │   ├── deps.sh                # Dependency checking
+│   │   ├── cache.sh               # Cache management functions
+│   │   ├── content_discovery.sh   # Finds posts, pages, drafts
+│   │   ├── markdown_processor.sh  # Markdown conversion logic
+│   │   ├── process_posts.sh       # Processes individual posts
+│   │   ├── process_pages.sh       # Processes individual pages
+│   │   ├── generate_indexes.sh    # Creates index, tag, and archive pages
+│   │   ├── generate_feeds.sh      # Creates RSS feed and sitemap
+│   │   ├── copy_static.sh         # Copies static files and theme assets
+│   │   └── theme_utils.sh         # Theme-related utilities
 │   ├── post.sh                    # Handles post creation and editing
 │   ├── page.sh                    # Handles page creation and editing
 │   ├── edit.sh                    # Post editing utilities
@@ -157,14 +173,14 @@ BSSG/
 │   ├── list.sh                    # Lists posts and tags
 │   ├── backup.sh                  # Backup functionality
 │   ├── restore.sh                 # Restore functionality
-│   ├── theme.sh                   # Theme management and processing
-│   ├── template.sh                # Template processing utilities
-│   └── css.sh                     # CSS generation utilities
-├── src/                           # Source directory for markdown files
+│   ├── theme.sh                   # Theme management and processing (legacy helper)
+│   ├── template.sh                # Template processing utilities (legacy helper)
+│   └── css.sh                     # CSS generation utilities (legacy helper)
+├── src/                           # Source directory for markdown posts
 │   └── *.md                       # Markdown posts
 ├── pages/                         # Source directory for static pages
 │   └── *.md                       # Markdown pages
-├── templates/                     # HTML templates
+├── templates/                     # HTML templates (used by themes)
 │   ├── header.html                # Header template
 │   └── footer.html                # Footer template
 ├── themes/                        # Theme directory for different visual styles
@@ -175,6 +191,8 @@ BSSG/
 ├── admin/                         # Admin interface files
 ├── example/                       # Theme preview directory (generated)
 ├── .bssg_cache/                   # Cache directory for improved performance
+├── config.sh                      # Default site configuration
+├── config.sh.local                # Optional user overrides for configuration
 └── output/                        # Generated HTML website (created during build)
 ```
 
@@ -197,9 +215,8 @@ Commands:
                                Use -html to edit in HTML instead of Markdown
   page [-html] [draft_file]    Create a new page or continue editing a draft
                                Use -html to edit in HTML instead of Markdown
-  edit [-n|-f] <post_file>     Edit an existing post
+  edit [-n] <post_file>        Edit an existing post
                                Use -n to give the post a new name if title changes
-                               Use -f to edit the full HTML file (advanced)
   delete [-f] <post_file>      Delete a post
                                Use -f to skip confirmation
   list                         List all posts
@@ -207,10 +224,13 @@ Commands:
                                Use -n to sort by number of posts
   drafts                       List all draft posts
   backup                       Create a backup of all posts, pages, and config
-  restore [backup_file|ID]     Restore from a backup
+  restore [backup_file|ID]     Restore from a backup (all content by default)
                                Options: --no-posts, --no-drafts, --no-pages, --no-config
   backups                      List all available backups
-  build                        Build the site
+  build [opts]                 Build the site using the modular build system in scripts/build/
+                               Options: -c|--clean-output, -f|--force-rebuild,
+                                        --config FILE, --theme NAME,
+                                        --site-url URL, --output DIR
   help                         Show this help message
 ```
 
@@ -360,7 +380,13 @@ You can use these options with restore to selectively restore content:
 Usage: ./bssg.sh build [options]
 
 Options:
-  --config FILE           Configuration file (default: config.sh)
+  -c, --clean-output      Empty the output directory before building
+  -f, --force-rebuild     Ignore cache and rebuild all files
+  --config FILE           Use a specific configuration file (e.g., my_config.sh)
+                          instead of the default config.sh
+  --theme NAME            Override the theme specified in the config file for this build
+  --site-url URL          Override the SITE_URL specified in the config file for this build
+  --output DIR            Build the site to a specific output directory
 ```
 
 ### Internationalization (i18n)
@@ -412,6 +438,7 @@ Posts should include YAML frontmatter at the beginning:
 ---
 title: Post Title
 date: YYYY-MM-DD HH:MM:SS +TIMEZONE
+lastmod: YYYY-MM-DD HH:MM:SS +TIMEZONE # Optional: Last modification date
 tags: tag1, tag2, tag3
 slug: custom-slug
 image: /path/to/image.jpg
@@ -422,7 +449,11 @@ description: A brief summary of your post that will appear in listings, social m
 Content goes here...
 ```
 
-The date format supports full timestamps with timezone information. If you don't specify a time, the system will use the current time. If you don't specify a timezone, the system will use your local timezone.
+- The `date` format supports full timestamps with timezone information. If you don't specify a time, the system will use the current time. If you don't specify a timezone, the system will use your local timezone.
+- The optional `lastmod` field allows you to specify the date and time the content was last modified. It uses the same format as `date`. If omitted, it defaults to the `date` value. This field is used:
+    - For the `<lastmod>` tag in `sitemap.xml`.
+    - For the `<atom:updated>` tag in `rss.xml`.
+    - To optionally display an "Updated on" date on the post page if it differs from the publish `date`.
 
 ### Post Description
 
@@ -481,10 +512,13 @@ AUTHOR_NAME="Anonymous"
 AUTHOR_EMAIL="anonymous@example.com"
 
 # Content configuration
-DATE_FORMAT="%Y-%m-%d %H:%M:%S"
-TIMEZONE="local"  # Options: "local", "GMT", or a specific timezone like "America/New_York"
+DATE_FORMAT="%Y-%m-%d %H:%M:%S %z"
+TIMEZONE="local"  # Options: "local", "GMT", or a specific timezone
+                  # Affects how dates are displayed in the generated site based on system interpretation.
+SHOW_TIMEZONE="false" # Options: "true", "false". Determines if the timezone offset (e.g., +0200) is shown in displayed dates.
 POSTS_PER_PAGE=10
 ENABLE_ARCHIVES=true  # Enable or disable archives by year/month
+URL_SLUG_FORMAT="Year/Month/Day/slug"  # Format for post URLs
 ```
 
 #### Date Format Examples
@@ -595,7 +629,7 @@ BSSG includes a variety of themes to customize the look of your site. Themes are
 - `brutalist` - Raw, minimalist concrete-inspired design
 - `newspaper` - Classic newspaper layout
 - `diary` - Personal diary/journal style
-- `random` - Selects a random theme for each build
+- `random` - Selects a random theme (from the available themes) for each build
 
 To use a theme, specify it in your config file:
 
@@ -723,10 +757,11 @@ AUTHOR_NAME="Anonymous"
 AUTHOR_EMAIL="anonymous@example.com"
 
 # Content configuration
-DATE_FORMAT="%Y-%m-%d %H:%M:%S"
+DATE_FORMAT="%Y-%m-%d %H:%M:%S %z"
 TIMEZONE="local"  # Options: "local", "GMT", or a specific timezone
+SHOW_TIMEZONE="false" # Options: "true", "false". Determines if the timezone offset (e.g., +0200) is shown in displayed dates.
 POSTS_PER_PAGE=10
-ENABLE_ARCHIVES=true  # Enable or disable archive pages
+ENABLE_ARCHIVES=true  # Enable or disable archives by year/month
 URL_SLUG_FORMAT="Year/Month/Day/slug"  # Format for post URLs
 ```
 
@@ -741,7 +776,6 @@ Other possible formats include:
 
 While BSSG is designed to be simple, there are a few enhancements planned for the future:
 
-- **Last Modification Timestamp:** Implement a `lastmod` field for posts to track the last modification date and time.
 - **Stale Content Banner:** Add an option to display a banner on posts that haven't been updated in a configurable amount of time (e.g., more than X days/months).
 - **Performance Refactor:** Address identified performance bottlenecks and improve the overall efficiency of the build process.
 - **Build Script Refactor:** In the long term, refactor the main `build.sh` script into smaller, more specialized scripts for better maintainability and clarity.

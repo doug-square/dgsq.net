@@ -73,6 +73,10 @@ delete_post() {
         fi
     fi
     
+    # Get the absolute path *before* deleting the file
+    local absolute_file_path
+    absolute_file_path=$(realpath "$post_file")
+
     # Create a backup of the file
     mkdir -p "backup"
     cp "$post_file" "backup/$(basename "$post_file").$(date +%Y%m%d%H%M%S).bak"
@@ -82,11 +86,29 @@ delete_post() {
     
     echo -e "${GREEN}Post deleted: $post_file (backup created in 'backup' directory)${NC}"
     
-    # Build site
-    echo -e "${GREEN}Building site...${NC}"
-    ./scripts/build.sh
-    
-    echo -e "${GREEN}Done.${NC}"
+    # Determine if the deleted file was a published post (in src/)
+    local build_command="./scripts/build/main.sh"
+    # Use realpath to get the absolute path for reliable checking
+    local src_dir_path
+    src_dir_path=$(realpath "src")
+
+    # Check if the deleted file was inside the src directory
+    # Note: We check the path *before* deletion happened logically
+    # Check if the absolute path starts with the absolute src path
+    if [[ "${absolute_file_path#$src_dir_path/}" != "$absolute_file_path" ]]; then
+        echo "Deleted file was a published post. Rebuilding with --clean-output and --force-rebuild..."
+        build_command+=" --clean-output --force-rebuild"
+    else
+        echo "Deleted file was not a published post (likely a draft). Rebuilding normally..."
+    fi
+
+    # Build site using the determined command
+    if ! $build_command; then
+        echo -e "${RED}Error: Failed to rebuild the site after deleting the post.${NC}"
+        exit 1 # Exit if build fails
+    fi
+
+    echo -e "${GREEN}Site rebuilt successfully after deleting '$post_file'.${NC}"
 }
 
 # Run the delete post function

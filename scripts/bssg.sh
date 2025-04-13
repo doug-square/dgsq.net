@@ -46,9 +46,8 @@ show_help() {
     echo "                               Use -html to edit in HTML instead of Markdown"
     echo "  page [-html] [draft_file]    Create a new page or continue editing a draft"
     echo "                               Use -html to edit in HTML instead of Markdown"
-    echo "  edit [-n|-f] <post_file>     Edit an existing post"
+    echo "  edit [-n] <post_file>     Edit an existing post"
     echo "                               Use -n to give the post a new name if title changes"
-    echo "                               Use -f to edit the full HTML file (advanced)"
     echo "  delete [-f] <post_file>      Delete a post"
     echo "                               Use -f to skip confirmation"
     echo "  list                         List all posts"
@@ -110,12 +109,10 @@ main() {
             scripts/backup.sh list
             ;;
         build)
-            # Instead of passing individual settings, pass the local config file path
-            if [ -f "$LOCAL_CONFIG_FILE" ]; then
-                scripts/build.sh --local-config "$LOCAL_CONFIG_FILE" "$@"
-            else
-                scripts/build.sh "$@"
-            fi
+            # Call the new build orchestrator script in the build/ directory
+            # Pass along any additional arguments (e.g., --force-rebuild)
+            echo "Invoking new build process..."
+            scripts/build/main.sh "$@"
             ;;
         help)
             show_help

@@ -165,8 +165,11 @@ EOF
     
     # Build site if not a draft
     if [ "$draft_mode" = false ]; then
-        echo -e "${GREEN}Building site...${NC}"
-        ./scripts/build.sh
+        echo "Building the site..."
+        if ! ./scripts/build/main.sh; then
+            error "Failed to build the site after creating the page."
+        fi
+        echo "Page '$title' created successfully."
     fi
 }
 
