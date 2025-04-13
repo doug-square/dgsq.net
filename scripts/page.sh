@@ -30,10 +30,22 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
-# Check if EDITOR is set
+# Flag to track if vi is used as fallback
+VI_FALLBACK=false
+
+# Check if EDITOR is set, otherwise default to nano or vi
 if [ -z "$EDITOR" ]; then
-    echo -e "${YELLOW}EDITOR environment variable not set. Using nano as default.${NC}"
-    EDITOR="nano"
+    if command -v nano &> /dev/null; then
+        echo -e "${YELLOW}EDITOR environment variable not set. Using nano as default.${NC}"
+        EDITOR="nano"
+    elif command -v vi &> /dev/null; then
+        echo -e "${YELLOW}EDITOR environment variable not set and nano not found. Using vi as default.${NC}"
+        EDITOR="vi"
+        VI_FALLBACK=true
+    else
+        echo -e "${RED}Error: EDITOR environment variable not set, and neither nano nor vi could be found.${NC}"
+        exit 1
+    fi
 fi
 
 # Function to generate a slug from a title
@@ -74,7 +86,7 @@ create_page() {
     done
     
     # Create drafts directory if it doesn't exist
-    mkdir -p "drafts/pages"
+    mkdir -p "$DRAFTS_DIR/pages"
     
     # Create pages directory if it doesn't exist
     mkdir -p "$PAGES_DIR"
@@ -119,7 +131,7 @@ create_page() {
     
     local output_path
     if [ "$draft_mode" = true ]; then
-        output_path="drafts/pages/$filename"
+        output_path="$DRAFTS_DIR/pages/$filename"
     else
         output_path="$PAGES_DIR/$filename"
     fi
@@ -130,33 +142,55 @@ create_page() {
         exit 1
     fi
     
+    # Define the vi easter egg message with actual newlines
+    local vi_message=$(cat <<-EOM
+Looks like you're using vi because nano wasn't around. Don't panic!
+To save and exit: Press Esc, then type :wq and press Enter.
+To exit without saving: Press Esc, then type :q! and press Enter.
+Good luck!
+
+EOM
+    )
+
     # Create template based on format
     if [ "$html_mode" = true ]; then
+        local initial_content="<p>Your content here...</p>"
+        if [ "$VI_FALLBACK" = true ]; then
+             # Embed the message directly within pre tags
+            initial_content="<pre>${vi_message}</pre>"
+        fi
         cat > "$output_path" << EOF
 <!DOCTYPE html>
 <html>
 <head>
     <title>$title</title>
     <meta name="date" content="$date">
+    <meta name="lastmod" content="$date">
     <meta name="slug" content="$slug">
     <meta name="secondary" content="$([ "$secondary_mode" = true ] && echo "true" || echo "false")">
 </head>
 <body>
     <h1>$title</h1>
-    <p>Your content here...</p>
+    $initial_content
 </body>
 </html>
 EOF
     else
+        local initial_content="Your content here..."
+        if [ "$VI_FALLBACK" = true ]; then
+            # Assign the message directly
+            initial_content="$vi_message"
+        fi
         cat > "$output_path" << EOF
 ---
 title: $title
 date: $date
+lastmod: $date
 slug: $slug
 secondary: $([ "$secondary_mode" = true ] && echo "true" || echo "false")
 ---
 
-Your content here...
+$initial_content
 EOF
     fi
     

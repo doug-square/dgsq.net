@@ -81,7 +81,7 @@ create_post() {
     done
     
     # Create drafts directory if it doesn't exist
-    mkdir -p "drafts"
+    mkdir -p "$DRAFTS_DIR"
     
     # If a draft file is specified, edit it
     if [ -n "$draft_file" ]; then
@@ -127,9 +127,9 @@ create_post() {
     
     local output_path
     if [ "$draft_mode" = true ]; then
-        output_path="drafts/$filename"
+        output_path="$DRAFTS_DIR/$filename"
     else
-        output_path="src/$filename"
+        output_path="$SRC_DIR/$filename"
     fi
     
     # Check if file already exists

@@ -89,6 +89,25 @@ edit_post() {
     # Store the original filename
     local original_file="$post_file"
     
+    # Update lastmod timestamp before editing
+    local current_datetime
+    current_datetime=$(date +"%Y-%m-%d %H:%M:%S %z")
+    
+    echo -e "${YELLOW}Updating lastmod timestamp to $current_datetime...${NC}"
+    
+    if [[ "$post_file" == *.md ]]; then
+        # Use sed to update the lastmod line in Markdown
+        # macOS sed requires '' after -i for in-place editing without backup
+        sed -i '' "s/^lastmod:.*/lastmod: $current_datetime/" "$post_file"
+    elif [[ "$post_file" == *.html ]]; then
+        # Use sed to update the lastmod meta tag in HTML
+        # Using | as delimiter to avoid issues with slashes in dates/paths
+        # Escaping < and > to prevent shell interpretation issues
+        sed -i '' "s|\<meta name=\"lastmod\" content=\".*\"\>|\<meta name=\"lastmod\" content=\"$current_datetime\"\>|" "$post_file"
+    else
+        echo -e "${YELLOW}Warning: Unknown file type for '$post_file'. Cannot automatically update lastmod.${NC}"
+    fi
+    
     # If vi is the fallback, show the easter egg message and wait for user
     if [ "$VI_FALLBACK" = true ]; then
         local vi_message="Looks like you're using vi because nano wasn't around. Don't panic!\nTo save and exit: Press Esc, then type :wq and press Enter.\nTo exit without saving: Press Esc, then type :q! and press Enter.\nGood luck!"
@@ -131,15 +150,30 @@ edit_post() {
             local extension="${post_file##*.}"
             local new_filename="$new_date-$new_slug.$extension"
             
-            # Determine if original file is in src or drafts directory
+            # Determine the directory path based on the original file location
             local dir_path
-            if [[ "$post_file" == src/* ]]; then
-                dir_path="src"
-            elif [[ "$post_file" == drafts/* ]]; then
-                dir_path="drafts"
+            local original_dir
+            original_dir=$(dirname "$post_file")
+
+            # Normalize paths for comparison (remove trailing slashes if any)
+            local src_dir_norm=${SRC_DIR%/}
+            local drafts_dir_norm=${DRAFTS_DIR%/}
+            local pages_dir_norm=${PAGES_DIR%/}
+            local drafts_pages_dir_norm=${DRAFTS_DIR%/}/pages
+            original_dir_norm=${original_dir%/}
+
+            # Check against normalized paths
+            if [[ "$original_dir_norm" == "$src_dir_norm" ]]; then
+                dir_path="$SRC_DIR"
+            elif [[ "$original_dir_norm" == "$drafts_dir_norm" ]]; then
+                dir_path="$DRAFTS_DIR"
+            elif [[ "$original_dir_norm" == "$pages_dir_norm" ]]; then
+                dir_path="$PAGES_DIR"
+            elif [[ "$original_dir_norm" == "$drafts_pages_dir_norm" ]]; then
+                dir_path="$DRAFTS_DIR/pages"
             else
-                # If not in either, use same directory as original
-                dir_path="$(dirname "$post_file")"
+                # If not in a standard directory, use the original directory
+                dir_path="$original_dir"
             fi
             
             local new_path="$dir_path/$new_filename"

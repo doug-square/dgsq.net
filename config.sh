@@ -19,6 +19,7 @@ OUTPUT_DIR="output"
 TEMPLATES_DIR="templates"
 THEMES_DIR="themes"
 STATIC_DIR="static"
+DRAFTS_DIR="drafts" # Directory for drafts
 THEME="default"
 
 # Build configuration

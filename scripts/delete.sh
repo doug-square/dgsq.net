@@ -86,20 +86,20 @@ delete_post() {
     
     echo -e "${GREEN}Post deleted: $post_file (backup created in 'backup' directory)${NC}"
     
-    # Determine if the deleted file was a published post (in src/)
+    # Determine if the deleted file was a published post or page for build flags
     local build_command="./scripts/build/main.sh"
-    # Use realpath to get the absolute path for reliable checking
     local src_dir_path
-    src_dir_path=$(realpath "src")
+    local pages_dir_path
+    src_dir_path=$(realpath "$SRC_DIR")
+    pages_dir_path=$(realpath "$PAGES_DIR")
 
-    # Check if the deleted file was inside the src directory
-    # Note: We check the path *before* deletion happened logically
-    # Check if the absolute path starts with the absolute src path
-    if [[ "${absolute_file_path#$src_dir_path/}" != "$absolute_file_path" ]]; then
-        echo "Deleted file was a published post. Rebuilding with --clean-output and --force-rebuild..."
+    # Check if the deleted file was inside the src or pages directory
+    if [[ "${absolute_file_path#$src_dir_path/}" != "$absolute_file_path" ]] || \
+       [[ "${absolute_file_path#$pages_dir_path/}" != "$absolute_file_path" ]]; then
+        echo "Deleted file was a published post or page. Rebuilding with --clean-output and --force-rebuild..."
         build_command+=" --clean-output --force-rebuild"
     else
-        echo "Deleted file was not a published post (likely a draft). Rebuilding normally..."
+        echo "Deleted file was not published (likely a draft). Rebuilding normally..."
     fi
 
     # Build site using the determined command

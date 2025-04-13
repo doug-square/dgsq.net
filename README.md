@@ -164,22 +164,27 @@ BSSG/
 │   │   ├── process_pages.sh       # Processes individual pages
 │   │   ├── generate_indexes.sh    # Creates index, tag, and archive pages
 │   │   ├── generate_feeds.sh      # Creates RSS feed and sitemap
+│   │   ├── generate_secondary_pages.sh # Creates pages.html index
 │   │   ├── copy_static.sh         # Copies static files and theme assets
 │   │   └── theme_utils.sh         # Theme-related utilities
-│   ├── post.sh                    # Handles post creation and editing
-│   ├── page.sh                    # Handles page creation and editing
-│   ├── edit.sh                    # Post editing utilities
-│   ├── delete.sh                  # Post deletion utilities
-│   ├── list.sh                    # Lists posts and tags
+│   ├── post.sh                    # Handles post creation
+│   ├── page.sh                    # Handles page creation
+│   ├── edit.sh                    # Handles post/page editing (updates lastmod)
+│   ├── delete.sh                  # Handles post/page/draft deletion
+│   ├── list.sh                    # Lists posts, pages, drafts, tags
 │   ├── backup.sh                  # Backup functionality
 │   ├── restore.sh                 # Restore functionality
 │   ├── theme.sh                   # Theme management and processing (legacy helper)
 │   ├── template.sh                # Template processing utilities (legacy helper)
 │   └── css.sh                     # CSS generation utilities (legacy helper)
-├── src/                           # Source directory for markdown posts
+├── src/                           # Source directory for markdown posts (Configurable: $SRC_DIR)
 │   └── *.md                       # Markdown posts
-├── pages/                         # Source directory for static pages
+├── pages/                         # Source directory for static pages (Configurable: $PAGES_DIR)
 │   └── *.md                       # Markdown pages
+├── drafts/                        # Source directory for drafts (Configurable: $DRAFTS_DIR)
+│   ├── *.md/*.html                # Draft posts
+│   └── pages/                     # Optional subdirectory for page drafts
+│       └── *.md/*.html            # Draft pages
 ├── templates/                     # HTML templates (used by themes)
 │   ├── header.html                # Header template
 │   └── footer.html                # Footer template
@@ -211,19 +216,24 @@ cd BSSG
 Usage: ./bssg.sh command [options]
 
 Commands:
-  post [-html] [draft_file]    Create a new post or continue editing a draft
+  post [-html] [draft_file]    Create a new post (in $SRC_DIR or $DRAFTS_DIR)
+                               or continue editing a draft (in $DRAFTS_DIR)
                                Use -html to edit in HTML instead of Markdown
-  page [-html] [draft_file]    Create a new page or continue editing a draft
+  page [-html] [-s] [draft_file] Create a new page (in $PAGES_DIR or $DRAFTS_DIR/pages)
+                               or continue editing a draft (in $DRAFTS_DIR/pages)
                                Use -html to edit in HTML instead of Markdown
-  edit [-n] <post_file>        Edit an existing post
-                               Use -n to give the post a new name if title changes
-  delete [-f] <post_file>      Delete a post
+                               Use -s to mark page as secondary (for menu)
+  edit [-n] <file>             Edit an existing post/page/draft (updates lastmod)
+                               File path should point to $SRC_DIR, $PAGES_DIR, $DRAFTS_DIR etc.
+                               Use -n to rename based on title (posts/drafts only currently)
+  delete [-f] <file>           Delete a post/page/draft
+                               File path should point to $SRC_DIR, $PAGES_DIR, $DRAFTS_DIR etc.
                                Use -f to skip confirmation
-  list                         List all posts
-  tags [-n]                    List all tags
-                               Use -n to sort by number of posts
-  drafts                       List all draft posts
-  backup                       Create a backup of all posts, pages, and config
+  list {posts|pages|drafts|tags [-n]}
+                               List posts ($SRC_DIR), pages ($PAGES_DIR),
+                               drafts ($DRAFTS_DIR and $DRAFTS_DIR/pages), or tags.
+                               For tags, use -n to sort by count.
+  backup                       Create a backup of all posts, pages, drafts, and config
   restore [backup_file|ID]     Restore from a backup (all content by default)
                                Options: --no-posts, --no-drafts, --no-pages, --no-config
   backups                      List all available backups
@@ -494,8 +504,10 @@ The `config.sh` file contains the default configuration settings for the site ge
 
 ```bash
 # Directory configuration
-SRC_DIR="src"
-OUTPUT_DIR="output"
+SRC_DIR="src"            # Source directory for posts
+PAGES_DIR="pages"        # Source directory for pages
+DRAFTS_DIR="drafts"      # Source directory for drafts (posts and pages)
+OUTPUT_DIR="output"        # Where the generated site is placed
 TEMPLATES_DIR="templates"
 THEMES_DIR="themes"
 STATIC_DIR="static"
@@ -534,7 +546,7 @@ RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". If set to "true", t
 
 **IMPORTANT:** Do not modify `config.sh` directly. This file is part of the git repository and your changes could be lost during updates.
 
-For local modifications, use the `config.sh.local` file instead. This file will override any settings in the main configuration and is ignored by git.
+For local modifications, use the `config.sh.local` file instead. This file will override any settings in the main configuration and is ignored by git. You can override any variable from `config.sh`, including `SRC_DIR`, `PAGES_DIR`, and `DRAFTS_DIR`.
 
 Example `config.sh.local`:
 ```bash

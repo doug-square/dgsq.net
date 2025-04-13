@@ -13,10 +13,18 @@ source "$(dirname "$0")/utils.sh" || { echo >&2 "Error: Failed to source utils.s
 generate_pages_index() {
     echo -e "${YELLOW}Generating pages index...${NC}"
 
-    # Access the exported array string and reconstruct the array
+    # Access the exported array string and reconstruct the array safely
     local temp_secondary_pages=()
-    # shellcheck disable=SC2206 # Word splitting is intended here
-    eval "temp_secondary_pages=($SECONDARY_PAGES)"
+    if [ -n "$SECONDARY_PAGES" ]; then
+        # Read each entry separated by space/newline (default IFS)
+        while read -r page_data; do
+            # Trim leading/trailing whitespace just in case
+            page_data=$(echo "$page_data" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            if [ -n "$page_data" ]; then
+                temp_secondary_pages+=("$page_data")
+            fi
+        done <<< "$SECONDARY_PAGES"
+    fi
 
     # Skip if there are no secondary pages
     if [ ${#temp_secondary_pages[@]} -eq 0 ]; then
