@@ -485,7 +485,7 @@ To customize the appearance of your site, you can edit:
 
 - `templates/header.html` - Site header and navigation
 - `templates/footer.html` - Site footer
-- CSS styles are generated in `output/css/style.css` (edit in the `create_css` function in build.sh)
+- CSS styles are generated in `output/css/style.css` 
 - `config.sh.local` - Configuration file for site-wide settings
 
 ### Configuration
@@ -778,7 +778,6 @@ While BSSG is designed to be simple, there are a few enhancements planned for th
 
 - **Stale Content Banner:** Add an option to display a banner on posts that haven't been updated in a configurable amount of time (e.g., more than X days/months).
 - **Performance Refactor:** Address identified performance bottlenecks and improve the overall efficiency of the build process.
-- **Build Script Refactor:** In the long term, refactor the main `build.sh` script into smaller, more specialized scripts for better maintainability and clarity.
 
 ## Troubleshooting
 
@@ -791,7 +790,7 @@ If you encounter errors about missing commands, make sure you've installed all r
 If you get "Permission denied" errors when running scripts, make them executable:
 ```bash
 chmod +x bssg.sh
-chmod +x scripts/*.sh
+chmod -R +x scripts/*.sh
 ```
 
 #### Pandoc Not Found
