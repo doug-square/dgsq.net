@@ -8,7 +8,7 @@
 set -euo pipefail
 
 # --- Configuration ---
-readonly BSSG_BUILD_SCRIPT="scripts/build.sh"
+readonly BSSG_BUILD_SCRIPT="scripts/build/main.sh"
 readonly THEMES_DIR="./themes"
 readonly BSSG_DEFAULT_OUTPUT_DIR="./output" # Default output dir used by build.sh
 readonly EXAMPLE_ROOT_DIR="./example"
