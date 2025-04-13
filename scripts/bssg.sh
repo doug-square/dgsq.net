@@ -59,6 +59,7 @@ show_help() {
     echo "                               Options: --no-posts, --no-drafts, --no-pages, --no-config"
     echo "  backups                      List all available backups"
     echo "  build                        Build the site"
+    echo "  init <target_directory>       Initialize a new site in the specified directory"
     echo "  help                         Show this help message"
     echo ""
     echo "For more information, refer to the README.md file."
@@ -113,6 +114,15 @@ main() {
             # Pass along any additional arguments (e.g., --force-rebuild)
             echo "Invoking new build process..."
             scripts/build/main.sh "$@"
+            ;;
+        init)
+            # Check if directory argument is provided
+            if [ -z "$1" ]; then
+                echo -e "${RED}Error: Target directory argument is required for the init command.${NC}"
+                echo -e "Usage: $0 init <target_directory>"
+                exit 1
+            fi
+            scripts/init.sh "$1"
             ;;
         help)
             show_help

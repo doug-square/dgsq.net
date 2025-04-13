@@ -6,6 +6,7 @@
 - [Features](#features)
 - [Requirements](#requirements)
 - [Quick Start](#quick-start)
+- [Recommended Setup: Separating Content from Core](#recommended-setup-separating-content-from-core)
 - [Directory Structure](#directory-structure)
 - [Usage](#usage)
 - [Markdown Post Format](#markdown-post-format)
@@ -81,6 +82,44 @@
    ```
 
 5. Open your browser and navigate to http://localhost:8000
+
+## Recommended Setup: Separating Content from Core
+
+**Why separate?** This setup keeps your website's content (posts, pages, static files, configuration) in a dedicated directory, separate from the BSSG core scripts. This makes it much easier to update BSSG itself (using `git pull` in the core directory) without affecting or risking conflicts with your site content. This is the **recommended approach for most users**.
+
+1.  **Clone BSSG Core (if you haven't already):**
+    ```bash
+    git clone https://brew.bsd.cafe/stefano/BSSG.git
+    cd BSSG # Navigate into the BSSG core directory
+    ```
+
+2.  **Initialize Your Site Directory:**
+    From within the BSSG core directory, run the `init` command, specifying the path where you want your new site's content to live:
+    ```bash
+    ./bssg.sh init /path/to/your/new/website
+    ```
+    *Replace `/path/to/your/new/website` with the actual path (e.g., `~/my-blog`, `./my-website`).*
+
+3.  **Directory Structure Creation:**
+    BSSG will create the necessary content directories (`src`, `pages`, `drafts`, `static`) inside `/path/to/your/new/website`. The build output (`output/`) will also be placed within this new site directory by default.
+
+4.  **Site Configuration File:**
+    A specific `config.sh.local` file will be automatically created *inside your new site directory* (`/path/to/your/new/website/config.sh.local`). This file tells BSSG where to find your content (`SRC_DIR`, `PAGES_DIR`, etc.) and where to build the output (`OUTPUT_DIR`).
+
+5.  **Automatic Configuration Loading (Optional but Recommended):**
+    The `init` script will ask if you want to modify the `config.sh.local` file located *within the BSSG core directory* to automatically point to your new site's configuration.
+    *   **Choose `yes` (y):** This is the **recommended** option. It adds a line to the *core* `config.sh.local` that sources your *site's* configuration file. This means you can run `./bssg.sh` commands (like `build`, `post`, `page`) directly from the BSSG core directory, and it will automatically use the correct settings for your separated site.
+    *   **Choose `no` (N):** If you choose no, you will need to manually specify your site's configuration file using the `--config` flag every time you run a BSSG command from the core directory that needs to know about your site:
+        ```bash
+        # Example: Running build from the BSSG core directory
+        ./bssg.sh build --config /path/to/your/new/website/config.sh.local
+
+        # Example: Creating a post from the BSSG core directory
+        ./bssg.sh post --config /path/to/your/new/website/config.sh.local
+        ```
+
+**Benefit:** With your content separated, you can safely update the BSSG core scripts in their own directory using `git pull` without worrying about overwriting your posts, pages, or custom configurations.
+
 
 ## Requirements
 
@@ -241,6 +280,8 @@ Commands:
                                Options: -c|--clean-output, -f|--force-rebuild,
                                         --config FILE, --theme NAME,
                                         --site-url URL, --output DIR
+  init <target_directory>      Initialize a new, empty site structure in the specified directory.
+                               This is useful for separating your site content from the BSSG core scripts.
   help                         Show this help message
 ```
 
@@ -844,3 +885,32 @@ This project is licensed under the BSD 3-Clause License - see the LICENSE file f
 - **Themes**: Explore the available themes in the `themes` directory.
 - **Backup & Restore**: Use `./bssg.sh backup` and `./bssg.sh restore` to manage content backups. 
 - **Development Blog**: Stay up-to-date with the latest release notes, development progress, and announcements on the official BSSG Dev Blog: [https://blog.bssg.dragas.net](https://blog.bssg.dragas.net)
+
+## Separating Site Content from BSSG Core
+
+To make updating the BSSG core easier via `git pull` without affecting your website content, you can initialize your site in a separate directory.
+
+1.  **Initialize the Site:**
+    From within the BSSG core directory, run:
+    ```bash
+    ./bssg.sh init /path/to/your/new/site
+    ```
+    Replace `/path/to/your/new/site` with the desired location for your website content.
+
+2.  **Structure Creation:**
+    This command will create the necessary directory structure (`src`, `pages`, `drafts`, `static`) inside `/path/to/your/new/site`. The build output will also be placed within this directory (in `output/` by default).
+
+3.  **Site Configuration:**
+    It will also create a `config.sh.local` file within your new site directory. This file automatically configures BSSG to use the correct content directories (`SRC_DIR`, `PAGES_DIR`, `DRAFTS_DIR`, `STATIC_DIR`) and the `OUTPUT_DIR` for this specific site.
+
+4.  **Automatic Loading (Optional):**
+    The script will ask if you want to modify the `config.sh.local` file *within the BSSG core directory* to automatically load your new site's configuration. 
+    - If you choose **yes (y)**, BSSG will automatically use your separate site's configuration whenever you run `./bssg.sh` commands from the core directory. This is the recommended approach for ease of use.
+    - If you choose **no (N)**, you will need to specify the site's configuration file manually using the `--config` flag for most commands:
+      ```bash
+      ./bssg.sh build --config /path/to/your/new/site/config.sh.local
+      ./bssg.sh post --config /path/to/your/new/site/config.sh.local
+      # etc.
+      ```
+
+By using this separation, you can keep your website content (`/path/to/your/new/site`) independent and update the BSSG core engine (in the original cloned directory) without conflicts.
