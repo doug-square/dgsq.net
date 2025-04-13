@@ -6,7 +6,6 @@
 # Developed by Stefano Marinelli (stefano@dragas.it)
 # Project Homepage: https://bssg.dragas.net
 #
-# Version 0.9
 
 # Get script directory in a more compatible way
 if [ -z "${BASH_VERSION:-}" ]; then
