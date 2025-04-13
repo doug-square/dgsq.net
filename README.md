@@ -519,6 +519,8 @@ SHOW_TIMEZONE="false" # Options: "true", "false". Determines if the timezone off
 POSTS_PER_PAGE=10
 ENABLE_ARCHIVES=true  # Enable or disable archives by year/month
 URL_SLUG_FORMAT="Year/Month/Day/slug"  # Format for post URLs
+RSS_ITEM_LIMIT=15 # Number of items to include in the RSS feed.
+RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". If set to "true", the full post content will be included in the RSS feed description instead of the excerpt. Useful for readers that consume entire posts via RSS.
 ```
 
 #### Date Format Examples
@@ -763,6 +765,8 @@ SHOW_TIMEZONE="false" # Options: "true", "false". Determines if the timezone off
 POSTS_PER_PAGE=10
 ENABLE_ARCHIVES=true  # Enable or disable archives by year/month
 URL_SLUG_FORMAT="Year/Month/Day/slug"  # Format for post URLs
+RSS_ITEM_LIMIT=15 # Number of items to include in the RSS feed.
+RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". If set to "true", the full post content will be included in the RSS feed description instead of the excerpt. Useful for readers that consume entire posts via RSS.
 ```
 
 The `URL_SLUG_FORMAT` setting determines how your post URLs are structured. By default, it uses `Year/Month/Day/slug` which creates URLs like `http://yoursite.com/2023/01/15/my-post-title/`. 

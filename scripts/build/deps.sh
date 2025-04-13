@@ -143,4 +143,8 @@ check_directories() {
 # Export functions
 export -f check_dependencies
 export -f check_directories
-export -f portable_md5sum 
+export -f portable_md5sum
+
+# Define and export the MD5 command variable to use the portable function
+MD5_CMD="portable_md5sum"
+export MD5_CMD 

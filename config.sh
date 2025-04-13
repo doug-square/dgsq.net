@@ -39,6 +39,7 @@ TIMEZONE="local"  # Options: "local", "GMT", or a specific timezone like "Americ
 SHOW_TIMEZONE="false" # Options: "true", "false". Whether to display the timezone in rendered dates.
 POSTS_PER_PAGE=10
 RSS_ITEM_LIMIT=15 # Number of items to include in the RSS feed.
+RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". Include full post content in RSS feed.
 ENABLE_ARCHIVES=true  # Enable or disable archive pages
 URL_SLUG_FORMAT="Year/Month/Day/slug"  # Format for post URLs: Year/Month/Day/slug will create Year/Month/Day/slug/index.html
 

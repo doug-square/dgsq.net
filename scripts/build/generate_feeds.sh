@@ -9,6 +9,9 @@
 source "$(dirname "$0")/utils.sh" || { echo >&2 "Error: Failed to source utils.sh from generate_feeds.sh"; exit 1; }
 # shellcheck source=cache.sh disable=SC1091
 source "$(dirname "$0")/cache.sh" || { echo >&2 "Error: Failed to source cache.sh from generate_feeds.sh"; exit 1; }
+# Source content.sh to get convert_markdown_to_html
+# shellcheck source=content.sh disable=SC1091
+source "$(dirname "$0")/content.sh" || { echo >&2 "Error: Failed to source content.sh from generate_feeds.sh"; exit 1; }
 # Note: Needs access to primary_pages and SECONDARY_PAGES which should be exported by templates.sh
 
 # Function to get the latest lastmod date from a file index, optionally filtered
@@ -338,6 +341,23 @@ EOF
 generate_rss() {
     echo -e "${YELLOW}Generating RSS feed...${NC}"
 
+    # Ensure needed functions/vars are available (especially if run standalone/debug)
+    # convert_markdown_to_html should be sourced from content.sh
+    # MD5_CMD should be exported by deps.sh
+    # CACHE_DIR, MARKDOWN_PROCESSOR, MARKDOWN_PL_PATH etc should be exported by config_loader.sh
+    if ! command -v convert_markdown_to_html &> /dev/null; then
+        echo -e "${RED}Error: convert_markdown_to_html function not found. Make sure content.sh was sourced.${NC}" >&2
+        return 1
+    fi
+    if [ -z "${MD5_CMD:-}" ]; then
+        echo -e "${RED}Error: MD5_CMD is not set. Make sure deps.sh was sourced and exported it.${NC}" >&2
+        return 1
+    fi
+    if [ -z "${CACHE_DIR:-}" ]; then
+        echo -e "${RED}Error: CACHE_DIR is not set.${NC}" >&2
+        return 1
+    fi
+
     local rss="$OUTPUT_DIR/rss.xml"
     local file_index="$CACHE_DIR/file_index.txt"
 
@@ -413,29 +433,59 @@ EOF
 
         # --- RSS Item Description Enhancement ---
         local item_description_content=""
-        # Add featured image if available
-        if [ -n "$image" ]; then
-            # Assume image path is relative to site root or absolute
-            local img_src
-            [[ "$image" =~ ^https?:// ]] && img_src="$image" || img_src=$(fix_url "$image")
-            # Basic HTML escaping for alt/title (replace quotes, &, <, >)
-            local img_alt=$(echo "$title" | sed -e 's/&/&amp;/g' -e 's/</&lt;/g' -e 's/>/&gt;/g' -e 's/"/&quot;/g' -e "s/'/&apos;/g")
-            local img_title=$(echo "$image_caption" | sed -e 's/&/&amp;/g' -e 's/</&lt;/g' -e 's/>/&gt;/g' -e 's/"/&quot;/g' -e "s/'/&apos;/g")
-             # Default alt to title if caption is empty
-             [ -z "$img_title" ] && img_title="$img_alt"
 
-            # Use standard quotes for HTML attributes within CDATA
-            item_description_content+="<img src=\"${img_src}\" alt=\"${img_alt}\" title=\"${img_title}\">"
-             if [ -n "$image_caption" ]; then
-                  # Use basic escaping for content within HTML tags inside CDATA
-                  local escaped_caption=$(echo "$image_caption" | sed -e 's/&/&amp;/g' -e 's/</&lt;/g' -e 's/>/&gt;/g')
-                  item_description_content+="<p><em>${escaped_caption}</em></p>"
-             fi
+        # Check if full content should be included
+        if [ "${RSS_INCLUDE_FULL_CONTENT:-false}" = true ]; then
+            # Convert full content from cached raw markdown on the fly
+            local raw_content_cache_file="${CACHE_DIR:-.bssg_cache}/content/$(basename "${file}")"
+            local raw_content=""
+            local converted_html=""
+
+            if [ -f "$raw_content_cache_file" ]; then
+                # Read the raw cached content
+                raw_content=$(cat "$raw_content_cache_file")
+                
+                # Convert raw markdown to HTML
+                converted_html=$(convert_markdown_to_html "$raw_content")
+                local convert_status=$?
+
+                if [ $convert_status -eq 0 ] && [ -n "$converted_html" ]; then
+                    item_description_content="$converted_html"
+                else
+                    echo "Warning: Failed to convert markdown to HTML for RSS item ($file, status: $convert_status). Falling back to excerpt." >&2
+                    item_description_content="$description" # Fallback to excerpt on conversion error
+                fi
+            else
+                # Fallback to excerpt if raw content cache not found
+                echo "Warning: Cached raw markdown content file '$raw_content_cache_file' not found for RSS item ($file). Falling back to excerpt." >&2
+                item_description_content="$description"
+            fi
+        else
+            # Use excerpt (original logic)
+            # Add featured image if available
+            if [ -n "$image" ]; then
+                # Assume image path is relative to site root or absolute
+                local img_src
+                [[ "$image" =~ ^https?:// ]] && img_src="$image" || img_src=$(fix_url "$image")
+                # Basic HTML escaping for alt/title (replace quotes, &, <, >)
+                local img_alt=$(echo "$title" | sed -e 's/&/&amp;/g' -e 's/</&lt;/g' -e 's/>/&gt;/g' -e 's/"/&quot;/g' -e "s/'/&apos;/g")
+                local img_title=$(echo "$image_caption" | sed -e 's/&/&amp;/g' -e 's/</&lt;/g' -e 's/>/&gt;/g' -e 's/"/&quot;/g' -e "s/'/&apos;/g")
+                 # Default alt to title if caption is empty
+                 [ -z "$img_title" ] && img_title="$img_alt"
+
+                # Use standard quotes for HTML attributes within CDATA
+                item_description_content+="<img src=\"${img_src}\" alt=\"${img_alt}\" title=\"${img_title}\">"
+                 if [ -n "$image_caption" ]; then
+                      # Use basic escaping for content within HTML tags inside CDATA
+                      local escaped_caption=$(echo "$image_caption" | sed -e 's/&/&amp;/g' -e 's/</&lt;/g' -e 's/>/&gt;/g')
+                      item_description_content+="<p><em>${escaped_caption}</em></p>"
+                 fi
+            fi
+            # Add description/excerpt (already extracted, may contain HTML)
+            # Needs basic XML entity escaping for CDATA safety (although CDATA handles most) - primarily & < > within the text itself.
+            # No need to escape quotes or apostrophes here for CDATA
+            item_description_content+="$description" # Use original description directly in CDATA
         fi
-        # Add description/excerpt (already extracted, may contain HTML)
-        # Needs basic XML entity escaping for CDATA safety (although CDATA handles most) - primarily & < > within the text itself.
-        # No need to escape quotes or apostrophes here for CDATA
-        item_description_content+="$description" # Use original description directly in CDATA
 
         # Wrap final description in CDATA
         local final_description="<![CDATA[${item_description_content}]]>"

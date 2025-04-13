@@ -50,58 +50,61 @@ convert_markdown() {
 
     echo -e "Processing post: ${GREEN}$(basename "$input_file")${NC}"
 
+    # IMPORTANT: Assumes lock_file/unlock_file are sourced/available
+    lock_file "$content_cache_file"
+    
     # Try to get content from cache or file
     local content=""
-    if [ "${FORCE_REBUILD:-false}" = false ] && [ -f "$content_cache_file" ] && [ "$content_cache_file" -nt "$input_file" ]; then
-        content=$(cat "$content_cache_file")
-    else
-        # Extract content from source file
-        local in_frontmatter=false
-        local found_frontmatter=false
-        {
-            while IFS= read -r line; do
-                if [[ "$line" == "---" ]]; then
-                    if ! $in_frontmatter && ! $found_frontmatter; then
-                        in_frontmatter=true
-                        found_frontmatter=true
-                        continue
-                    elif $in_frontmatter; then
-                        in_frontmatter=false
-                        continue # Skip the closing --- line itself
-                    fi
+    local in_frontmatter=false
+    local found_frontmatter=false
+    {
+        while IFS= read -r line; do
+            if [[ "$line" == "---" ]]; then
+                if ! $in_frontmatter && ! $found_frontmatter; then
+                    in_frontmatter=true
+                    found_frontmatter=true
+                    continue
+                elif $in_frontmatter; then
+                    in_frontmatter=false
+                    continue # Skip the closing --- line itself
                 fi
-                if ! $in_frontmatter && $found_frontmatter; then
-                    content+="$line"$'\n'
-                fi
-            done
-        } < "$input_file"
-        
-        # If no frontmatter was found, use the whole file as content
-        if ! $found_frontmatter; then
-            content=$(cat "$input_file")
-        fi
-        
-        # Cache the content
-        mkdir -p "$(dirname "$content_cache_file")"
-        printf '%s' "$content" > "$content_cache_file"
+            fi
+            if ! $in_frontmatter && $found_frontmatter; then
+                content+="$line"$'\n'
+            fi
+        done
+    } < "$input_file"
+    
+    # If no frontmatter was found, use the whole file as content
+    if ! $found_frontmatter; then
+        content=$(cat "$input_file")
     fi
+    
+    # Cache the raw markdown content (after frontmatter removal)
+    # Use printf to handle potential leading dashes
+    mkdir -p "$(dirname "$content_cache_file")"
+    printf '%s' "$content" > "$content_cache_file"
+    
+    unlock_file "$content_cache_file"
 
     # Calculate reading time
     local reading_time
     reading_time=$(calculate_reading_time "$content")
 
-    # Convert markdown content to HTML
+    # Convert markdown content to HTML (No HTML caching here anymore)
     local html_content
     if [[ "$input_file" == *.html ]]; then
         # For HTML files, extract content between <body> tags (simple approach)
         # Assumes content is already HTML
         html_content=$(sed -n '/<body.*>/,/<\/body>/p' "$input_file" | sed '1d;$d')
-        echo -e "Extracted body content from HTML file: ${GREEN}$(basename "$input_file")${NC}"
+        # echo -e "Extracted body content from HTML file: ${GREEN}$(basename "$input_file")${NC}" # Can be verbose
     elif [[ "$input_file" == *.md ]]; then
-        # Original Markdown conversion
+        # Original Markdown conversion using the raw content we extracted/cached
         html_content=$(convert_markdown_to_html "$content")
         if [ $? -ne 0 ]; then
             echo -e "${RED}Markdown conversion failed for '$input_file', skipping html generation.${NC}" >&2
+            # Optionally delete the output file if it exists from a previous run?
+            # rm -f "$output_html_file"
             return 1
         fi
     else
