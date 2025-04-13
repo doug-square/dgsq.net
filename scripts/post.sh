@@ -162,6 +162,7 @@ EOM
     <title>$title</title>
     <meta name="tags" content="">
     <meta name="date" content="$display_date">
+    <meta name="lastmod" content="$display_date">
     <meta name="slug" content="$slug">
 </head>
 <body>
@@ -180,6 +181,7 @@ EOF
 ---
 title: $title
 date: $display_date
+lastmod: $display_date
 tags:
 slug: $slug
 image:
