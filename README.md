@@ -543,7 +543,7 @@ To customize the appearance of your site, you can edit:
 - CSS styles are generated in `output/css/style.css` 
 - `config.sh.local` - Configuration file for site-wide settings
 
--   **`CUSTOM_CSS`:** (Optional) Specify a path (relative to the output directory root) to a custom CSS file. If set, a `<link>` tag will be added to the `<head>` of every generated page, after the theme's default `style.css`. The CSS file itself should be placed in your `$STATIC_DIR` (default: `static/`) to be copied to the output directory. Example: `CUSTOM_CSS="/css/my-styles.css"` (assuming `static/css/my-styles.css` exists).
+- **`CUSTOM_CSS`:** (Optional) Specify a path (relative to the output directory root) to a custom CSS file. If set, a `<link>` tag will be added to the `<head>` of every generated page, after the theme's default `style.css`. The CSS file itself should be placed in your `$STATIC_DIR` (default: `static/`) to be copied to the output directory. Example: `CUSTOM_CSS="/css/my-styles.css"` (assuming `static/css/my-styles.css` exists).
 
 
 
