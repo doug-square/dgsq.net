@@ -39,9 +39,9 @@ create_css() {
     mkdir -p "${css_dir}"
     
     # Check if theme directory exists
-    local theme_dir="themes/${theme}"
+    local theme_dir="${THEMES_DIR}/${theme}"
     if [ ! -d "$theme_dir" ]; then
-        echo -e "${RED}Error: Theme directory '$theme_dir' not found.${NC}"
+        echo -e "${RED}Error: Theme directory '$theme_dir' (using THEMES_DIR='${THEMES_DIR}') not found.${NC}"
         # Decide if this is fatal. For now, just warn and skip CSS copy.
         return 1 # Return error code
     fi

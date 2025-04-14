@@ -74,15 +74,19 @@ preload_templates() {
     local template_dir
     local templates_to_load=("header.html" "footer.html" "post.html" "page.html" "index.html" "tag.html" "archive.html")
 
-    # Check if templates are in the theme subdirectory or directly in templates dir
-    # IMPORTANT: Requires TEMPLATES_DIR, THEME to be exported/available
-    if [ -d "${TEMPLATES_DIR:-templates}/${THEME:-default}" ]; then
-        template_dir="${TEMPLATES_DIR:-templates}/${THEME:-default}"
-    else
-        template_dir="${TEMPLATES_DIR:-templates}"
+    # --- Use TEMPLATES_DIR directly --- 
+    # Always load structural HTML templates from the directory specified by TEMPLATES_DIR.
+    # Themes are only responsible for style.css (handled in assets.sh).
+    template_dir="${TEMPLATES_DIR:-templates}"
+    
+    # Check if the base template directory exists
+    if [ ! -d "$template_dir" ]; then
+        echo -e "${RED}Error: Base template directory '$template_dir' (defined by TEMPLATES_DIR) not found! Cannot load templates.${NC}" >&2
+         HEADER_TEMPLATE="" FOOTER_TEMPLATE="" POST_TEMPLATE="" PAGE_TEMPLATE="" INDEX_TEMPLATE="" TAG_TEMPLATE="" ARCHIVE_TEMPLATE="" # Clear templates
+         return 1 # Indicate error
     fi
-
-    echo -e "${GREEN}Loading and caching templates from $template_dir${NC}"
+    
+    echo -e "${GREEN}Loading structural templates from $template_dir (defined by TEMPLATES_DIR)${NC}"
 
     # Load each template once
     for tmpl in "${templates_to_load[@]}"; do
