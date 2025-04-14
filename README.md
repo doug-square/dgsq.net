@@ -108,7 +108,7 @@
 
 5.  **Automatic Configuration Loading (Optional but Recommended):**
     The `init` script will ask if you want to modify the `config.sh.local` file located *within the BSSG core directory* to automatically point to your new site's configuration.
-    *   **Choose `yes` (y):** This is the **recommended** option. It adds a line to the *core* `config.sh.local` that sources your *site's* configuration file. This means you can run `./bssg.sh` commands (like `build`, `post`, `page`) directly from the BSSG core directory, and it will automatically use the correct settings for your separated site.
+    *   **Choose `yes` (y):** This is the **recommended** option. It adds a line to the *core* `config.sh.local` that sources your *site's* configuration file. This means you can run `./bssg.sh` commands (like `build`, `post`, `page`) directly from the BSSG core directory, and it will automatically use the correct settings for your separated site. (Note: For reliability, the `source` command added to the core config will use the resolved absolute path to your site's configuration file, even if you provided a relative or tilde-prefixed path during `init`.)
     *   **Choose `no` (N):** If you choose no, you will need to manually specify your site's configuration file using the `--config` flag every time you run a BSSG command from the core directory that needs to know about your site:
         ```bash
         # Example: Running build from the BSSG core directory
@@ -282,6 +282,10 @@ Commands:
                                         --site-url URL, --output DIR
   init <target_directory>      Initialize a new, empty site structure in the specified directory.
                                This is useful for separating your site content from the BSSG core scripts.
+                               The script will preserve the path format you provide (relative, absolute, or tilde-prefixed)
+                               in the generated site 'config.sh.local' for portability.
+                               Note: If using '~' for your home directory, quote the path (e.g., '~/mysite' or "~/mysite")
+                               to ensure the tilde is preserved in the generated config.
   help                         Show this help message
 ```
 
@@ -885,4 +889,3 @@ This project is licensed under the BSD 3-Clause License - see the LICENSE file f
 - **Themes**: Explore the available themes in the `themes` directory.
 - **Backup & Restore**: Use `./bssg.sh backup` and `./bssg.sh restore` to manage content backups. 
 - **Development Blog**: Stay up-to-date with the latest release notes, development progress, and announcements on the official BSSG Dev Blog: [https://blog.bssg.dragas.net](https://blog.bssg.dragas.net)
-

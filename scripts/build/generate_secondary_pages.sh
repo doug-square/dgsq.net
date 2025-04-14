@@ -11,28 +11,72 @@ source "$(dirname "$0")/utils.sh" || { echo >&2 "Error: Failed to source utils.s
 
 # Generate pages index
 generate_pages_index() {
+    # --- Define Target File --- 
+    local pages_index="$OUTPUT_DIR/pages.html"
+    local secondary_pages_list_file="${CACHE_DIR:-.bssg_cache}/secondary_pages.list"
+
+    # --- Cache Check --- START ---
+    # Rebuild if force flag is set OR if list file exists and output is older than list file
+    # OR if list file doesn't exist (implies it was just created or cleaned)
+    local should_rebuild=false
+    if [[ "${FORCE_REBUILD:-false}" == true ]]; then
+        should_rebuild=true
+        echo -e "${YELLOW}Forcing pages index rebuild (--force-rebuild).${NC}"
+    elif [ ! -f "$secondary_pages_list_file" ]; then
+         # If list file doesn't exist, we need to generate pages.html (or handle absence)
+         # This case might mean 0 secondary pages after a clean build.
+         # Let the existing logic handle the case of 0 pages later.
+         should_rebuild=true 
+         echo -e "${YELLOW}Secondary pages list file not found, rebuilding pages index.${NC}"
+    elif [ ! -f "$pages_index" ] || [ "$pages_index" -ot "$secondary_pages_list_file" ]; then
+        should_rebuild=true
+        echo -e "${YELLOW}Pages index is older than secondary pages list, rebuilding.${NC}"
+    # Add checks for template file changes? More complex, rely on overall rebuild for now.
+    # Consider adding checks against header/footer template files if more granularity is needed.
+    # Example: || [ "$pages_index" -ot "path/to/header.html" ] ...
+    fi
+    
+    if [[ "$should_rebuild" == false ]]; then
+        echo -e "${GREEN}Pages index '$pages_index' is up to date, skipping.${NC}"
+        return 0
+    fi
+    # --- Cache Check --- END ---
+    
     echo -e "${YELLOW}Generating pages index...${NC}"
 
-    # Access the exported array string and reconstruct the array safely
+    # --- Read secondary pages from cache file --- START ---
     local temp_secondary_pages=()
-    if [ -n "$SECONDARY_PAGES" ]; then
-        # Read each entry separated by space/newline (default IFS)
-        while read -r page_data; do
-            # Trim leading/trailing whitespace just in case
-            page_data=$(echo "$page_data" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-            if [ -n "$page_data" ]; then
-                temp_secondary_pages+=("$page_data")
-            fi
-        done <<< "$SECONDARY_PAGES"
+    
+    if [ -f "$secondary_pages_list_file" ]; then
+        # Use mapfile (readarray) to read lines into the array
+        mapfile -t temp_secondary_pages < "$secondary_pages_list_file"
+        # Optional: Trim whitespace from each element if necessary (mapfile usually handles newlines)
+        # for i in "${!temp_secondary_pages[@]}"; do
+        #     temp_secondary_pages[$i]=$(echo "${temp_secondary_pages[$i]}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        # done
+    else
+        echo -e "${YELLOW}Cache file '$secondary_pages_list_file' not found. Assuming no secondary pages.${NC}"
     fi
+    # --- Read secondary pages from cache file --- END ---
+
+    # Access the exported array string and reconstruct the array safely (REMOVED)
+    # local temp_secondary_pages=()
+    # if [ -n "$SECONDARY_PAGES" ]; then
+    #     # Read each entry separated by space/newline (default IFS)
+    #     while read -r page_data; do
+    #         # Trim leading/trailing whitespace just in case
+    #         page_data=$(echo "$page_data" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    #         if [ -n "$page_data" ]; then
+    #             temp_secondary_pages+=("$page_data")
+    #         fi
+    #     done <<< "$SECONDARY_PAGES"
+    # fi
 
     # Skip if there are no secondary pages
     if [ ${#temp_secondary_pages[@]} -eq 0 ]; then
         echo -e "${YELLOW}No secondary pages found, skipping pages index${NC}"
         return 0
     fi
-
-    local pages_index="$OUTPUT_DIR/pages.html"
 
     # Prepare templates (should be exported already)
     local header_content="$HEADER_TEMPLATE"

@@ -236,10 +236,12 @@ preload_templates() {
     # Write primary and secondary page lists to cache files only if changed
     local primary_pages_cache="$CACHE_DIR/primary_pages.tmp"
     local secondary_pages_cache="$CACHE_DIR/secondary_pages.tmp"
+    local secondary_pages_list_file="$CACHE_DIR/secondary_pages.list" # <-- Define list file path
     
     # Prepare content in temporary files
     local primary_tmp=$(mktemp)
     local secondary_tmp=$(mktemp)
+    local secondary_list_tmp=$(mktemp) # <-- Temp file for the list
     
     # Write current content to temporary files
     # Use printf for safer writing
@@ -247,7 +249,10 @@ preload_templates() {
         printf "%s\n" "$page" >> "$primary_tmp"
     done
     for page in "${SECONDARY_PAGES[@]}"; do
+        # Write to the temp file for comparison
         printf "%s\n" "$page" >> "$secondary_tmp"
+        # Also write to the list temp file, one per line
+        printf "%s\n" "$page" >> "$secondary_list_tmp"
     done
 
     # Function to compare and update cache file
@@ -265,9 +270,13 @@ preload_templates() {
         fi
     }
 
-    # Update cache files only if content differs
-    update_cache_if_changed "$primary_tmp" "$primary_pages_cache" "Primary pages"
-    update_cache_if_changed "$secondary_tmp" "$secondary_pages_cache" "Secondary pages"
+    # Compare and update cache files
+    update_cache_if_changed "$primary_tmp" "$primary_pages_cache"
+    update_cache_if_changed "$secondary_tmp" "$secondary_pages_cache"
+    update_cache_if_changed "$secondary_list_tmp" "$secondary_pages_list_file" # <-- Update the list file
+
+    # Clean up temporary files
+    rm -f "$primary_tmp" "$secondary_tmp" "$secondary_list_tmp" # <-- Cleanup list temp file
 
     echo -e "${GREEN}Templates pre-processed (menus, locale placeholders).${NC}"
 }
@@ -286,3 +295,7 @@ export FOOTER_TEMPLATE
 # export primary_pages="$(declare -p primary_pages | sed 's/declare -a primary_pages=//')"
 # If array export is problematic, preload_templates could write page lists to cache files instead
 # --- Exports --- END --- 
+
+# Export functions - Do not export the SECONDARY_PAGES array itself anymore
+export -f preload_templates 
+# export SECONDARY_PAGES # <-- Remove this export 

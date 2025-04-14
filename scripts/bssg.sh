@@ -9,27 +9,46 @@
 
 set -e
 
-# Load configuration
-CONFIG_FILE="config.sh"
-if [ -f "$CONFIG_FILE" ]; then
-    source "$CONFIG_FILE"
+# Load configuration (DEPRECATED - Moved to config_loader.sh)
+# CONFIG_FILE="config.sh"
+# if [ -f "$CONFIG_FILE" ]; then
+#     source "$CONFIG_FILE"
+# else
+#     echo "Error: Configuration file '$CONFIG_FILE' not found"
+#     exit 1
+# fi
+
+# Load local configuration overrides if they exist (DEPRECATED - Moved to config_loader.sh)
+# LOCAL_CONFIG_FILE="config.sh.local"
+# if [ -f "$LOCAL_CONFIG_FILE" ]; then
+#     source "$LOCAL_CONFIG_FILE"
+#     echo "Local configuration loaded from $LOCAL_CONFIG_FILE"
+# fi
+
+# --- Centralized Configuration Loading --- START ---
+# Source the config loader script EARLY to set defaults, load configs, and expand paths.
+# It handles config.sh, config.sh.local, and site-specific configs sourced via core local file.
+# It also EXPORTS all necessary variables for subsequent scripts.
+
+# Define path to config loader relative to this script
+BSSG_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+CONFIG_LOADER_SCRIPT="${BSSG_SCRIPT_DIR}/scripts/build/config_loader.sh"
+
+if [ -f "$CONFIG_LOADER_SCRIPT" ]; then
+    # shellcheck source=scripts/build/config_loader.sh
+    source "$CONFIG_LOADER_SCRIPT"
+    echo "Central configuration loaded via config_loader.sh"
 else
-    echo "Error: Configuration file '$CONFIG_FILE' not found"
+    echo -e "${RED}Error: Config loader script not found at '$CONFIG_LOADER_SCRIPT'${NC}" >&2
     exit 1
 fi
+# --- Centralized Configuration Loading --- END ---
 
-# Load local configuration overrides if they exist
-LOCAL_CONFIG_FILE="config.sh.local"
-if [ -f "$LOCAL_CONFIG_FILE" ]; then
-    source "$LOCAL_CONFIG_FILE"
-    echo "Local configuration loaded from $LOCAL_CONFIG_FILE"
-fi
-
-# Terminal colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-NC='\033[0m' # No Color
+# Terminal colors (still needed here if config_loader doesn't export them, though it should)
+RED='${RED:-\\033[0;31m}' # Default if not exported
+GREEN='${GREEN:-\\033[0;32m}'
+YELLOW='${YELLOW:-\\033[0;33m}'
+NC='${NC:-\\033[0m}'
 
 # Make sure all scripts are executable
 chmod +x scripts/*.sh 2>/dev/null || true

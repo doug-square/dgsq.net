@@ -9,41 +9,42 @@
 
 set -e
 
-# Load configuration
-CONFIG_FILE="config.sh"
-if [ -f "$CONFIG_FILE" ]; then
-    source "$CONFIG_FILE"
-else
-    echo "Error: Configuration file '$CONFIG_FILE' not found"
-    exit 1
-fi
+# Load configuration (DEPRECATED - Handled centrally by bssg.sh sourcing config_loader.sh)
+# CONFIG_FILE="config.sh"
+# if [ -f "$CONFIG_FILE" ]; then
+#     source "$CONFIG_FILE"
+# else
+#     echo "Error: Configuration file '$CONFIG_FILE' not found"
+#     exit 1
+# fi
 
-# Load local configuration overrides if they exist
-LOCAL_CONFIG_FILE="config.sh.local"
-if [ -f "$LOCAL_CONFIG_FILE" ]; then
-    source "$LOCAL_CONFIG_FILE"
-fi
+# Load local configuration overrides if they exist (DEPRECATED - Handled centrally)
+# LOCAL_CONFIG_FILE="config.sh.local"
+# if [ -f "$LOCAL_CONFIG_FILE" ]; then
+#     source "$LOCAL_CONFIG_FILE"
+# fi
 
-# Terminal colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-NC='\033[0m' # No Color
+# Terminal colors (DEPRECATED - Handled centrally by config_loader.sh)
+# RED='\033[0;31m'
+# GREEN='\033[0;32m'
+# YELLOW='\033[0;33m'
+# NC='\033[0m' # No Color
 
 # Flag to track if vi is used as fallback
 VI_FALLBACK=false
 
 # Check if EDITOR is set, otherwise default to nano or vi
+# Use inherited color variables (e.g. $YELLOW, $NC)
 if [ -z "$EDITOR" ]; then
     if command -v nano &> /dev/null; then
-        echo -e "${YELLOW}EDITOR environment variable not set. Using nano as default.${NC}"
+        echo -e "${YELLOW}EDITOR environment variable not set. Using nano as default.${NC}" # Use inherited vars
         EDITOR="nano"
     elif command -v vi &> /dev/null; then
-        echo -e "${YELLOW}EDITOR environment variable not set and nano not found. Using vi as default.${NC}"
+        echo -e "${YELLOW}EDITOR environment variable not set and nano not found. Using vi as default.${NC}" # Use inherited vars
         EDITOR="vi"
         VI_FALLBACK=true
     else
-        echo -e "${RED}Error: EDITOR environment variable not set, and neither nano nor vi could be found.${NC}"
+        echo -e "${RED}Error: EDITOR environment variable not set, and neither nano nor vi could be found.${NC}" # Use inherited vars
         exit 1
     fi
 fi

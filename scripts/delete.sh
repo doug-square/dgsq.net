@@ -9,26 +9,26 @@
 
 set -e
 
-# Load configuration
-CONFIG_FILE="config.sh"
-if [ -f "$CONFIG_FILE" ]; then
-    source "$CONFIG_FILE"
-else
-    echo "Error: Configuration file '$CONFIG_FILE' not found"
-    exit 1
-fi
+# Load configuration (DEPRECATED - Handled centrally by bssg.sh sourcing config_loader.sh)
+# CONFIG_FILE="config.sh"
+# if [ -f "$CONFIG_FILE" ]; then
+#     source "$CONFIG_FILE"
+# else
+#     echo "Error: Configuration file '$CONFIG_FILE' not found"
+#     exit 1
+# fi
 
-# Load local configuration overrides if they exist
-LOCAL_CONFIG_FILE="config.sh.local"
-if [ -f "$LOCAL_CONFIG_FILE" ]; then
-    source "$LOCAL_CONFIG_FILE"
-fi
+# Load local configuration overrides if they exist (DEPRECATED - Handled centrally)
+# LOCAL_CONFIG_FILE="config.sh.local"
+# if [ -f "$LOCAL_CONFIG_FILE" ]; then
+#     source "$LOCAL_CONFIG_FILE"
+# fi
 
-# Terminal colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-NC='\033[0m' # No Color
+# Terminal colors (DEPRECATED - Handled centrally by config_loader.sh)
+# RED='\033[0;31m'
+# GREEN='\033[0;32m'
+# YELLOW='\033[0;33m'
+# NC='\033[0m' # No Color
 
 # Function to delete a post
 delete_post() {

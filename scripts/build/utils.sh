@@ -8,7 +8,30 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
 NC='\033[0m'
+
+# --- Printing Functions --- START ---
+print_error() {
+    # Print message in red to stderr
+    echo -e "${RED}[ERROR]${NC} $1" >&2
+}
+
+print_warning() {
+    # Print message in yellow to stderr
+    echo -e "${YELLOW}[WARNING]${NC} $1" >&2
+}
+
+print_success() {
+    # Print message in green to stdout
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_info() {
+    # Print message in blue to stdout
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+# --- Printing Functions --- END ---
 
 # Fix relative URLs to use SITE_URL
 fix_url() {
@@ -291,4 +314,9 @@ export -f lock_file
 export -f unlock_file
 export -f get_file_mtime
 export -f run_parallel
-export -f calculate_reading_time 
+export -f calculate_reading_time
+# Export the new print functions
+export -f print_error
+export -f print_warning
+export -f print_success
+export -f print_info 

@@ -4,7 +4,7 @@
 # Sets default variables, loads user config and locale files, and exports them.
 #
 
-# --- Default Configuration Variables ---
+# --- Default Configuration Variables --- START ---
 # Use :- syntax to only set defaults if the variable is unset or null.
 # This allows values set by CLI parsing (before this script is sourced) to persist.
 CONFIG_FILE="${CONFIG_FILE:-config.sh}"
@@ -36,6 +36,36 @@ ENABLE_ARCHIVES="${ENABLE_ARCHIVES:-true}"
 URL_SLUG_FORMAT="${URL_SLUG_FORMAT:-Year/Month/Day/slug}"
 PAGE_URL_FORMAT="${PAGE_URL_FORMAT:-slug}"
 
+# Define default colors here so utils.sh can use them if not overridden by config
+RED='${RED:-\\033[0;31m}'
+GREEN='${GREEN:-\\033[0;32m}'
+YELLOW='${YELLOW:-\\033[0;33m}'
+BLUE='${BLUE:-\\033[0;34m}' # Added Blue for print_info
+NC='${NC:-\\033[0m}' # No Color
+# --- Default Configuration Variables --- END ---
+
+
+# --- Source Utilities --- START ---
+# Source utility functions (like print_info, print_error) needed by this script.
+# Determine the directory of this script
+CONFIG_LOADER_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+UTILS_SCRIPT="${CONFIG_LOADER_DIR}/utils.sh"
+
+if [ -f "$UTILS_SCRIPT" ]; then
+    # shellcheck source=utils.sh
+    source "$UTILS_SCRIPT"
+    if ! declare -F print_success > /dev/null; then
+        echo "Error: Failed to source utils.sh correctly - 'print_success' function not found." >&2
+        exit 1
+    fi
+else
+    # Fallback to standard error echo if utils not found, but this is critical
+    echo "Error: Utilities script not found at '$UTILS_SCRIPT'. Required by config_loader.sh." >&2
+    exit 1
+fi
+# --- Source Utilities --- END ---
+
+
 # --- Configuration and Locale Sourcing Logic --- START ---
 # Load main configuration file (using variable potentially set by CLI)
 # If CONFIG_FILE wasn't exported by main.sh before sourcing this, it will use the default set above.
@@ -44,7 +74,7 @@ if [ -f "$CONFIG_FILE" ]; then
     source "$CONFIG_FILE"
     echo -e "${GREEN}Configuration loaded from $CONFIG_FILE${NC}"
 else
-    echo -e "${YELLOW}Configuration file '$CONFIG_FILE' not found, using defaults.${NC}"
+    print_warning "Configuration file '$CONFIG_FILE' not found, using defaults."
 fi
 
 # Check for local override config file (relative to the main config file)
@@ -52,7 +82,7 @@ LOCAL_CONFIG_OVERRIDE="${CONFIG_FILE}.local"
 if [ -f "$LOCAL_CONFIG_OVERRIDE" ]; then
     # shellcheck source=/dev/null disable=SC1090,SC1091
     source "$LOCAL_CONFIG_OVERRIDE"
-    echo -e "${GREEN}Local configuration loaded from ${LOCAL_CONFIG_OVERRIDE}${NC}"
+    print_success "Local configuration loaded from ${LOCAL_CONFIG_OVERRIDE}"
 fi
 
 # --- Handle Random Theme --- START ---
@@ -89,9 +119,9 @@ fi
 
 # ---- Start Locale Loading ----
 # Function to print error messages in red (specific to locale loading)
-print_error() {
-    echo -e "${RED}Error: $1${NC}" >&2
-}
+# print_error() {
+#     echo -e "${RED}Error: $1${NC}" >&2
+# }
 
 # Set the path for the locale file based on SITE_LANG
 LOCALE_FILE="${LOCALE_DIR}/${SITE_LANG}.sh"
@@ -99,12 +129,12 @@ DEFAULT_LOCALE_FILE="${LOCALE_DIR}/en.sh"
 
 # Check if the specific locale file exists
 if [ -f "$LOCALE_FILE" ]; then
-    echo "Loading locale: ${SITE_LANG} from ${LOCALE_FILE}"
+    print_info "Loading locale: ${SITE_LANG} from ${LOCALE_FILE}"
     # shellcheck source=/dev/null disable=SC1090
     . "$LOCALE_FILE"
 elif [ -f "$DEFAULT_LOCALE_FILE" ]; then
-    echo -e "${YELLOW}Warning: Locale file '${LOCALE_FILE}' not found. Defaulting to English.${NC}"
-    echo "Loading locale: en from ${DEFAULT_LOCALE_FILE}"
+    print_warning "Locale file '${LOCALE_FILE}' not found. Defaulting to English."
+    print_info "Loading locale: en from ${DEFAULT_LOCALE_FILE}"
     # shellcheck source=/dev/null disable=SC1090
     . "$DEFAULT_LOCALE_FILE"
 else
@@ -114,6 +144,33 @@ else
 fi
 # ---- End Locale Loading ----
 # --- Configuration and Locale Sourcing Logic --- END ---
+
+
+# --- Expand Tilde in Path Variables --- START ---
+# After all configs are sourced, expand ~ in relevant paths before exporting.
+# This ensures scripts use the resolved paths, even if config stores portable '~'.
+print_info "Expanding tilde (~) in configuration paths..."
+PATHS_TO_EXPAND=("SRC_DIR" "PAGES_DIR" "DRAFTS_DIR" "OUTPUT_DIR" "TEMPLATES_DIR" "THEMES_DIR" "STATIC_DIR")
+for var_name in "${PATHS_TO_EXPAND[@]}"; do
+    # Get the current value using indirect reference
+    current_value="${!var_name}"
+    expanded_value=""
+    
+    # Check if it starts with ~ or ~/ 
+    if [[ "$current_value" == "~" ]]; then
+        expanded_value="$HOME"
+    elif [[ "$current_value" == "~/"* ]]; then
+        # Replace ~/ with $HOME/
+        expanded_value="$HOME/${current_value#\~/}"
+    fi
+    
+    # If expansion occurred, update the variable in the current shell using printf -v
+    if [ -n "$expanded_value" ]; then
+        printf -v "$var_name" '%s' "$expanded_value"
+        # echo "Expanded $var_name to: ${!var_name}" # Debugging
+    fi
+done
+# --- Expand Tilde in Path Variables --- END ---
 
 
 # --- Export All Variables --- START ---
@@ -127,6 +184,7 @@ BSSG_CONFIG_VARS_ARRAY=(
     DATE_FORMAT TIMEZONE SHOW_TIMEZONE POSTS_PER_PAGE RSS_ITEM_LIMIT RSS_INCLUDE_FULL_CONTENT CLEAN_OUTPUT
     FORCE_REBUILD SITE_LANG LOCALE_DIR PAGES_DIR MARKDOWN_PROCESSOR
     MARKDOWN_PL_PATH ENABLE_ARCHIVES URL_SLUG_FORMAT PAGE_URL_FORMAT
+    DRAFTS_DIR REBUILD_AFTER_POST REBUILD_AFTER_EDIT
     # Add any other custom config variables here if needed
 )
 
@@ -135,7 +193,7 @@ BSSG_CONFIG_VARS="${BSSG_CONFIG_VARS_ARRAY[@]}"
 export BSSG_CONFIG_VARS
 
 # Export all config variables individually as well, for direct use by scripts
-# This might seem redundant, but ensures compatibility if scripts expect individual vars
+# The values exported here will be the potentially tilde-expanded ones.
 export CONFIG_FILE
 export SRC_DIR
 export OUTPUT_DIR
@@ -164,6 +222,9 @@ export MARKDOWN_PL_PATH
 export ENABLE_ARCHIVES
 export URL_SLUG_FORMAT
 export PAGE_URL_FORMAT
+export DRAFTS_DIR
+export REBUILD_AFTER_POST
+export REBUILD_AFTER_EDIT
 
 # Export ALL MSG_* locale variables explicitly
 # These are generally NOT included in BSSG_CONFIG_VARS as they don't affect the config hash directly,
