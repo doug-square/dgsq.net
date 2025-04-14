@@ -233,6 +233,26 @@ preload_templates() {
     # Replace language code placeholder using POSIX whitespace class
     HEADER_TEMPLATE=$(echo "$HEADER_TEMPLATE" | sed "s|{{[[:space:]]*site_lang_code[[:space:]]*}}|${SITE_LANG:-en}|g")
 
+    # --- Handle Custom CSS --- START ---
+    local custom_css_tag=""
+    if [ -n "$CUSTOM_CSS" ]; then
+        # Ensure CUSTOM_CSS starts with / if not empty
+        local custom_css_path="$CUSTOM_CSS"
+        if [[ "$custom_css_path" != /* ]]; then
+            custom_css_path="/$custom_css_path"
+        fi
+        # Construct the link tag
+        custom_css_tag="<link rel=\"stylesheet\" href=\"{{site_url}}${custom_css_path}\">"
+        # Replace {{site_url}} within the tag itself
+        custom_css_tag=$(echo "$custom_css_tag" | sed "s|{{site_url}}|${SITE_URL}|g")
+        print_info "Adding custom CSS link: $CUSTOM_CSS"
+    else
+        print_info "No CUSTOM_CSS specified, skipping link."
+    fi
+    # Replace the placeholder in the header template
+    HEADER_TEMPLATE=$(echo "$HEADER_TEMPLATE" | sed "s|{{[[:space:]]*custom_css_link[[:space:]]*}}|${custom_css_tag}|")
+    # --- Handle Custom CSS --- END ---
+
     # Write primary and secondary page lists to cache files only if changed
     local primary_pages_cache="$CACHE_DIR/primary_pages.tmp"
     local secondary_pages_cache="$CACHE_DIR/secondary_pages.tmp"

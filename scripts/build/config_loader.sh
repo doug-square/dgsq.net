@@ -36,6 +36,9 @@ ENABLE_ARCHIVES="${ENABLE_ARCHIVES:-true}"
 URL_SLUG_FORMAT="${URL_SLUG_FORMAT:-Year/Month/Day/slug}"
 PAGE_URL_FORMAT="${PAGE_URL_FORMAT:-slug}"
 
+# Customization Defaults
+CUSTOM_CSS="${CUSTOM_CSS:-}" # Default to empty string
+
 # Define default colors here so utils.sh can use them if not overridden by config
 RED='${RED:-\\033[0;31m}'
 GREEN='${GREEN:-\\033[0;32m}'
@@ -185,6 +188,7 @@ BSSG_CONFIG_VARS_ARRAY=(
     FORCE_REBUILD SITE_LANG LOCALE_DIR PAGES_DIR MARKDOWN_PROCESSOR
     MARKDOWN_PL_PATH ENABLE_ARCHIVES URL_SLUG_FORMAT PAGE_URL_FORMAT
     DRAFTS_DIR REBUILD_AFTER_POST REBUILD_AFTER_EDIT
+    CUSTOM_CSS
     # Add any other custom config variables here if needed
 )
 
@@ -225,6 +229,7 @@ export PAGE_URL_FORMAT
 export DRAFTS_DIR
 export REBUILD_AFTER_POST
 export REBUILD_AFTER_EDIT
+export CUSTOM_CSS
 
 # Export ALL MSG_* locale variables explicitly
 # These are generally NOT included in BSSG_CONFIG_VARS as they don't affect the config hash directly,

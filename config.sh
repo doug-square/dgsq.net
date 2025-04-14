@@ -27,6 +27,9 @@ CLEAN_OUTPUT=false
 REBUILD_AFTER_POST=true # Build site automatically after creating a new post (scripts/post.sh)
 REBUILD_AFTER_EDIT=true # Build site automatically after editing a post (scripts/edit.sh)
 
+# Customization
+CUSTOM_CSS="" # Optional: Path to custom CSS file relative to output root (e.g., "/css/custom.css"). File should be placed in STATIC_DIR.
+
 # Site information
 SITE_TITLE="My new BSSG site"
 SITE_DESCRIPTION="A complete SSG - written in bash"
