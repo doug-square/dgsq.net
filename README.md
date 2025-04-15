@@ -255,9 +255,20 @@ cd BSSG
 Usage: ./bssg.sh command [options]
 
 Commands:
-  post [-html] [draft_file]    Create a new post (in $SRC_DIR or $DRAFTS_DIR)
-                               or continue editing a draft (in $DRAFTS_DIR)
-                               Use -html to edit in HTML instead of Markdown
+  post [-html] [draft_file]    # Interactive: Create/edit post/draft, prompt for title, open editor.
+                               # Rebuilds site afterwards if REBUILD_AFTER_POST=true in config.
+                               # Use -html for HTML format.
+  post -t <title> [-T <tags>] [-s <slug>] [--html] [-d] {-c <content> | -f <file> | --stdin} [--build]
+                               # Command-line: Create post non-interactively.
+                               #   -t: Title (required)
+                               #   -T: Tags (comma-sep)
+                               #   -s: Slug (optional)
+                               #   --html: HTML format (default: MD)
+                               #   -d: Save as draft
+                               #   -c: Content string
+                               #   -f: Content file
+                               #   --stdin: Content from stdin
+                               #   --build: Force rebuild (overrides REBUILD_AFTER_POST=false)
   page [-html] [-s] [draft_file] Create a new page (in $PAGES_DIR or $DRAFTS_DIR/pages)
                                or continue editing a draft (in $DRAFTS_DIR/pages)
                                Use -html to edit in HTML instead of Markdown
@@ -291,19 +302,29 @@ Commands:
 
 ### Creating Posts and Pages
 
-To create a new post:
+To create a new post interactively:
 
 ```bash
 ./bssg.sh post
 ```
 
-To create a new page:
+To create a new page interactively:
 
 ```bash
 ./bssg.sh page
 ```
 
-You'll be prompted for a title, and an editor will open for you to write your content. When you save and exit, the site will be automatically built.
+You'll be prompted for a title, and `$EDITOR` will open for you to write your content. By default, the site rebuilds automatically after saving an interactive post if `REBUILD_AFTER_POST` is set to `true` in your configuration (`config.sh` or `config.sh.local`).
+
+To create a post non-interactively via the command line (see command list above for all options):
+
+```bash
+# Example: Create markdown post from file, force build
+./bssg.sh post -t "My CLI Post" -f content.md --build
+
+# Example: Create HTML post from stdin, don't force build (relies on REBUILD_AFTER_POST)
+echo "<p>Hello</p>" | ./bssg.sh post -t "HTML Test" --html --stdin
+```
 
 To create a secondary page (appears under the "Pages" menu):
 
