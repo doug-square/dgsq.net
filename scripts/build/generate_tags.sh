@@ -288,14 +288,13 @@ EOF
                 # We lack the original 'file' path and 'tags' string here. We can approximate.
 
                 local tag_post_data_tmp=$(mktemp)
-                awk -F'|' -v tag="$tag" -v url="$tag_url" '$1 == tag && $2 == url {print $0}' "$tags_index_file" | 
-                sort -t'|' -k4,4r -k5,5r | 
-                head -n "$rss_item_limit" | 
+                awk -F'|' -v tag="$tag" -v url="$tag_url" '$1 == tag && $2 == url {print $0}' "$tags_index_file" | \
+                sort -t'|' -k4,4r -k5,5r | \
+                head -n "$rss_item_limit" | \
                 awk -F'|' -v tag_val="$tag" 'BEGIN {OFS="|"} { 
-                    # Reconstruct needed fields. Use filename as proxy for 'file'. Tags will just be the current tag.
-                    # Use the OriginalFilePath (last field, $11) for the first field (file) expected by _generate_rss_feed.
-                    # file | filename | title | date | lastmod | tags | slug | image | image_caption | description
-                    print $11 "|" $6 "|" $3 "|" $4 "|" $5 "|" tag_val "|" $7 "|" $8 "|" $9 "|" $10
+                    # Reconstruct needed fields. Use filename ($6) as placeholder for first field.
+                    # file (placeholder) | filename | title | date | lastmod | tags | slug | image | image_caption | description
+                    print $6 "|" $6 "|" $3 "|" $4 "|" $5 "|" tag_val "|" $7 "|" $8 "|" $9 "|" $10
                 }' > "$tag_post_data_tmp"
 
                 local tag_post_data=$(cat "$tag_post_data_tmp")
