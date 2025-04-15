@@ -439,9 +439,15 @@ Options:
   -f, --force-rebuild     Ignore cache and rebuild all files
   --config FILE           Use a specific configuration file (e.g., my_config.sh)
                           instead of the default config.sh
-  --theme NAME            Override the theme specified in the config file for this build
-  --site-url URL          Override the SITE_URL specified in the config file for this build
+  --src DIR               Override the SRC_DIR specified in the config file
+  --pages DIR             Override the PAGES_DIR specified in the config file
+  --drafts DIR            Override the DRAFTS_DIR specified in the config file
   --output DIR            Build the site to a specific output directory
+  --templates DIR         Override the TEMPLATES_DIR specified in the config file
+  --themes-dir DIR        Override the THEMES_DIR specified in the config file
+  --theme NAME            Override the theme specified in the config file for this build
+  --static DIR            Override the STATIC_DIR specified in the config file
+  --site-url URL          Override the SITE_URL specified in the config file for this build
 ```
 
 ### Internationalization (i18n)
@@ -543,7 +549,7 @@ To customize the appearance of your site, you can edit:
 - CSS styles are generated in `output/css/style.css` 
 - `config.sh.local` - Configuration file for site-wide settings
 
-- **`CUSTOM_CSS`:** (Optional) Specify a path (relative to the output directory root) to a custom CSS file. If set, a `<link>` tag will be added to the `<head>` of every generated page, after the theme's default `style.css`. The CSS file itself should be placed in your `$STATIC_DIR` (default: `static/`) to be copied to the output directory. Example: `CUSTOM_CSS="/css/my-styles.css"` (assuming `static/css/my-styles.css` exists).
+-   **`CUSTOM_CSS`:** (Optional) Specify a path (relative to the output directory root) to a custom CSS file. If set, a `<link>` tag will be added to the `<head>` of every generated page, after the theme's default `style.css`. The CSS file itself should be placed in your `$STATIC_DIR` (default: `static/`) to be copied to the output directory. Example: `CUSTOM_CSS="/css/my-styles.css"` (assuming `static/css/my-styles.css` exists).
 
 
 
@@ -582,6 +588,7 @@ ENABLE_ARCHIVES=true  # Enable or disable archives by year/month
 URL_SLUG_FORMAT="Year/Month/Day/slug"  # Format for post URLs
 RSS_ITEM_LIMIT=15 # Number of items to include in the RSS feed.
 RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". If set to "true", the full post content will be included in the RSS feed description instead of the excerpt. Useful for readers that consume entire posts via RSS.
+ENABLE_TAG_RSS=true # Options: "true", "false". If set to "true" (default), an additional RSS feed will be generated for each tag at `output/tags/<tag-slug>/rss.xml`.
 ```
 
 #### Date Format Examples
@@ -828,6 +835,7 @@ ENABLE_ARCHIVES=true  # Enable or disable archives by year/month
 URL_SLUG_FORMAT="Year/Month/Day/slug"  # Format for post URLs
 RSS_ITEM_LIMIT=15 # Number of items to include in the RSS feed.
 RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". If set to "true", the full post content will be included in the RSS feed description instead of the excerpt. Useful for readers that consume entire posts via RSS.
+ENABLE_TAG_RSS=true # Options: "true", "false". If set to "true" (default), an additional RSS feed will be generated for each tag at `output/tags/<tag-slug>/rss.xml`.
 ```
 
 The `URL_SLUG_FORMAT` setting determines how your post URLs are structured. By default, it uses `Year/Month/Day/slug` which creates URLs like `http://yoursite.com/2023/01/15/my-post-title/`. 

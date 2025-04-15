@@ -71,12 +71,24 @@ parse_args() {
                 SRC_DIR="$2"
                 shift 2
                 ;;
+            --pages)
+                PAGES_DIR="$2"
+                shift 2
+                ;;
+            --drafts)
+                DRAFTS_DIR="$2"
+                shift 2
+                ;;
             --output)
                 OUTPUT_DIR="$2"
                 shift 2
                 ;;
             --templates)
                 TEMPLATES_DIR="$2"
+                shift 2
+                ;;
+            --themes-dir)
+                THEMES_DIR="$2"
                 shift 2
                 ;;
             --theme)
@@ -157,8 +169,11 @@ show_help() {
     echo "Options:"
     echo "  --config FILE           Configuration file (default: config.sh)"
     echo "  --src DIR               Source directory containing markdown files (default: src)"
+    echo "  --pages DIR             Pages directory containing markdown/html files (default: pages)"
+    echo "  --drafts DIR            Drafts directory (default: drafts)"
     echo "  --output DIR            Output directory for the generated site (default: output)"
     echo "  --templates DIR         Templates directory (default: templates)"
+    echo "  --themes-dir DIR        Themes parent directory (default: themes)"
     echo "  --theme NAME            Theme to use (default: default)"
     echo "  --static DIR            Static directory (default: static)"
     echo "  --clean-output          Clean output directory before building (default: false)"

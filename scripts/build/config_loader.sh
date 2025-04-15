@@ -35,6 +35,7 @@ MARKDOWN_PL_PATH="${MARKDOWN_PL_PATH:-}"
 ENABLE_ARCHIVES="${ENABLE_ARCHIVES:-true}"
 URL_SLUG_FORMAT="${URL_SLUG_FORMAT:-Year/Month/Day/slug}"
 PAGE_URL_FORMAT="${PAGE_URL_FORMAT:-slug}"
+ENABLE_TAG_RSS="${ENABLE_TAG_RSS:-false}" # Generate RSS feed for each tag
 
 # Customization Defaults
 CUSTOM_CSS="${CUSTOM_CSS:-}" # Default to empty string
@@ -189,6 +190,7 @@ BSSG_CONFIG_VARS_ARRAY=(
     MARKDOWN_PL_PATH ENABLE_ARCHIVES URL_SLUG_FORMAT PAGE_URL_FORMAT
     DRAFTS_DIR REBUILD_AFTER_POST REBUILD_AFTER_EDIT
     CUSTOM_CSS
+    ENABLE_TAG_RSS
     # Add any other custom config variables here if needed
 )
 
@@ -230,6 +232,7 @@ export DRAFTS_DIR
 export REBUILD_AFTER_POST
 export REBUILD_AFTER_EDIT
 export CUSTOM_CSS
+export ENABLE_TAG_RSS
 
 # Export ALL MSG_* locale variables explicitly
 # These are generally NOT included in BSSG_CONFIG_VARS as they don't affect the config hash directly,

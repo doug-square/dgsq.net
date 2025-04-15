@@ -76,6 +76,7 @@ echo "Re-exporting variables potentially set by CLI..."
 export SRC_DIR OUTPUT_DIR TEMPLATES_DIR THEMES_DIR STATIC_DIR THEME
 export SITE_TITLE SITE_DESCRIPTION SITE_URL AUTHOR_NAME AUTHOR_EMAIL
 export POSTS_PER_PAGE CLEAN_OUTPUT FORCE_REBUILD CONFIG_FILE
+export PAGES_DIR DRAFTS_DIR
 # Add any other variable that parse_args can change
 
 # Source Utilities (needs sourced colors) AFTER config/cli

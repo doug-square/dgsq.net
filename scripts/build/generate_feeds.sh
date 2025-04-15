@@ -337,74 +337,56 @@ EOF
     echo -e "${GREEN}Sitemap generated!${NC}"
 }
 
-# Generate RSS feed
-generate_rss() {
-    echo -e "${YELLOW}Generating RSS feed...${NC}"
-
-    # Ensure needed functions/vars are available (especially if run standalone/debug)
-    # convert_markdown_to_html should be sourced from content.sh
-    # MD5_CMD should be exported by deps.sh
-    # CACHE_DIR, MARKDOWN_PROCESSOR, MARKDOWN_PL_PATH etc should be exported by config_loader.sh
-    if ! command -v convert_markdown_to_html &> /dev/null; then
-        echo -e "${RED}Error: convert_markdown_to_html function not found. Make sure content.sh was sourced.${NC}" >&2
-        return 1
-    fi
-    if [ -z "${MD5_CMD:-}" ]; then
-        echo -e "${RED}Error: MD5_CMD is not set. Make sure deps.sh was sourced and exported it.${NC}" >&2
-        return 1
-    fi
-    if [ -z "${CACHE_DIR:-}" ]; then
-        echo -e "${RED}Error: CACHE_DIR is not set.${NC}" >&2
-        return 1
-    fi
-
-    local rss="$OUTPUT_DIR/rss.xml"
-    local file_index="$CACHE_DIR/file_index.txt"
-
-    # Check if RSS feed needs to be rebuilt
-    if ! file_needs_rebuild "$file_index" "$rss"; then
-        echo -e "${GREEN}RSS feed is up to date, skipping...${NC}"
-        return 0
-    fi
+# Core RSS generation function
+# Usage: _generate_rss_feed <output_file> <feed_title> <feed_description> <feed_link_rel> <feed_atom_link_rel> <post_data_input>
+# <post_data_input> should be a string containing the filtered, sorted, and limited post data,
+# with each line formatted as: file|filename|title|date|lastmod|tags|slug|image|image_caption|description
+# Example Call:
+#   sorted_posts=$(sort -t'|' -k4,4r "$file_index" | head -n "$rss_item_limit")
+#   _generate_rss_feed "$rss" "$feed_title" "$feed_desc" "/" "/rss.xml" "$sorted_posts"
+_generate_rss_feed() {
+    local output_file="$1"
+    local feed_title="$2"
+    local feed_description="$3"
+    local feed_link_rel="$4" # Relative link for the channel (e.g., "/" or "/tags/tag-slug/")
+    local feed_atom_link_rel="$5" # Relative link for the atom:link (e.g., "/rss.xml" or "/tags/tag-slug/rss.xml")
+    local post_data_input="$6" # String containing post data lines
 
     local rss_date_fmt="%a, %d %b %Y %H:%M:%S %z"
-    local now=$(format_date "now" "$rss_date_fmt")
 
     # Get build timestamp in ISO 8601 for atom:updated fallback
     local build_timestamp_iso=$(format_date "now" "%Y-%m-%dT%H:%M:%S%z")
     # Convert RFC-2822 timezone (+0000) to ISO 8601 (+00:00) if needed
-    # Bash doesn't support %:z, use date command again if necessary
     if [[ "$build_timestamp_iso" =~ ([+-][0-9]{2})([0-9]{2})$ ]]; then
         build_timestamp_iso="${build_timestamp_iso::${#build_timestamp_iso}-2}:${BASH_REMATCH[2]}"
     fi
 
-    # Create the RSS feed
-    cat > "$rss" << EOF
+    # Ensure output directory exists
+    mkdir -p "$(dirname "$output_file")"
+
+    # Create the RSS feed header
+    cat > "$output_file" << EOF
 <?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 <channel>
-    <title>${MSG_RSS_FEED_TITLE:-${SITE_TITLE} - RSS Feed}</title>
-    <link>${SITE_URL}</link>
-    <description>${MSG_RSS_FEED_DESCRIPTION:-${SITE_DESCRIPTION}}</description>
+    <title>${feed_title}</title>
+    <link>$(fix_url "$feed_link_rel")</link>
+    <description>${feed_description}</description>
     <language>${SITE_LANG:-en}</language>
-    <lastBuildDate>$(format_date "now" "%a, %d %b %Y %H:%M:%S %z")</lastBuildDate>
-    <atom:link href="$(fix_url "/rss.xml")" rel="self" type="application/rss+xml" />
+    <lastBuildDate>$(format_date "now" "$rss_date_fmt")</lastBuildDate>
+    <atom:link href="$(fix_url "$feed_atom_link_rel")" rel="self" type="application/rss+xml" />
 EOF
 
-    # Use the dedicated RSS item limit variable, default to 15
-    local rss_item_limit=${RSS_ITEM_LIMIT:-15}
-
-    # Read file_index.txt, sort by original date (field 4), take top N
-    sort -t'|' -k4,4r "$file_index" | head -n "$rss_item_limit" | while IFS='|' read -r file filename title date lastmod tags slug image image_caption description; do
-        # Skip if essential fields are missing
+    # Process the provided post data
+    echo "$post_data_input" | while IFS='|' read -r file filename title date lastmod tags slug image image_caption description; do
+        # Skip if essential fields are missing (robustness)
         if [ -z "$file" ] || [ -z "$title" ] || [ -z "$date" ] || [ -z "$lastmod" ] || [ -z "$slug" ]; then
-            echo "Warning: Skipping RSS item due to missing fields for file: $file" >&2
+            echo "Warning: Skipping RSS item due to missing fields in input line: file=$file, title=$title, date=$date, lastmod=$lastmod, slug=$slug" >&2
             continue
         fi
 
         # Format dates for RSS
         local pub_date=$(format_date "$date" "$rss_date_fmt")
-        # Updated date for <atom:updated> needs ISO 8601 format
         local updated_date_iso=$(format_date "$lastmod" "%Y-%m-%dT%H:%M:%S%z")
         # Convert timezone format again if needed
         if [[ "$updated_date_iso" =~ ([+-][0-9]{2})([0-9]{2})$ ]]; then
@@ -442,10 +424,7 @@ EOF
             local converted_html=""
 
             if [ -f "$raw_content_cache_file" ]; then
-                # Read the raw cached content
                 raw_content=$(cat "$raw_content_cache_file")
-                
-                # Convert raw markdown to HTML
                 converted_html=$(convert_markdown_to_html "$raw_content")
                 local convert_status=$?
 
@@ -453,45 +432,34 @@ EOF
                     item_description_content="$converted_html"
                 else
                     echo "Warning: Failed to convert markdown to HTML for RSS item ($file, status: $convert_status). Falling back to excerpt." >&2
-                    item_description_content="$description" # Fallback to excerpt on conversion error
+                    item_description_content="$description" # Fallback to excerpt
                 fi
             else
-                # Fallback to excerpt if raw content cache not found
                 echo "Warning: Cached raw markdown content file '$raw_content_cache_file' not found for RSS item ($file). Falling back to excerpt." >&2
-                item_description_content="$description"
+                item_description_content="$description" # Fallback to excerpt
             fi
         else
-            # Use excerpt (original logic)
-            # Add featured image if available
+            # Use excerpt + image
             if [ -n "$image" ]; then
-                # Assume image path is relative to site root or absolute
                 local img_src
                 [[ "$image" =~ ^https?:// ]] && img_src="$image" || img_src=$(fix_url "$image")
-                # Basic HTML escaping for alt/title (replace quotes, &, <, >)
-                local img_alt=$(echo "$title" | sed -e 's/&/&amp;/g' -e 's/</&lt;/g' -e 's/>/&gt;/g' -e 's/"/&quot;/g' -e "s/'/&apos;/g")
-                local img_title=$(echo "$image_caption" | sed -e 's/&/&amp;/g' -e 's/</&lt;/g' -e 's/>/&gt;/g' -e 's/"/&quot;/g' -e "s/'/&apos;/g")
-                 # Default alt to title if caption is empty
+                local img_alt=$(echo "$title" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g' -e "s/'/\&apos;/g")
+                local img_title=$(echo "$image_caption" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g' -e "s/'/\&apos;/g")
                  [ -z "$img_title" ] && img_title="$img_alt"
-
-                # Use standard quotes for HTML attributes within CDATA
                 item_description_content+="<img src=\"${img_src}\" alt=\"${img_alt}\" title=\"${img_title}\">"
                  if [ -n "$image_caption" ]; then
-                      # Use basic escaping for content within HTML tags inside CDATA
-                      local escaped_caption=$(echo "$image_caption" | sed -e 's/&/&amp;/g' -e 's/</&lt;/g' -e 's/>/&gt;/g')
+                      local escaped_caption=$(echo "$image_caption" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')
                       item_description_content+="<p><em>${escaped_caption}</em></p>"
                  fi
             fi
-            # Add description/excerpt (already extracted, may contain HTML)
-            # Needs basic XML entity escaping for CDATA safety (although CDATA handles most) - primarily & < > within the text itself.
-            # No need to escape quotes or apostrophes here for CDATA
-            item_description_content+="$description" # Use original description directly in CDATA
+            item_description_content+="$description" # Append excerpt
         fi
 
         # Wrap final description in CDATA
         local final_description="<![CDATA[${item_description_content}]]>"
         # --- End RSS Item Description Enhancement ---
 
-        cat >> "$rss" << EOF
+        cat >> "$output_file" << EOF
     <item>
         <title>${title}</title>
         <link>${full_url}</link>
@@ -503,14 +471,95 @@ EOF
 EOF
     done
 
-    # Close channel and rss tags
-    cat >> "$rss" << EOF
+    # Close the RSS feed
+    cat >> "$output_file" << EOF
 </channel>
 </rss>
 EOF
 
-    echo -e "${GREEN}RSS feed generated!${NC}"
+    echo -e "${GREEN}RSS feed generated at $output_file${NC}"
+}
+export -f _generate_rss_feed # Export for potential parallel use or sourcing
+
+# Generate RSS feed (Main site feed)
+generate_rss() {
+    echo -e "${YELLOW}Generating main RSS feed...${NC}"
+
+    # Ensure needed functions/vars are available
+    if ! command -v convert_markdown_to_html &> /dev/null; then
+        echo -e "${RED}Error: convert_markdown_to_html function not found.${NC}" >&2; return 1; fi
+    if [ -z "${MD5_CMD:-}" ]; then
+        echo -e "${RED}Error: MD5_CMD is not set.${NC}" >&2; return 1; fi
+    if [ -z "${CACHE_DIR:-}" ]; then
+        echo -e "${RED}Error: CACHE_DIR is not set.${NC}" >&2; return 1; fi
+
+    local rss="$OUTPUT_DIR/rss.xml"
+    local file_index="$CACHE_DIR/file_index.txt"
+    local config_hash_file="$CONFIG_HASH_FILE"
+    local script_path="$BSSG_SCRIPT_DIR/build/generate_feeds.sh"
+
+    # Determine active locale file
+    local active_locale_file=""
+    if [ -f "${LOCALE_DIR:-locales}/${SITE_LANG:-en}.sh" ]; then
+        active_locale_file="${LOCALE_DIR:-locales}/${SITE_LANG:-en}.sh"
+    elif [ -f "${LOCALE_DIR:-locales}/en.sh" ]; then
+        active_locale_file="${LOCALE_DIR:-locales}/en.sh"
+    fi
+
+    # Check if RSS feed needs to be rebuilt (using specific dependencies)
+    if [ -f "$rss" ]; then
+        local rss_mtime=$(get_file_mtime "$rss")
+        local rebuild_needed=false
+
+        # Dependencies: file index, config hash, this script, locale file
+        local dependencies=("$file_index" "$config_hash_file" "$script_path")
+         if [ -n "$active_locale_file" ]; then
+             dependencies+=("$active_locale_file")
+        fi
+        
+        # Check FORCE_REBUILD flag
+        if [ "${FORCE_REBUILD:-false}" = true ]; then
+            rebuild_needed=true
+        else
+            for dep in "${dependencies[@]}"; do
+                if [ -e "$dep" ] && [[ $(get_file_mtime "$dep") -gt $rss_mtime ]]; then
+                    # echo "DEBUG: RSS rebuild triggered by newer dependency: $dep" >&2 # Optional debug
+                    rebuild_needed=true
+                    break
+                fi
+            done
+        fi
+        
+        # If no rebuild needed, skip
+        if [ "$rebuild_needed" = false ]; then
+            echo -e "${GREEN}Main RSS feed is up to date (based on specific dependencies), skipping...${NC}"
+            return 0
+        fi
+    fi
+
+    if [ ! -f "$file_index" ]; then
+        echo -e "${RED}Error: File index '$file_index' not found. Cannot generate RSS feed.${NC}"
+        return 1
+    fi
+
+    # Prepare data for the reusable function
+    local feed_title="${MSG_RSS_FEED_TITLE:-${SITE_TITLE} - RSS Feed}"
+    local feed_desc="${MSG_RSS_FEED_DESCRIPTION:-${SITE_DESCRIPTION}}"
+    local feed_link_rel="/"
+    local feed_atom_link_rel="/rss.xml"
+    local rss_item_limit=${RSS_ITEM_LIMIT:-15}
+
+    # Read file_index.txt, sort by original date (field 4), take top N
+    # Use lastmod (field 5) as secondary sort key if dates are identical (optional, but good practice)
+    local sorted_posts
+    sorted_posts=$(sort -t'|' -k4,4r -k5,5r "$file_index" | head -n "$rss_item_limit")
+
+    # Call the reusable function
+    _generate_rss_feed "$rss" "$feed_title" "$feed_desc" "$feed_link_rel" "$feed_atom_link_rel" "$sorted_posts"
+
+    # The reusable function already prints the success message
+    # echo -e "${GREEN}RSS feed generated!${NC}" # Redundant now
 }
 
-# Make functions available for sourcing
+# Export public functions
 export -f generate_sitemap generate_rss 
