@@ -252,7 +252,7 @@ build_tags_index() {
                 tag_slug=$(generate_slug "$tag")
 
                 # Output: TagName|TagSlug|PostTitle|PostDate|PostLastMod|PostFilename|PostSlug|PostImage|PostImageCaption|PostDescription
-                echo "$tag|$tag_slug|$title|$date|$lastmod|$filename.html|$slug|$image|$image_caption|$description" >> "$tags_index_file"
+                echo "$tag|$tag_slug|$title|$date|$lastmod|$filename|$slug|$image|$image_caption|$description" >> "$tags_index_file"
             done
         fi
     done < "$file_index"

@@ -80,10 +80,10 @@ convert_markdown() {
         content=$(cat "$input_file")
     fi
     
-    # Cache the raw markdown content (after frontmatter removal)
-    # Use printf to handle potential leading dashes
-    mkdir -p "$(dirname "$content_cache_file")"
-    printf '%s' "$content" > "$content_cache_file"
+    # Cache the raw markdown content for potential use in RSS full content
+    if [ -n "$CACHE_DIR" ] && [ -d "${CACHE_DIR}/content" ]; then
+        cp "$input_file" "${CACHE_DIR}/content/$(basename "$input_file")"
+    fi
     
     unlock_file "$content_cache_file"
 

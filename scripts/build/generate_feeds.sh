@@ -435,6 +435,7 @@ EOF
                     item_description_content="$description" # Fallback to excerpt
                 fi
             else
+                # Revert DEBUG warning back to original
                 echo "Warning: Cached raw markdown content file '$raw_content_cache_file' not found for RSS item ($file). Falling back to excerpt." >&2
                 item_description_content="$description" # Fallback to excerpt
             fi
