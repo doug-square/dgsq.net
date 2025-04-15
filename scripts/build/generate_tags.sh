@@ -282,7 +282,7 @@ EOF
 
                 # Get post data for this tag from the tags index
                 # Sort by post date (field 4), then lastmod (field 5) reverse, limit
-                # IMPORTANT: tags_index.txt has format: Tag|TagSlug|PostTitle|PostDate|PostLastMod|PostFilename|PostSlug|Image|ImageCaption|PostDescription
+                # IMPORTANT: tags_index.txt has format: Tag|TagSlug|PostTitle|PostDate|PostLastMod|PostFilename|PostSlug|Image|ImageCaption|PostDescription|OriginalFilePath
                 # We need to map this to the format expected by _generate_rss_feed:
                 # file|filename|title|date|lastmod|tags|slug|image|image_caption|description
                 # We lack the original 'file' path and 'tags' string here. We can approximate.
@@ -293,8 +293,9 @@ EOF
                 head -n "$rss_item_limit" | 
                 awk -F'|' -v tag_val="$tag" 'BEGIN {OFS="|"} { 
                     # Reconstruct needed fields. Use filename as proxy for 'file'. Tags will just be the current tag.
+                    # Use the OriginalFilePath (last field, $11) for the first field (file) expected by _generate_rss_feed.
                     # file | filename | title | date | lastmod | tags | slug | image | image_caption | description
-                    print $6 "|" $6 "|" $3 "|" $4 "|" $5 "|" tag_val "|" $7 "|" $8 "|" $9 "|" $10
+                    print $11 "|" $6 "|" $3 "|" $4 "|" $5 "|" tag_val "|" $7 "|" $8 "|" $9 "|" $10
                 }' > "$tag_post_data_tmp"
 
                 local tag_post_data=$(cat "$tag_post_data_tmp")
