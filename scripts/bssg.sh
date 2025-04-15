@@ -32,6 +32,7 @@ set -e
 
 # Define path to config loader relative to this script
 BSSG_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+export BSSG_SCRIPT_DIR # Export the variable so sub-scripts inherit it
 CONFIG_LOADER_SCRIPT="${BSSG_SCRIPT_DIR}/scripts/build/config_loader.sh"
 
 if [ -f "$CONFIG_LOADER_SCRIPT" ]; then
