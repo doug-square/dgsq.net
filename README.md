@@ -11,6 +11,7 @@
 - [Usage](#usage)
 - [Markdown Post Format](#markdown-post-format)
 - [Customization](#customization)
+- [Deployment](#deployment)
 - [Themes](#themes)
 - [Theme Previews](#theme-previews)
 - [Admin Interface](#admin-interface)
@@ -469,6 +470,8 @@ Options:
   --theme NAME            Override the theme specified in the config file for this build
   --static DIR            Override the STATIC_DIR specified in the config file
   --site-url URL          Override the SITE_URL specified in the config file for this build
+  --deploy                Force deployment after successful build (overrides config)
+  --no-deploy             Prevent deployment after build (overrides config)
 ```
 
 ### Internationalization (i18n)
@@ -610,6 +613,10 @@ URL_SLUG_FORMAT="Year/Month/Day/slug"  # Format for post URLs
 RSS_ITEM_LIMIT=15 # Number of items to include in the RSS feed.
 RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". If set to "true", the full post content will be included in the RSS feed description instead of the excerpt. Useful for readers that consume entire posts via RSS.
 ENABLE_TAG_RSS=true # Options: "true", "false". If set to "true" (default), an additional RSS feed will be generated for each tag at `output/tags/<tag-slug>/rss.xml`.
+
+# Deployment configuration
+DEPLOY_AFTER_BUILD="false" # Options: "true", "false". Automatically deploy after a successful build.
+DEPLOY_SCRIPT=""           # Path to the deployment script to execute if DEPLOY_AFTER_BUILD is true.
 ```
 
 #### Date Format Examples
@@ -657,6 +664,68 @@ Example usage:
    image: /images/photo.jpg
    ---
    ```
+
+### Deployment
+
+BSSG allows you to automatically execute a custom deployment script after a successful build process. This is useful for uploading your site to a server, updating a Git repository, or performing any other post-build actions.
+
+**Configuration:**
+
+Two configuration variables in `config.sh.local` control this feature:
+
+-   `DEPLOY_AFTER_BUILD`: Set this to `"true"` to enable automatic deployment after a successful build. Defaults to `"false"`.
+-   `DEPLOY_SCRIPT`: Specify the path to your deployment script. This can be an absolute path or a path relative to the project root (where `bssg.sh` resides).
+
+Example `config.sh.local`:
+
+```bash
+# Automatically deploy after build
+DEPLOY_AFTER_BUILD="true"
+# Path to the deployment script (relative to project root)
+DEPLOY_SCRIPT="scripts/deploy.sh"
+```
+
+**Command-Line Overrides:**
+
+You can override the `DEPLOY_AFTER_BUILD` setting for a specific build using command-line flags:
+
+-   `./bssg.sh build --deploy`: Forces the deployment script to run, regardless of the `DEPLOY_AFTER_BUILD` setting.
+-   `./bssg.sh build --no-deploy`: Prevents the deployment script from running, regardless of the `DEPLOY_AFTER_BUILD` setting.
+
+**Deployment Script:**
+
+-   Your deployment script (e.g., `scripts/deploy.sh`) must be executable (`chmod +x scripts/deploy.sh`).
+-   BSSG will execute the script from the project root directory.
+-   The script receives two arguments:
+    1.  The path to the generated output directory (`$OUTPUT_DIR`).
+    2.  The site URL (`$SITE_URL`).
+-   The script should exit with a status code of `0` on success. A non-zero exit code will be reported as an error in the build output, but will not necessarily stop the build process itself (unless you modify `scripts/build/main.sh` to do so).
+
+Example `scripts/deploy.sh` using `rsync`:
+
+```bash
+#!/usr/bin/env bash
+
+OUTPUT_DIR="$1"
+SITE_URL="$2"
+REMOTE_USER="your_user"
+REMOTE_HOST="your_server.com"
+REMOTE_PATH="/path/to/your/webroot/"
+
+echo "Deploying site from '$OUTPUT_DIR' to $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH"
+echo "Site URL: $SITE_URL"
+
+# Example rsync command (ensure ssh keys are set up for passwordless login)
+rsync -avz --delete "$OUTPUT_DIR/" "$REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH"
+
+if [ $? -eq 0 ]; then
+  echo "Deployment successful."
+  exit 0
+else
+  echo "Deployment failed!"
+  exit 1
+fi
+```
 
 ## Themes
 

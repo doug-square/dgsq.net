@@ -57,6 +57,10 @@ MARKDOWN_PROCESSOR="commonmark" # Options: "pandoc", "commonmark", or "markdown.
 # Language Configuration
 SITE_LANG="en"  # Default language code (e.g., en, es, fr). See locales/ directory.
 
+# Deployment configuration
+DEPLOY_AFTER_BUILD="false" # Options: "true", "false". Automatically deploy after a successful build.
+DEPLOY_SCRIPT=""           # Path to the deployment script to execute if DEPLOY_AFTER_BUILD is true.
+
 # Terminal colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'

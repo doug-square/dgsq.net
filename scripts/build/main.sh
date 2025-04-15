@@ -272,6 +272,56 @@ fix_output_permissions || echo -e "${YELLOW}Fixing output permissions failed, co
 echo "Completed post-processing."
 # --- Post Processing --- END ---
 
+# --- Deployment --- START ---
+deploy_now="false"
+if [[ "${CMD_DEPLOY_OVERRIDE:-unset}" == "true" ]]; then # Use default value for safety
+    deploy_now="true"
+    echo -e "${YELLOW}Deployment forced via command line (--deploy).${NC}"
+elif [[ "${CMD_DEPLOY_OVERRIDE:-unset}" == "false" ]]; then
+    deploy_now="false"
+    echo -e "${YELLOW}Deployment skipped via command line (--no-deploy).${NC}"
+elif [[ "${DEPLOY_AFTER_BUILD:-false}" == "true" ]]; then
+    deploy_now="true"
+    echo "Deployment enabled via configuration (DEPLOY_AFTER_BUILD=true)."
+else
+    echo "Deployment not configured or explicitly disabled."
+fi
+
+if [[ "$deploy_now" == "true" ]]; then
+    if [[ -n "${DEPLOY_SCRIPT:-}" ]]; then
+        # Ensure the deploy script path is treated correctly (absolute or relative to project root)
+        effective_deploy_script="$DEPLOY_SCRIPT"
+        if [[ ! "$effective_deploy_script" = /* ]]; then
+            effective_deploy_script="${PROJECT_ROOT}/${effective_deploy_script}"
+        fi
+
+        if [[ -f "$effective_deploy_script" ]]; then
+            if [[ -x "$effective_deploy_script" ]]; then
+                echo -e "${GREEN}Executing deployment script: $effective_deploy_script...${NC}"
+                DEPLOY_START_TIME=$(date +%s)
+                # Execute the script from the project root context
+                # Pass OUTPUT_DIR and SITE_URL as potentially useful arguments
+                # Add error handling for the script execution itself
+                if (cd "$PROJECT_ROOT" && "$effective_deploy_script" "$OUTPUT_DIR" "$SITE_URL"); then
+                    DEPLOY_END_TIME=$(date +%s)
+                    DEPLOY_DURATION=$((DEPLOY_END_TIME - DEPLOY_START_TIME))
+                    echo -e "${GREEN}Deployment script finished successfully in ${DEPLOY_DURATION} seconds.${NC}"
+                else
+                    echo -e "${RED}Error: Deployment script '$effective_deploy_script' failed with exit code $?.${NC}"
+                    # Decide if build should fail on deployment failure (e.g., exit 1)
+                fi
+            else
+                echo -e "${RED}Error: Deployment script '$effective_deploy_script' is not executable.${NC}"
+            fi
+        else
+            echo -e "${RED}Error: Deployment script '$effective_deploy_script' not found.${NC}"
+        fi
+    else
+        echo -e "${YELLOW}Warning: Deployment was requested, but DEPLOY_SCRIPT is not set in configuration.${NC}"
+    fi
+fi
+# --- Deployment --- END ---
+
 # --- End of execution ---
 
 BUILD_END_TIME=$(date +%s)

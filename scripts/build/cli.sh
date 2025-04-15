@@ -6,6 +6,9 @@
 
 # Parse command line arguments
 parse_args() {
+    # Initialize deploy override flag
+    CMD_DEPLOY_OVERRIDE="unset"
+
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --config)
@@ -147,6 +150,14 @@ parse_args() {
                 fi
                 shift 2
                 ;;
+            --deploy)
+                CMD_DEPLOY_OVERRIDE="true"
+                shift 1
+                ;;
+            --no-deploy)
+                CMD_DEPLOY_OVERRIDE="false"
+                shift 1
+                ;;
             --help)
                 show_help
                 exit 0
@@ -185,5 +196,7 @@ show_help() {
     echo "  --author-email EMAIL    Author email (default: anonymous@example.com)"
     echo "  --posts-per-page NUM    Posts per page (default: 10)"
     echo "  --local-config FILE     Load local configuration file directly"
+    echo "  --deploy                Force deployment after successful build (overrides config)"
+    echo "  --no-deploy             Prevent deployment after build (overrides config)"
     echo "  --help                  Display this help message and exit"
 } 
