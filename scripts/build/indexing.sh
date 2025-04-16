@@ -98,7 +98,7 @@ optimized_build_file_index() {
     
     # Export required functions and variables
     export DATE_FORMAT CACHE_DIR SRC_DIR FORCE_REBUILD # Add others as needed
-    export -f extract_metadata get_file_mtime format_date_from_timestamp generate_slug generate_excerpt lock_file unlock_file parse_metadata
+    export -f extract_metadata get_file_mtime format_date_from_timestamp generate_slug generate_excerpt lock_file unlock_file parse_metadata convert_markdown_to_html
     
     # Split files into batches
     split -l "$batch_size" "$all_files_tmp" "$temp_dir/batch_"

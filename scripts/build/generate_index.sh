@@ -221,7 +221,7 @@ EOF
             if [ -n "$description" ]; then
                 cat >> "$output_file" << EOF
         <div class="summary">
-            <p>$description</p>
+            $description
         </div>
 EOF
             fi

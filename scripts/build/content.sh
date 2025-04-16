@@ -193,7 +193,15 @@ extract_metadata() {
     fi
     if [ -z "$description" ]; then
         # Generate excerpt only if description is missing
-        description=$(generate_excerpt "$file")
+        local plain_excerpt
+        plain_excerpt=$(generate_excerpt "$file")
+        # Convert the plain text excerpt to HTML
+        description=$(convert_markdown_to_html "$plain_excerpt")
+        # Basic fallback if conversion somehow fails, use the plain excerpt
+        if [ $? -ne 0 ] || [ -z "$description" ]; then
+             echo "Warning: Failed to convert generated excerpt to HTML for $file. Using plain text excerpt." >&2
+             description="$plain_excerpt"
+        fi
     fi
 
     # Construct the metadata string for comparison and caching
