@@ -178,7 +178,7 @@ extract_metadata() {
 
     # Fallbacks for missing metadata
     if [ -z "$title" ]; then
-        title=$(basename "$file" | sed 's/\\.[^.]*$//')
+        title=$(basename "$file" | sed 's/\\\\.[^.]*$//')
     fi
     if [ -z "$date" ]; then
         local file_mtime=$(get_file_mtime "$file")
@@ -193,15 +193,8 @@ extract_metadata() {
     fi
     if [ -z "$description" ]; then
         # Generate excerpt only if description is missing
-        local plain_excerpt
-        plain_excerpt=$(generate_excerpt "$file")
-        # Convert the plain text excerpt to HTML
-        description=$(convert_markdown_to_html "$plain_excerpt")
-        # Basic fallback if conversion somehow fails, use the plain excerpt
-        if [ $? -ne 0 ] || [ -z "$description" ]; then
-             echo "Warning: Failed to convert generated excerpt to HTML for $file. Using plain text excerpt." >&2
-             description="$plain_excerpt"
-        fi
+        # The excerpt is already sanitized and HTML-escaped plain text
+        description=$(generate_excerpt "$file")
     fi
 
     # Construct the metadata string for comparison and caching
@@ -268,8 +261,12 @@ generate_excerpt() {
         # 5. Remove headers (# Header)
         line=$(echo "$line" | sed -E 's/^#+ +//g')
 
-        # 6. Remove emphasis/code markers (*, _, `)
-        line=$(echo "$line" | sed -E 's/(\*\*|__|\*|_|`)([^\*`_]+)(\1)/\2/g')
+        # 6. Remove emphasis/code markers (**, __, *, _, `)
+        line=$(echo "$line" | sed -E 's/\*\*([^*]+)\*\*/\1/g') # Bold (**text**)
+        line=$(echo "$line" | sed -E 's/__([^_]+)__/\1/g')     # Bold (__text__)
+        line=$(echo "$line" | sed -E 's/\*([^*]+)\*/\1/g')     # Italic (*text*)
+        line=$(echo "$line" | sed -E 's/_([^_]+)_/\1/g')       # Italic (_text_)
+        line=$(echo "$line" | sed -E 's/`([^`]+)`/\1/g')       # Code (`text`)
 
         # 7. Remove blockquotes (> text)
         line=$(echo "$line" | sed -E 's/^> +//g')
