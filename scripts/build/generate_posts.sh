@@ -80,9 +80,10 @@ convert_markdown() {
         content=$(cat "$input_file")
     fi
     
-    # Cache the raw markdown content for potential use in RSS full content
+    # Cache the markdown content *without frontmatter* for potential use in RSS full content
     if [ -n "$CACHE_DIR" ] && [ -d "${CACHE_DIR}/content" ]; then
-        cp "$input_file" "${CACHE_DIR}/content/$(basename "$input_file")"
+        # Write the $content variable (which has frontmatter removed) to the cache file
+        printf '%s' "$content" > "$content_cache_file"
     fi
     
     unlock_file "$content_cache_file"
@@ -100,6 +101,7 @@ convert_markdown() {
         # echo -e "Extracted body content from HTML file: ${GREEN}$(basename "$input_file")${NC}" # Can be verbose
     elif [[ "$input_file" == *.md ]]; then
         # Original Markdown conversion using the raw content we extracted/cached
+        # This now uses the content *without* frontmatter
         html_content=$(convert_markdown_to_html "$content")
         if [ $? -ne 0 ]; then
             echo -e "${RED}Markdown conversion failed for '$input_file', skipping html generation.${NC}" >&2
