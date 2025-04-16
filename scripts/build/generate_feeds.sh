@@ -416,6 +416,23 @@ EOF
         # --- RSS Item Description Enhancement ---
         local item_description_content=""
 
+        # Always add the image first if it exists
+        if [ -n "$image" ]; then
+            local img_src
+            [[ "$image" =~ ^https?:// ]] && img_src="$image" || img_src=$(fix_url "$image")
+            # Escape title and caption for HTML attributes
+            local img_alt=$(echo "$title" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g' -e "s/'/\&apos;/g")
+            local img_title=$(echo "$image_caption" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g' -e "s/'/\&apos;/g")
+            [ -z "$img_title" ] && img_title="$img_alt" # Use title as fallback for img title attribute
+
+            item_description_content+="<figure><img src=\"${img_src}\" alt=\"${img_alt}\" title=\"${img_title}\">"
+            if [ -n "$image_caption" ]; then
+                 local escaped_caption=$(echo "$image_caption" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')
+                 item_description_content+="<figcaption>${escaped_caption}</figcaption>"
+            fi
+            item_description_content+="</figure>"
+        fi
+
         # Check if full content should be included
         if [ "${RSS_INCLUDE_FULL_CONTENT:-false}" = true ]; then
             # Convert full content from cached raw markdown on the fly
@@ -425,35 +442,26 @@ EOF
 
             if [ -f "$raw_content_cache_file" ]; then
                 raw_content=$(cat "$raw_content_cache_file")
-                converted_html=$(convert_markdown_to_html "$raw_content")
+                # Pass the source file path to the converter for potential relative path resolution
+                converted_html=$(convert_markdown_to_html "$raw_content" "$file") # Pass original file path as second arg
                 local convert_status=$?
 
                 if [ $convert_status -eq 0 ] && [ -n "$converted_html" ]; then
-                    item_description_content="$converted_html"
+                    # Append the converted HTML *after* the image
+                    item_description_content+="$converted_html"
                 else
                     echo "Warning: Failed to convert markdown to HTML for RSS item ($file, status: $convert_status). Falling back to excerpt." >&2
-                    item_description_content="$description" # Fallback to excerpt
+                    # Append the excerpt *after* the image (if image existed)
+                    item_description_content+="$description"
                 fi
             else
-                # Revert DEBUG warning back to original
                 echo "Warning: Cached raw markdown content file '$raw_content_cache_file' not found for RSS item ($file). Falling back to excerpt." >&2
-                item_description_content="$description" # Fallback to excerpt
+                # Append the excerpt *after* the image (if image existed)
+                item_description_content+="$description"
             fi
         else
-            # Use excerpt + image
-            if [ -n "$image" ]; then
-                local img_src
-                [[ "$image" =~ ^https?:// ]] && img_src="$image" || img_src=$(fix_url "$image")
-                local img_alt=$(echo "$title" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g' -e "s/'/\&apos;/g")
-                local img_title=$(echo "$image_caption" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g' -e "s/'/\&apos;/g")
-                 [ -z "$img_title" ] && img_title="$img_alt"
-                item_description_content+="<img src=\"${img_src}\" alt=\"${img_alt}\" title=\"${img_title}\">"
-                 if [ -n "$image_caption" ]; then
-                      local escaped_caption=$(echo "$image_caption" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')
-                      item_description_content+="<p><em>${escaped_caption}</em></p>"
-                 fi
-            fi
-            item_description_content+="$description" # Append excerpt
+            # Append the excerpt *after* the image (if image existed)
+            item_description_content+="$description"
         fi
 
         # Wrap final description in CDATA
