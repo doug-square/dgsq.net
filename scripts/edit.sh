@@ -49,6 +49,15 @@ if [ -z "$EDITOR" ]; then
     fi
 fi
 
+# Check OS type for sed compatibility
+sed_inplace_arg=()
+if [[ "$(uname)" == "Linux" ]]; then
+    sed_inplace_arg=("-i")
+else
+    # Assume BSD/macOS sed syntax
+    sed_inplace_arg=("-i" "")
+fi
+
 # Function to generate a slug from a title
 generate_slug() {
     local title="$1"
@@ -96,18 +105,21 @@ edit_post() {
     
     echo -e "${YELLOW}Updating lastmod timestamp to $current_datetime...${NC}"
     
-    if [[ "$post_file" == *.md ]]; then
-        # Use sed to update the lastmod line in Markdown
-        # macOS sed requires '' after -i for in-place editing without backup
-        sed -i '' "s/^lastmod:.*/lastmod: $current_datetime/" "$post_file"
-    elif [[ "$post_file" == *.html ]]; then
-        # Use sed to update the lastmod meta tag in HTML
-        # Using | as delimiter to avoid issues with slashes in dates/paths
-        # Escaping < and > to prevent shell interpretation issues
-        sed -i '' "s|\<meta name=\"lastmod\" content=\".*\"\>|\<meta name=\"lastmod\" content=\"$current_datetime\"\>|" "$post_file"
-    else
-        echo -e "${YELLOW}Warning: Unknown file type for '$post_file'. Cannot automatically update lastmod.${NC}"
-    fi
+    # Determine file type based on extension
+    file_ext="${post_file##*.}"
+
+    # Use sed to update the lastmod line/meta tag based on file type
+    case "$file_ext" in
+        md)
+            sed "${sed_inplace_arg[@]}" "s/^lastmod:.*/lastmod: $current_datetime/" "$post_file"
+            ;;
+        html)
+            sed "${sed_inplace_arg[@]}" "s|<meta name=\"lastmod\" content=\".*\"\>|<meta name=\"lastmod\" content=\"$current_datetime\"\>|" "$post_file"
+            ;;
+        *)
+            echo -e "${YELLOW}Warning: Unknown file type for '$post_file'. Cannot automatically update lastmod.${NC}"
+            ;;
+    esac
     
     # If vi is the fallback, show the easter egg message and wait for user
     if [ "$VI_FALLBACK" = true ]; then
