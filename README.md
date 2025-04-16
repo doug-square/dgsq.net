@@ -286,7 +286,7 @@ Commands:
                                For tags, use -n to sort by count.
   backup                       Create a backup of all posts, pages, drafts, and config
   restore [backup_file|ID]     Restore from a backup (all content by default)
-                               Options: --no-posts, --no-drafts, --no-pages, --no-config
+                               Options: --no-content, --no-config
   backups                      List all available backups
   build [opts]                 Build the site using the modular build system in scripts/build/
                                Options: -c|--clean-output, -f|--force-rebuild,
@@ -445,10 +445,8 @@ To restore from a backup (will prompt for confirmation):
 
 You can use these options with restore to selectively restore content:
 ```bash
-./bssg.sh restore backup_id --no-posts  # Don't restore posts
-./bssg.sh restore backup_id --no-drafts  # Don't restore drafts
-./bssg.sh restore backup_id --no-pages  # Don't restore pages
-./bssg.sh restore backup_id --no-config  # Don't restore configuration
+./bssg.sh restore backup_id --no-content  # Don't restore content (src, drafts, pages)
+./bssg.sh restore backup_id --no-config   # Don't restore configuration (config.sh, config.sh.local)
 ```
 
 ### Build Options

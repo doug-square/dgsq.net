@@ -37,6 +37,9 @@ URL_SLUG_FORMAT="${URL_SLUG_FORMAT:-Year/Month/Day/slug}"
 PAGE_URL_FORMAT="${PAGE_URL_FORMAT:-slug}"
 ENABLE_TAG_RSS="${ENABLE_TAG_RSS:-false}" # Generate RSS feed for each tag
 
+# --- Backup Directory --- Added ---
+BACKUP_DIR="${BACKUP_DIR:-backup}" # Default backup location
+
 # Customization Defaults
 CUSTOM_CSS="${CUSTOM_CSS:-}" # Default to empty string
 
@@ -150,11 +153,20 @@ fi
 # --- Configuration and Locale Sourcing Logic --- END ---
 
 
+# --- Define Local Config File Path --- START ---
+# Define this *after* main config and local override sourcing, in case CONFIG_FILE was changed.
+# Note: LOCAL_CONFIG_OVERRIDE used during sourcing might differ if CONFIG_FILE changed mid-script,
+# but we export the path based on the *final* CONFIG_FILE value.
+LOCAL_CONFIG_FILE="${CONFIG_FILE}.local"
+export LOCAL_CONFIG_FILE # Export it for other scripts
+# --- Define Local Config File Path --- END ---
+
+
 # --- Expand Tilde in Path Variables --- START ---
 # After all configs are sourced, expand ~ in relevant paths before exporting.
 # This ensures scripts use the resolved paths, even if config stores portable '~'.
 print_info "Expanding tilde (~) in configuration paths..."
-PATHS_TO_EXPAND=("SRC_DIR" "PAGES_DIR" "DRAFTS_DIR" "OUTPUT_DIR" "TEMPLATES_DIR" "THEMES_DIR" "STATIC_DIR")
+PATHS_TO_EXPAND=("SRC_DIR" "PAGES_DIR" "DRAFTS_DIR" "OUTPUT_DIR" "TEMPLATES_DIR" "THEMES_DIR" "STATIC_DIR" "BACKUP_DIR") # Added BACKUP_DIR
 for var_name in "${PATHS_TO_EXPAND[@]}"; do
     # Get the current value using indirect reference
     current_value="${!var_name}"
@@ -191,6 +203,7 @@ BSSG_CONFIG_VARS_ARRAY=(
     DRAFTS_DIR REBUILD_AFTER_POST REBUILD_AFTER_EDIT
     CUSTOM_CSS
     ENABLE_TAG_RSS
+    BACKUP_DIR
     # Add any other custom config variables here if needed
 )
 
@@ -233,6 +246,7 @@ export REBUILD_AFTER_POST
 export REBUILD_AFTER_EDIT
 export CUSTOM_CSS
 export ENABLE_TAG_RSS
+export BACKUP_DIR
 
 # Export ALL MSG_* locale variables explicitly
 # These are generally NOT included in BSSG_CONFIG_VARS as they don't affect the config hash directly,
