@@ -352,16 +352,16 @@ build_archive_index() {
     local file_index="${CACHE_DIR:-.bssg_cache}/file_index.txt"
     local archive_index_file="${CACHE_DIR:-.bssg_cache}/archive_index.txt"
 
-    # Check if rebuild is needed
+    # Check if rebuild is needed: missing cache or input/dependencies changed
     local rebuild_needed=false
-    if indexes_need_rebuild; then rebuild_needed=true; 
-    elif [ ! -f "$archive_index_file" ]; then rebuild_needed=true; 
-    elif [ "$file_index" -nt "$archive_index_file" ]; then 
-        echo -e "${YELLOW}File index is newer than archive index, rebuilding archives...${NC}";
-        rebuild_needed=true;
+    if [ ! -f "$archive_index_file" ]; then
+        rebuild_needed=true
+    elif file_needs_rebuild "$file_index" "$archive_index_file"; then
+        echo -e "${YELLOW}Archive index is outdated or dependencies changed, rebuilding archives...${NC}"
+        rebuild_needed=true
     fi
 
-    if ! $rebuild_needed; then
+    if [ "$rebuild_needed" = false ]; then
          echo -e "${GREEN}Archive index is up to date, skipping...${NC}"
          return 0
     fi

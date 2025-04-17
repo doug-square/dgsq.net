@@ -14,13 +14,13 @@ source "$(dirname "$0")/cache.sh" || { echo >&2 "Error: Failed to source cache.s
 generate_archive_pages() {
     echo -e "${YELLOW}Processing archive pages...${NC}"
     
-    # Check if rebuild is needed (using indexes_need_rebuild from cache.sh)
-    if ! indexes_need_rebuild; then
+    # Only rebuild archives if archive cache index or templates changed
+    local archive_index_file="$CACHE_DIR/archive_index.txt"
+    local archives_index="$OUTPUT_DIR/archives/index.html"
+    if [ -f "$archives_index" ] && ! file_needs_rebuild "$archive_index_file" "$archives_index"; then
         echo -e "${GREEN}Archive pages are up to date, skipping...${NC}"
         return
     fi
-    
-    local archive_index_file="$CACHE_DIR/archive_index.txt"
     
     # Check if the archive index file exists
     if [ ! -f "$archive_index_file" ]; then

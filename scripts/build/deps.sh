@@ -19,7 +19,9 @@ portable_md5sum() {
         # OpenBSD/NetBSD: md5 command without -r or -q
         # Output format: "MD5 (filename) = hash" -> Need "hash  filename"
         if [ $# -eq 0 ] || [ "$1" = "-" ]; then
-            md5 | awk '{print $4 "  -"}' # Handle stdin
+            # Handle stdin: OpenBSD md5 outputs just the hash directly.
+            # Read the hash (field 1) and append "  -" to match md5sum format.
+            md5 | awk '{print $1 "  -"}'
         else
             # Handle files: MD5 (file) = hash -> hash  file
             md5 "$@" | awk '{print $4 "  " $2}' | sed 's/[()]//g'
