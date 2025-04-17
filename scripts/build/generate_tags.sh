@@ -68,6 +68,32 @@ generate_tag_pages() {
     local tag_count=$(echo "$unique_tags_lines" | grep -v '^$' | wc -l)
     echo -e "Checking ${GREEN}$tag_count${NC} tag pages${NC}${ENABLE_TAG_RSS:+/feeds} for changes"
 
+    # --- Pre-group posts by tag slug --- START ---
+    local tag_data_dir="$CACHE_DIR/tag_data"
+    rm -rf "$tag_data_dir" # Clean previous data
+    mkdir -p "$tag_data_dir"
+    echo -e "Pre-grouping posts by tag into ${BLUE}$tag_data_dir${NC}..."
+    if awk -F'|' -v tag_dir="$tag_data_dir" '
+        NF >= 2 { # Ensure at least tag and slug fields exist
+            tag_slug = $2;
+            if (tag_slug != "") {
+                # Sanitize slug just in case for filename safety? (basic: remove /)
+                gsub(/\//, "_", tag_slug);
+                output_file = tag_dir "/" tag_slug ".tmp";
+                print $0 >> output_file; # Append the whole line
+                close(output_file); # Close file handle to avoid too many open files
+            } else {
+                print "Warning: Skipping line with empty tag slug in tags_index: " $0 > "/dev/stderr";
+            }
+        }
+    ' "$tags_index_file"; then
+        echo -e "${GREEN}Pre-grouping complete.${NC}"
+    else
+        echo -e "${RED}Error: Failed to pre-group tag data using awk.${NC}" >&2
+        return 1
+    fi
+    # --- Pre-group posts by tag slug --- END ---
+
     # Define a modified file_needs_rebuild function for parallel use - Now simpler
     # This version only checks if the specific tag output file is older than the
     # latest dependency time calculated during the global check.
@@ -94,7 +120,7 @@ generate_tag_pages() {
     # Define a function to process a single tag
     process_tag() {
         local tag_line="$1"
-        local tags_index_file="$2" # Still needed to find posts for the tag
+        local tag_data_dir="$2" # Now pass the directory with pre-grouped data
         local latest_dep_time="$3" # Pass the calculated latest dependency time
         local tag tag_url
         IFS='|' read -r tag tag_url <<< "$tag_line"
@@ -126,6 +152,16 @@ generate_tag_pages() {
 
             echo -e "Processing tag: ${GREEN}$tag${NC}" # Print only when generating HTML or RSS
             mkdir -p "$OUTPUT_DIR/tags/$tag_url/" # Create directory if it doesn't exist
+
+            # Define the path to the pre-grouped data file for this tag
+            local tag_specific_data_file="${tag_data_dir}/${tag_url}.tmp"
+
+            # Check if the specific data file exists (it should, unless the pre-grouping failed)
+            if [ ! -f "$tag_specific_data_file" ]; then
+                 echo -e "${RED}Error: Pre-grouped data file not found for tag '$tag' at $tag_specific_data_file${NC}" >&2
+                 # Decide whether to skip or error out - let's skip this tag
+                 return 1 # Or return 0 to continue with other tags?
+            fi
 
             # --- Generate HTML Page (if needed) ---
             if [ "$rebuild_html" = true ]; then
@@ -191,11 +227,12 @@ $header_content
 <div class="posts-list">
 EOF
 
-                # Add posts for this tag - use direct approach for parallel safety
-                local temp_file=$(mktemp)
-                awk -F'|' -v tag="$tag" -v url="$tag_url" '$1 == tag && $2 == url' "$tags_index_file" > "$temp_file"
+                # Add posts for this tag - use the pre-grouped data file
+                # local temp_file=$(mktemp)
+                # awk -F'|' -v tag="$tag" -v url="$tag_url" '$1 == tag && $2 == url' "$tags_index_file" > "$temp_file"
                 
-                if [ -s "$temp_file" ]; then
+                # Read directly from the pre-grouped file
+                if [ -s "$tag_specific_data_file" ]; then # Check if file not empty
                     while IFS= read -r post_line; do
                         if [ -z "$post_line" ]; then continue; fi
                         
@@ -256,9 +293,9 @@ EOF
                         cat >> "$tag_page_html_file" << EOF
     </article>
 EOF
-                    done < "$temp_file"
+                    done < "$tag_specific_data_file"
                 fi
-                rm "$temp_file"
+                # rm "$temp_file"
 
                 # Close the tag page
                 cat >> "$tag_page_html_file" << EOF
@@ -288,8 +325,8 @@ EOF
                 # We lack the original 'file' path and 'tags' string here. We can approximate.
 
                 local tag_post_data_tmp=$(mktemp)
-                awk -F'|' -v tag="$tag" -v url="$tag_url" '$1 == tag && $2 == url {print $0}' "$tags_index_file" | \
-                sort -t'|' -k4,4r -k5,5r | \
+                # Read from pre-grouped file, sort, limit, and map fields using awk
+                sort -t'|' -k4,4r -k5,5r "$tag_specific_data_file" | \
                 head -n "$rss_item_limit" | \
                 awk -F'|' -v tag_val="$tag" 'BEGIN {OFS="|"} { 
                     # Reconstruct needed fields. Use filename ($6) as placeholder for first field.
@@ -363,16 +400,16 @@ EOF
                 export MD5_CMD CACHE_DIR MARKDOWN_PROCESSOR MARKDOWN_PL_PATH RSS_INCLUDE_FULL_CONTENT # From deps/config
                 export SITE_LANG RSS_ITEM_LIMIT MSG_POSTS_TAGGED_WITH # From config/locale
             fi
-            # Pass index path and latest time
-            export tags_index_file latest_dependency_time
+            # Pass the tag data directory instead of the index file path
+            export tag_data_dir latest_dependency_time
 
-            printf "%s\n" "${tags_to_process_list[@]}" | parallel --jobs "$cores" process_tag {} "$tags_index_file" "$latest_dependency_time" || { echo -e "${RED}Parallel tag processing failed.${NC}"; exit 1; }
+            printf "%s\n" "${tags_to_process_list[@]}" | parallel --jobs "$cores" process_tag {} "$tag_data_dir" "$latest_dependency_time" || { echo -e "${RED}Parallel tag processing failed.${NC}"; exit 1; }
 
         else
             echo -e "${YELLOW}Using sequential processing for $tags_to_process_count tags${NC}"
             local tag_line
             for tag_line in "${tags_to_process_list[@]}"; do
-                process_tag "$tag_line" "$tags_index_file" "$latest_dependency_time"
+                process_tag "$tag_line" "$tag_data_dir" "$latest_dependency_time"
             done
         fi
     else
@@ -461,10 +498,11 @@ EOF
 
             if [ -n "$tag" ]; then
                 local post_count=0
-                if [ -f "$tags_index_file" ] && [ -s "$tags_index_file" ]; then
-                    post_count=$(awk -F'|' -v tag="$tag" -v url="$tag_url" '$1 == tag && $2 == url { count++ } END { print count }' "$tags_index_file" 2>/dev/null || echo 0)
+                # Count lines in the pre-grouped data file for this tag
+                local tag_specific_data_file="${tag_data_dir}/${tag_url}.tmp"
+                if [ -f "$tag_specific_data_file" ]; then
+                   post_count=$(wc -l < "$tag_specific_data_file" | tr -d ' ')
                 fi
-
                 # Ensure link to individual tag page has trailing slash
                 cat >> "$main_tags_index_output" << EOF
     <a href="${SITE_URL}/tags/$tag_url/">$tag <span class="tag-count">($post_count)</span></a>

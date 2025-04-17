@@ -307,6 +307,18 @@ calculate_reading_time() {
     echo "$reading_time_min"
 }
 
+# Function to escape special characters for HTML
+# Handles &, <, >, ", '
+html_escape() {
+    # Use Perl for efficient substitution if available
+    if command -v perl > /dev/null 2>&1; then
+        echo "$1" | perl -pe 's/&/&amp;/g; s/</&lt;/g; s/>/&gt;/g; s/"/&quot;/g; s/\x27/&apos;/g;'
+    else
+        # Fallback to sed (might be slower for many calls)
+        echo "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g' -e "s/'/&apos;/g"
+    fi
+}
+
 # Export the functions
 export -f format_date_from_timestamp
 export -f generate_slug
@@ -315,6 +327,7 @@ export -f unlock_file
 export -f get_file_mtime
 export -f run_parallel
 export -f calculate_reading_time
+export -f html_escape
 # Export the new print functions
 export -f print_error
 export -f print_warning

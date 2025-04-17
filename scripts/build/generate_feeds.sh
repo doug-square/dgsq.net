@@ -53,290 +53,6 @@ get_latest_mod_date() {
     fi
 }
 
-# Generate sitemap.xml
-generate_sitemap() {
-    echo -e "${YELLOW}Generating sitemap.xml...${NC}"
-
-    local sitemap="$OUTPUT_DIR/sitemap.xml"
-    local file_index="$CACHE_DIR/file_index.txt"
-    local tags_index="$CACHE_DIR/tags_index.txt"
-    local primary_pages_cache="$CACHE_DIR/primary_pages.tmp"
-    local secondary_pages_cache="$CACHE_DIR/secondary_pages.tmp"
-    local config_hash_file="$CONFIG_HASH_FILE" # Use the global var
-    local script_path="$BSSG_SCRIPT_DIR/build/generate_feeds.sh" # Path to this script
-    local sitemap_date_fmt="%Y-%m-%d"
-
-    # Determine active locale file
-    local active_locale_file=""
-    if [ -f "${LOCALE_DIR:-locales}/${SITE_LANG:-en}.sh" ]; then
-        active_locale_file="${LOCALE_DIR:-locales}/${SITE_LANG:-en}.sh"
-    elif [ -f "${LOCALE_DIR:-locales}/en.sh" ]; then # Fallback to en
-        active_locale_file="${LOCALE_DIR:-locales}/en.sh"
-    fi
-
-    # Check if sitemap needs rebuild (Specific check)
-    if [ -f "$sitemap" ]; then
-        local sitemap_mtime=$(get_file_mtime "$sitemap")
-        local rebuild_needed=false
-
-        # List of dependencies to check
-        local dependencies=("$file_index" "$tags_index" "$primary_pages_cache" "$secondary_pages_cache" "$config_hash_file" "$script_path")
-        if [ -n "$active_locale_file" ]; then
-             dependencies+=("$active_locale_file")
-        fi
-
-        # Check FORCE_REBUILD flag
-        if [ "${FORCE_REBUILD:-false}" = true ]; then
-            rebuild_needed=true
-        else
-            # Check modification times of dependencies
-            for dep in "${dependencies[@]}"; do
-                if [ -e "$dep" ] && [[ $(get_file_mtime "$dep") -gt $sitemap_mtime ]]; then
-                    # echo "DEBUG: Sitemap rebuild triggered by newer dependency: $dep" >&2 # Optional debug
-                    rebuild_needed=true
-                    break
-                fi
-            done
-        fi
-
-        # If no rebuild needed based on mtimes, skip
-        if [ "$rebuild_needed" = false ]; then
-            echo -e "${GREEN}Sitemap is up to date (based on specific dependencies), skipping...${NC}"
-            return 0
-        fi
-    # else
-    #     echo "DEBUG: Sitemap file missing, forcing generation." >&2 # Optional debug
-    fi
-
-
-    # --- Pre-calculate latest dates ---
-    # Latest post overall (using lastmod field - index 5)
-    local latest_post_mod_date=$(get_latest_mod_date "$file_index" 5 "" "$sitemap_date_fmt")
-    # Latest static page (using date field - index 3)
-    local latest_static_page_date=$(get_latest_mod_date "$secondary_pages_cache" 3 "" "$sitemap_date_fmt")
-
-
-    # Create the sitemap header
-    cat > "$sitemap" << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-EOF
-
-    # --- Add Homepage ---
-    # Use the overall latest post mod date
-    cat >> "$sitemap" << EOF
-    <url>
-        <loc>$(fix_url "/")</loc>
-        <lastmod>${latest_post_mod_date}</lastmod>
-        <changefreq>daily</changefreq>
-        <priority>1.0</priority>
-    </url>
-EOF
-
-    # --- Add Posts (from file index) ---
-    if [ -f "$file_index" ]; then
-        # Correctly read all fields including lastmod, tags, and the actual slug
-        while IFS='|' read -r file filename title date lastmod tags slug image image_caption description || [[ -n "$file" ]]; do
-            # Skip if essential fields are missing
-            if [ -z "$file" ] || [ -z "$date" ] || [ -z "$lastmod" ] || [ -z "$slug" ]; then
-                continue
-            fi
-            # Apply URL_SLUG_FORMAT for the URL
-            local year month day
-            # Use original date for URL generation structure
-            if [[ "$date" =~ ^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2}) ]]; then
-                year="${BASH_REMATCH[1]}"
-                month=$(printf "%02d" "$((10#${BASH_REMATCH[2]}))")
-                day=$(printf "%02d" "$((10#${BASH_REMATCH[3]}))")
-            else
-                # Skip if date format unrecognized
-                continue
-            fi
-            local formatted_path="${URL_SLUG_FORMAT//Year/$year}"
-            formatted_path="${formatted_path//Month/$month}"
-            formatted_path="${formatted_path//Day/$day}"
-            formatted_path="${formatted_path//slug/$slug}"
-            # Create clean URL
-            local item_url="/$(echo "$formatted_path" | sed 's|/*$|/|')"
-            # Use the lastmod field
-            local mod_time=$(format_date "$lastmod" "$sitemap_date_fmt")
-            # Fallback if formatting failed
-            [ -z "$mod_time" ] && mod_time=$(format_date "now" "$sitemap_date_fmt")
-            cat >> "$sitemap" << EOF
-    <url>
-        <loc>$(fix_url "$item_url")</loc>
-        <lastmod>${mod_time}</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
-    </url>
-EOF
-        done < "$file_index"
-    fi
-
-    # --- Add Primary Pages (from cache file) ---
-    if [ -f "$primary_pages_cache" ]; then
-        echo -e "Adding $(wc -l < "$primary_pages_cache" | tr -d ' ') primary pages to sitemap..."
-        while IFS='|' read -r _ url date source_file || [[ -n "$url" ]]; do
-            # Create clean URL
-            local sitemap_url
-            sitemap_url=$(echo "$url" | sed 's|/index.html$|/|; s|/*$|/|')
-            # Use the date from the frontmatter/meta
-            local mod_time=$(format_date "$date" "$sitemap_date_fmt")
-            # Fallback if formatting failed
-            [ -z "$mod_time" ] && mod_time=$(format_date "now" "$sitemap_date_fmt")
-            cat >> "$sitemap" << EOF
-    <url>
-        <loc>${sitemap_url}</loc>
-        <lastmod>${mod_time}</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.7</priority>
-    </url>
-EOF
-        done < "$primary_pages_cache"
-    fi
-
-    # --- Add Secondary Pages (from cache file) ---
-    if [ -f "$secondary_pages_cache" ]; then
-         local secondary_page_count=$(wc -l < "$secondary_pages_cache")
-         if [ "$secondary_page_count" -gt 0 ]; then
-             echo -e "Adding $secondary_page_count secondary pages to sitemap..."
-             while IFS='|' read -r _ url date source_file || [[ -n "$url" ]]; do
-                 if [ -z "$url" ]; then continue; fi
-                 local mod_time=$(format_date "$date" "$sitemap_date_fmt")
-                 # Fallback if formatting failed
-                 [ -z "$mod_time" ] && mod_time=$(format_date "now" "$sitemap_date_fmt")
-                 # Ensure trailing slash if it looks like a directory page
-                 if [[ "$url" == */index.html ]]; then
-                     url=$(echo "$url" | sed 's|/index.html$|/|')
-                 elif [[ "$url" != *.html && "$url" != */ ]]; then
-                     url="${url}/"
-                 fi
-                 cat >> "$sitemap" << EOF
-    <url>
-        <loc>${url}</loc>
-        <lastmod>${mod_time}</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.6</priority>
-    </url>
-EOF
-             done < "$secondary_pages_cache"
-         fi
-    fi
-
-    # --- Add Tag Index Page ---
-    local tag_index_file="$OUTPUT_DIR/tags/index.html"
-    if [ -f "$tag_index_file" ]; then
-        # Use the overall latest post mod date
-        cat >> "$sitemap" << EOF
-    <url>
-        <loc>$(fix_url "/tags/")</loc>
-        <lastmod>${latest_post_mod_date}</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.5</priority>
-    </url>
-EOF
-    fi
-
-    # --- Add Archive Index Page ---
-    local archive_index_file="$OUTPUT_DIR/archives/index.html"
-    if [ -f "$archive_index_file" ] && [ "${ENABLE_ARCHIVES:-false}" = true ]; then
-        # Use the overall latest post mod date
-        cat >> "$sitemap" << EOF
-    <url>
-        <loc>$(fix_url "/archives/")</loc>
-        <lastmod>${latest_post_mod_date}</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.5</priority>
-    </url>
-EOF
-    fi
-
-    # --- Add Individual Tag Pages ---
-    # We need tags_index.txt for accurate dates
-    if [ -f "$tags_index" ]; then
-        # Find index.html files within first-level subdirectories of $OUTPUT_DIR/tags
-        find "$OUTPUT_DIR/tags/"* -maxdepth 0 -type d -print0 | while IFS= read -r -d $'\0' tag_dir; do
-            local page_file="$tag_dir/index.html"
-            if [ ! -f "$page_file" ]; then continue; fi
-
-            local tag_slug clean_url mod_time
-            tag_slug=$(basename "$tag_dir")
-            # Use the tag slug to find the latest post date for this tag from tags_index (Field 5: PostLastMod)
-            mod_time=$(get_latest_mod_date "$tags_index" 5 "^[^|]+\\|${tag_slug}\\|" "$sitemap_date_fmt")
-            clean_url="/tags/${tag_slug}/" # Trailing slash structure
-
-            cat >> "$sitemap" << EOF
-    <url>
-        <loc>$(fix_url "$clean_url")</loc>
-        <lastmod>${mod_time}</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.4</priority>
-    </url>
-EOF
-        done
-    else
-         echo -e "${YELLOW}Warning: Tags index '$tags_index' not found. Cannot determine accurate lastmod for individual tag pages.${NC}"
-         # Optionally fall back to file mtime? Or skip? Skipping for now.
-    fi
-
-
-    # --- Add Individual Archive Pages ---
-    if [ "${ENABLE_ARCHIVES:-false}" = true ] && [ -f "$file_index" ]; then
-        # Find directories like /archives/YYYY, /archives/YYYY/MM, /archives/YYYY/MM/DD
-        find "$OUTPUT_DIR/archives/"* -type d -print0 | while IFS= read -r -d $'\0' dir_path; do
-            local page_file="$dir_path/index.html"
-            if [ -f "$page_file" ]; then
-                local clean_url_base clean_url mod_time date_pattern
-                clean_url_base="${dir_path#$OUTPUT_DIR}" # e.g., /archives/2023 or /archives/2023/01
-                clean_url="${clean_url_base}/" # Add trailing slash
-
-                # Determine date pattern for filtering file_index based on directory structure
-                date_pattern=$(echo "$clean_url_base" | sed -n 's|^/archives/\([0-9]\{4\}\)$|^\1-|p; s|^/archives/\([0-9]\{4\}\)/\([0-9]\{2\}\)$|^\1-\2-|p; s|^/archives/\([0-9]\{4\}\)/\([0-9]\{2\}\)/\([0-9]\{2\}\)$|^\1-\2-\3|p')
-
-                if [ -n "$date_pattern" ]; then
-                     # Get latest post in this period using lastmod (field 5) by filtering on date (field 4) in file_index
-                     # The grep pattern needs to match the date field (4th field)
-                     local grep_pattern="^[^|]+\\|[^|]+\\|[^|]+\\|${date_pattern}"
-                     mod_time=$(get_latest_mod_date "$file_index" 5 "$grep_pattern" "$sitemap_date_fmt")
-                else
-                     # Fallback if pattern extraction failed (e.g., /archives/ itself, though handled separately)
-                     mod_time=$(format_date_from_timestamp "$(get_file_mtime "$page_file")" "$sitemap_date_fmt")
-                fi
-
-                cat >> "$sitemap" << EOF
-    <url>
-        <loc>$(fix_url "$clean_url")</loc>
-        <lastmod>${mod_time}</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.5</priority>
-    </url>
-EOF
-            fi
-        done
-    elif [ "${ENABLE_ARCHIVES:-false}" = true ]; then
-         echo -e "${YELLOW}Warning: File index '$file_index' not found. Cannot determine accurate lastmod for individual archive pages.${NC}"
-    fi
-
-
-    # --- Add pages.html (Secondary Pages Index) ---
-    local pages_html_file="$OUTPUT_DIR/pages.html"
-    if [ -f "$pages_html_file" ]; then
-        # Use the pre-calculated latest static page date
-        cat >> "$sitemap" << EOF
-    <url>
-        <loc>$(fix_url "/pages.html")</loc> <!-- Assuming this page doesn't get a trailing slash -->
-        <lastmod>${latest_static_page_date}</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.6</priority>
-    </url>
-EOF
-    fi
-
-    # --- Close sitemap ---
-    echo "</urlset>" >> "$sitemap"
-    echo -e "${GREEN}Sitemap generated!${NC}"
-}
-
 # Core RSS generation function
 # Usage: _generate_rss_feed <output_file> <feed_title> <feed_description> <feed_link_rel> <feed_atom_link_rel> <post_data_input>
 # <post_data_input> should be a string containing the filtered, sorted, and limited post data,
@@ -415,58 +131,54 @@ EOF
 
         # --- RSS Item Description Enhancement ---
         local item_description_content=""
+        local figure_part=""
+        local caption_part=""
+        local content_part=""
 
-        # Always add the image first if it exists
+        # Build figure part
         if [ -n "$image" ]; then
             local img_src
             [[ "$image" =~ ^https?:// ]] && img_src="$image" || img_src=$(fix_url "$image")
-            # Escape title and caption for HTML attributes
-            local img_alt=$(echo "$title" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g' -e "s/'/\&apos;/g")
-            local img_title=$(echo "$image_caption" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g' -e "s/'/\&apos;/g")
-            [ -z "$img_title" ] && img_title="$img_alt" # Use title as fallback for img title attribute
+            # Escape alt/title attributes safely using html_escape from utils.sh
+            local img_alt=$(html_escape "$title")
+            local img_title=$(html_escape "$image_caption")
+            [ -z "$img_title" ] && img_title="$img_alt" # Use alt if title is empty
 
-            item_description_content+="<figure><img src=\"${img_src}\" alt=\"${img_alt}\" title=\"${img_title}\">"
+            figure_part="<figure><img src=\"${img_src}\" alt=\"${img_alt}\" title=\"${img_title}\">" # Open tags
+
             if [ -n "$image_caption" ]; then
-                 local escaped_caption=$(echo "$image_caption" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')
-                 item_description_content+="<figcaption>${escaped_caption}</figcaption>"
+                local escaped_caption=$(html_escape "$image_caption")
+                caption_part="<figcaption>${escaped_caption}</figcaption>" # Caption
             fi
-            item_description_content+="</figure>"
+            figure_part="${figure_part}${caption_part}</figure>" # Close figure tag (with caption inside if it exists)
         fi
 
-        # Check if full content should be included
+        # Build content part (excerpt or full)
         if [ "${RSS_INCLUDE_FULL_CONTENT:-false}" = true ]; then
-            # Convert full content from cached raw markdown on the fly
-            local raw_content_cache_file="${CACHE_DIR:-.bssg_cache}/content/$(basename "${file}")"
-            local raw_content=""
-            local converted_html=""
-
+            local raw_content_cache_file="${CACHE_DIR:-.bssg_cache}/content/$(basename "$file")"
             if [ -f "$raw_content_cache_file" ]; then
-                raw_content=$(cat "$raw_content_cache_file")
-                # Pass the source file path to the converter for potential relative path resolution
-                converted_html=$(convert_markdown_to_html "$raw_content" "$file") # Pass original file path as second arg
+                local raw_content=$(cat "$raw_content_cache_file")
+                local converted_html=$(convert_markdown_to_html "$raw_content" "$file")
                 local convert_status=$?
-
                 if [ $convert_status -eq 0 ] && [ -n "$converted_html" ]; then
-                    # Append the converted HTML *after* the image
-                    item_description_content+="$converted_html"
+                    content_part="$converted_html"
                 else
                     echo "Warning: Failed to convert markdown to HTML for RSS item ($file, status: $convert_status). Falling back to excerpt." >&2
-                    # Append the excerpt *after* the image (if image existed)
-                    item_description_content+="$description"
+                    content_part="$description"
                 fi
             else
                 echo "Warning: Cached raw markdown content file '$raw_content_cache_file' not found for RSS item ($file). Falling back to excerpt." >&2
-                # Append the excerpt *after* the image (if image existed)
-                item_description_content+="$description"
+                content_part="$description"
             fi
         else
-            # Append the excerpt *after* the image (if image existed)
-            item_description_content+="$description"
+            content_part="$description"
         fi
 
+        # Combine parts safely
+        item_description_content="${figure_part}${caption_part}${content_part}"
+
         # Wrap final description in CDATA
-        local final_description="<![CDATA[${item_description_content}]]>"
-        # --- End RSS Item Description Enhancement ---
+        local final_description="<![CDATA[$item_description_content]]>"
 
         cat >> "$output_file" << EOF
     <item>
@@ -515,35 +227,23 @@ generate_rss() {
         active_locale_file="${LOCALE_DIR:-locales}/en.sh"
     fi
 
-    # Check if RSS feed needs to be rebuilt (using specific dependencies)
-    if [ -f "$rss" ]; then
+    # Check if RSS feed needs to be rebuilt (Simplified check)
+    local rebuild_needed=false
+    if [ "${FORCE_REBUILD:-false}" = true ]; then
+        rebuild_needed=true
+    elif [ ! -f "$rss" ]; then
+        rebuild_needed=true # Rebuild if RSS file doesn't exist
+    else
         local rss_mtime=$(get_file_mtime "$rss")
-        local rebuild_needed=false
+        # Check only file index mtime
+        if [ -f "$file_index" ] && [ "$(get_file_mtime "$file_index")" -gt "$rss_mtime" ]; then rebuild_needed=true; fi
+        # Removed checks for script, config, locale mtime for simplicity
+    fi
 
-        # Dependencies: file index, config hash, this script, locale file
-        local dependencies=("$file_index" "$config_hash_file" "$script_path")
-         if [ -n "$active_locale_file" ]; then
-             dependencies+=("$active_locale_file")
-        fi
-        
-        # Check FORCE_REBUILD flag
-        if [ "${FORCE_REBUILD:-false}" = true ]; then
-            rebuild_needed=true
-        else
-            for dep in "${dependencies[@]}"; do
-                if [ -e "$dep" ] && [[ $(get_file_mtime "$dep") -gt $rss_mtime ]]; then
-                    # echo "DEBUG: RSS rebuild triggered by newer dependency: $dep" >&2 # Optional debug
-                    rebuild_needed=true
-                    break
-                fi
-            done
-        fi
-        
-        # If no rebuild needed, skip
-        if [ "$rebuild_needed" = false ]; then
-            echo -e "${GREEN}Main RSS feed is up to date (based on specific dependencies), skipping...${NC}"
-            return 0
-        fi
+    # If no rebuild needed, skip
+    if [ "$rebuild_needed" = false ]; then
+        echo -e "${GREEN}Main RSS feed is up to date (based on file index), skipping...${NC}"
+        return 0
     fi
 
     if [ ! -f "$file_index" ]; then
@@ -568,6 +268,214 @@ generate_rss() {
 
     # The reusable function already prints the success message
     # echo -e "${GREEN}RSS feed generated!${NC}" # Redundant now
+}
+
+# Export public functions
+export -f generate_rss 
+
+# Generate sitemap.xml
+generate_sitemap() {
+    echo -e "${YELLOW}Generating sitemap.xml...${NC}"
+
+    local sitemap="$OUTPUT_DIR/sitemap.xml"
+    local file_index="$CACHE_DIR/file_index.txt"
+    local tags_index="$CACHE_DIR/tags_index.txt"
+    local primary_pages_cache="$CACHE_DIR/primary_pages.tmp"
+    local secondary_pages_cache="$CACHE_DIR/secondary_pages.tmp"
+    local config_hash_file="$CONFIG_HASH_FILE" # Use the global var
+    local script_path="$BSSG_SCRIPT_DIR/build/generate_feeds.sh" # Path to this script
+    local sitemap_date_fmt="%Y-%m-%d"
+
+    # Determine active locale file
+    local active_locale_file=""
+    if [ -f "${LOCALE_DIR:-locales}/${SITE_LANG:-en}.sh" ]; then
+        active_locale_file="${LOCALE_DIR:-locales}/${SITE_LANG:-en}.sh"
+    elif [ -f "${LOCALE_DIR:-locales}/en.sh" ]; then # Fallback to en
+        active_locale_file="${LOCALE_DIR:-locales}/en.sh"
+    fi
+
+    # Check if sitemap needs rebuild (Simplified check)
+    local rebuild_needed=false
+    if [ "${FORCE_REBUILD:-false}" = true ]; then
+        rebuild_needed=true
+    elif [ ! -f "$sitemap" ]; then
+        rebuild_needed=true # Rebuild if sitemap doesn't exist
+    else
+        local sitemap_mtime=$(get_file_mtime "$sitemap")
+        # Check main content index files
+        if [ -f "$file_index" ] && [ "$(get_file_mtime "$file_index")" -gt "$sitemap_mtime" ]; then rebuild_needed=true; fi
+        if ! $rebuild_needed && [ -f "$tags_index" ] && [ "$(get_file_mtime "$tags_index")" -gt "$sitemap_mtime" ]; then rebuild_needed=true; fi
+        if ! $rebuild_needed && [ -f "$primary_pages_cache" ] && [ "$(get_file_mtime "$primary_pages_cache")" -gt "$sitemap_mtime" ]; then rebuild_needed=true; fi
+        if ! $rebuild_needed && [ -f "$secondary_pages_cache" ] && [ "$(get_file_mtime "$secondary_pages_cache")" -gt "$sitemap_mtime" ]; then rebuild_needed=true; fi
+        # Removed checks for script, config, locale mtime for simplicity to avoid sourcing errors
+    fi
+
+    # If no rebuild needed based on simple checks, skip
+        if [ "$rebuild_needed" = false ]; then
+        echo -e "${GREEN}Sitemap is up to date (based on content indexes), skipping...${NC}"
+            return 0
+    fi
+
+    # --- Pre-calculate latest dates (Still needed for Homepage/Tags) ---
+    local latest_post_mod_date=$(get_latest_mod_date "$file_index" 5 "" "$sitemap_date_fmt")
+    local latest_tag_page_mod_date=$(get_latest_mod_date "$tags_index" 5 "" "$sitemap_date_fmt") # Assumes lastmod is relevant field in tags_index
+
+    # --- Generate Sitemap using AWK --- START ---
+    echo "Generating sitemap content using awk..."
+
+    # Determine the best awk command locally to avoid potential scoping issues with AWK_CMD
+    local effective_awk_cmd="awk" # Default to standard awk
+    if command -v gawk > /dev/null 2>&1; then
+        effective_awk_cmd="gawk" # Prefer gawk if available
+    fi
+
+    # Use awk with a here-doc for the script for cleaner quoting
+    # Use the locally determined effective_awk_cmd
+    "$effective_awk_cmd" -v site_url="$SITE_URL" \
+        -v url_slug_format="$URL_SLUG_FORMAT" \
+        -v latest_post_mod_date="$latest_post_mod_date" \
+        -v latest_tag_page_mod_date="$latest_tag_page_mod_date" \
+        -v sitemap_date_fmt="$sitemap_date_fmt" \
+        -F'|' \
+        -f - \
+        "$file_index" "$primary_pages_cache" "$secondary_pages_cache" "$tags_index" <<'AWK_EOF' > "$sitemap"
+# AWK script for sitemap generation (fed via here-doc)
+BEGIN {
+    OFS=""; # No output field separator needed for XML
+    print "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+    print "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
+
+    # Homepage
+    print "    <url>";
+    print "        <loc>" fix_url_awk("/", site_url) "</loc>";
+    print "        <lastmod>" latest_post_mod_date "</lastmod>";
+    print "        <changefreq>daily</changefreq>";
+    print "        <priority>1.0</priority>";
+    print "    </url>";
+}
+
+# Custom function to replicate fix_url shell function logic
+function fix_url_awk(path, base_url) {
+    if (substr(path, 1, 1) == "/") {
+        # Remove trailing slash from base_url if present
+        sub(/\/$/, "", base_url);
+        # Ensure path doesnt start with //
+        sub(/^\/+/, "/", path);
+        # Remove index.html if present
+        sub(/\/index\.html$/, "/", path);
+        # Ensure trailing slash
+        if (substr(path, length(path), 1) != "/") {
+            path = path "/";
+        }
+        # Handle case where base_url is empty or just http://localhost* - skip prepending
+        if (base_url == "" || base_url ~ /^http:\/\/localhost(:[0-9]+)?$/) {
+            return path
+        } else {
+            return base_url path;
+        }
+    } else {
+        return path; # Should not happen for sitemap paths?
+    }
+}
+
+# Process file_index.txt (Posts)
+FILENAME == ARGV[1] {
+    file=$1; filename=$2; title=$3; date=$4; lastmod=$5; tags=$6; slug=$7;
+    if (length(file) == 0 || length(date) == 0 || length(lastmod) == 0 || length(slug) == 0) next;
+
+    year=substr(date, 1, 4);
+    month=substr(date, 6, 2);
+    day=substr(date, 9, 2);
+    # Ensure valid numbers? Basic check:
+    if (year ~ /^[0-9]{4}$/ && month ~ /^[0-9]{2}$/ && day ~ /^[0-9]{2}$/) {
+        formatted_path = url_slug_format;
+        gsub(/Year/, year, formatted_path);
+        gsub(/Month/, month, formatted_path);
+        gsub(/Day/, day, formatted_path);
+        gsub(/slug/, slug, formatted_path);
+        item_url = "/" formatted_path;
+        # Clean URL logic from shell script
+        sub(/\/+$/, "/", item_url);
+
+        mod_time = substr(lastmod, 1, 10); # Extract YYYY-MM-DD from lastmod ($5)
+        if (mod_time == "") next; # Skip if date is invalid/empty
+
+        print "    <url>";
+        print "        <loc>" fix_url_awk(item_url, site_url) "</loc>";
+        print "        <lastmod>" mod_time "</lastmod>";
+        print "        <changefreq>weekly</changefreq>";
+        print "        <priority>0.8</priority>";
+        print "    </url>";
+    }
+}
+
+# Process primary_pages.tmp
+FILENAME == ARGV[2] {
+    url=$2; date=$3; # $1=_, $4=source_file
+    if (length(url) == 0 || length(date) == 0) next;
+    sitemap_url = url;
+    sub(/index\.html$/, "", sitemap_url); # Remove index.html
+    sub(/\/+$/, "/", sitemap_url);      # Ensure trailing slash
+    mod_time = substr(date, 1, 10); # Extract YYYY-MM-DD from date ($3)
+    if (mod_time == "") next; # Skip if date is invalid/empty
+    print "    <url>";
+    print "        <loc>" fix_url_awk(sitemap_url, site_url) "</loc>";
+    print "        <lastmod>" mod_time "</lastmod>";
+    print "        <changefreq>monthly</changefreq>";
+    print "        <priority>0.7</priority>";
+    print "    </url>";
+}
+
+# Process secondary_pages.tmp
+FILENAME == ARGV[3] {
+    url=$2; date=$3; # $1=_, $4=source_file
+    if (length(url) == 0 || length(date) == 0) next;
+    sitemap_url = url;
+    sub(/index\.html$/, "", sitemap_url);
+    sub(/\/+$/, "/", sitemap_url);
+    mod_time = substr(date, 1, 10); # Extract YYYY-MM-DD from date ($3)
+    if (mod_time == "") next; # Skip if date is invalid/empty
+    print "    <url>";
+    print "        <loc>" fix_url_awk(sitemap_url, site_url) "</loc>";
+    print "        <lastmod>" mod_time "</lastmod>";
+    print "        <changefreq>monthly</changefreq>";
+    print "        <priority>0.6</priority>"; # Lower priority for secondary?
+    print "    </url>";
+}
+
+# Process tags_index.txt (Tag Pages)
+FILENAME == ARGV[4] {
+    tag=$1; tag_slug=$2; # $5 = lastmod for posts with this tag
+    if (length(tag_slug) == 0) next;
+    # Check if tag slug already processed
+    if ( !(tag_slug in processed_tags) ) {
+         processed_tags[tag_slug] = 1; # Mark as processed
+         item_url = "/tags/" tag_slug "/";
+         # Use the overall latest tag mod date for all tag pages?
+         mod_time = latest_tag_page_mod_date;
+         print "    <url>";
+         print "        <loc>" fix_url_awk(item_url, site_url) "</loc>";
+         print "        <lastmod>" mod_time "</lastmod>";
+         print "        <changefreq>weekly</changefreq>";
+         print "        <priority>0.5</priority>";
+         print "    </url>";
+    }
+}
+
+END {
+    print "</urlset>";
+}
+AWK_EOF
+    # awk exit status check - optional
+    # local awk_status=$?
+    # if [ $awk_status -ne 0 ]; then
+    #     echo -e "${RED}Error: awk script for sitemap generation failed with status $awk_status${NC}" >&2
+    #     # Decide whether to return 1 or continue
+    # fi
+
+    # --- Generate Sitemap using AWK --- END ---
+
+    echo -e "${GREEN}Sitemap generated!${NC}"
 }
 
 # Export public functions

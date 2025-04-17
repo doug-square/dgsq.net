@@ -116,62 +116,57 @@ extract_metadata() {
 
     elif [[ "$file" == *.md ]]; then
         # Parse YAML frontmatter for Markdown files
-        local in_frontmatter=false
-        local found_frontmatter=false
-        {
-            while IFS= read -r line; do
-                # Trim leading/trailing whitespace from line
-                line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        # Use awk with a here document for reliable script passing
+        
+        # Run awk and read results
+        local parsed_data
+        parsed_data=$(awk -f - "$file" <<'EOF'
+        BEGIN {
+            in_fm = 0;
+            found_fm = 0;
+            # Define default empty values
+            vars["title"] = ""; vars["date"] = ""; vars["lastmod"] = "";
+            vars["tags"] = ""; vars["slug"] = ""; vars["image"] = "";
+            vars["image_caption"] = ""; vars["description"] = "";
+        }
+        /^---$/ {
+            if (!in_fm && !found_fm) { in_fm = 1; found_fm = 1; next; }
+            if (in_fm) { in_fm = 0; exit; } # Exit awk early after frontmatter
+        }
+        in_fm {
+            # Match key: value, trim whitespace
+            local key value
+            if (match($0, /^([^:]+):[[:space:]]*(.*[^[:space:]])[[:space:]]*$/)) {
+                key = substr($0, RSTART, RLENGTH);
+                # Extract key part
+                match(key, /^[^:]+/);
+                key_str = substr(key, RSTART, RLENGTH);
+                # Extract value part
+                match(key, /:[[:space:]]*(.*)$/);
+                value = substr(key, RSTART + 1, RLENGTH -1 ); # +1/-1 to skip the :
+                # Trim spaces from key and value
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", key_str);
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", value);
+                key = tolower(key_str);
 
-                if [[ "$line" == "---" ]]; then
-                    if ! $in_frontmatter && ! $found_frontmatter; then
-                        in_frontmatter=true
-                        found_frontmatter=true
-                        continue
-                    elif $in_frontmatter; then
-                        in_frontmatter=false
-                        # Stop reading after frontmatter is closed
-                        break
-                    fi
-                fi
+                # Handle quoted strings (optional, basic handling)
+                if ( (match(value, /^"(.*)"$/) || match(value, /^\'(.*)\'$/)) && length(value) > 1 ) {
+                   value = substr(value, 2, length(value)-2);
+                }
+                vars[key] = value;
+            }
+        }
+        END {
+            # Print values in specific order
+            print vars["title"] "|" vars["date"] "|" vars["lastmod"] "|" \
+                  vars["tags"] "|" vars["slug"] "|" vars["image"] "|" \
+                  vars["image_caption"] "|" vars["description"];
+        }
+EOF
+        )
+        
+        IFS='|' read -r title date lastmod tags slug image image_caption description <<< "$parsed_data"
 
-                if $in_frontmatter; then
-                    # Parse each frontmatter field (case-insensitive key matching)
-                    local key value
-                    if [[ "$line" =~ ^([^:]+):[[:space:]]*(.*)$ ]]; then
-                        key=$(echo "${BASH_REMATCH[1]}" | tr '[:upper:]' '[:lower:]')
-                        value="${BASH_REMATCH[2]}"
-
-                        case "$key" in
-                            title)
-                                title="$value"
-                                ;;
-                            date)
-                                date="$value"
-                                ;;
-                            lastmod)
-                                lastmod="$value"
-                                ;;
-                            tags)
-                                tags="$value"
-                                ;;
-                            slug)
-                                slug="$value"
-                                ;;
-                            image)
-                                image="$value"
-                                ;;
-                            image_caption)
-                                image_caption="$value"
-                                ;;
-                            description)
-                                description="$value"
-                                ;;
-                        esac
-                    fi
-                fi
-            done
-        } < "$file"
     else
         echo "Warning: Unknown file type '$file' for metadata extraction." >&2
     fi
@@ -194,6 +189,7 @@ extract_metadata() {
     if [ -z "$description" ]; then
         # Generate excerpt only if description is missing
         # The excerpt is already sanitized and HTML-escaped plain text
+        echo "[DEBUG] Generating excerpt for $file" >&2
         description=$(generate_excerpt "$file")
     fi
 
@@ -230,77 +226,60 @@ generate_excerpt() {
 
     # Extract content after frontmatter
     local start_line=$(grep -n "^---$" "$file" | head -1 | cut -d: -f1)
-    local end_line=$(grep -n "^---$" "$file" | head -2 | tail -1 | cut -d: -f1)
+    local end_line=$(grep -n "^---$" "$file" | head -n 2 | tail -1 | cut -d: -f1)
 
-    local content=""
-    if [[ -z "$start_line" || -z "$end_line" || ! $start_line -lt $end_line ]]; then
-        # No valid frontmatter, use the beginning of the file
-        content=$(head -n 50 "$file")
+    local raw_content_stream
+    if [[ -n "$start_line" && -n "$end_line" && $start_line -lt $end_line ]]; then
+        # Stream content after frontmatter
+        raw_content_stream=$(tail -n +$((end_line + 1)) "$file")
     else
-        # Extract content after frontmatter
-        content=$(tail -n +$((end_line + 1)) "$file" | head -n 50)
+        # No valid frontmatter, stream the whole file
+        raw_content_stream=$(cat "$file")
     fi
 
-    # Comprehensive markdown sanitization
+    # Sanitize and extract the first non-empty paragraph/line
+    # Apply sanitization steps sequentially
+    local sanitized_content
+    sanitized_content=$(echo "$raw_content_stream" | \
+        # Remove code blocks (``` and indented)
+        awk '/^```/{flag=!flag;next} !flag;' | grep -v '^```' | \
+        grep -v '^    ' | \
+        # Remove images, links, headings, hr, blockquotes
+        sed -E 's/!\[([^]]*)\]\([^)]*\)//g' | \
+        sed -E 's/\[([^]]+)\]\(([^)]+)\)/\1/g' | \
+        sed 's/^#\{1,6\} //' | \
+        grep -v '^---\+$' | \
+        grep -v '^\*\*\*\+$' | \
+        grep -v '^___\+$' | \
+        sed 's/^> //' | \
+        # Remove list markers
+        sed -E 's/^\* |^- |^[0-9]+\. //' | \
+        # Remove HTML tags
+        sed -E 's/<[^>]*>//g' | \
+        # Escape basic HTML entities (ampersand, less than, greater than)
+        sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' | \
+        # Remove extra blank lines
+        awk 'NF {p=1} p' | \
+        # Get the first non-empty line (first paragraph)
+        awk 'NF {print; exit}' 
+    )
 
-    # 1. Remove code blocks (both ```code``` and indented)
-    content=$(echo "$content" | awk '/^```/{flag=!flag;next} !flag;' | grep -v '^```')
-    content=$(echo "$content" | grep -v '^    ')
+    # Truncate to max length
+    local excerpt
+    excerpt=$(echo "$sanitized_content" | head -c "$max_length")
 
-    # Process line by line to handle multiline patterns better
-    content=$(echo "$content" | while IFS= read -r line; do
-        # 2. Remove images ![alt](url)
-        line=$(echo "$line" | sed -E 's/!\[([^]]*)\]\([^)]*\)//g')
-
-        # 3. Replace links [text](url) with just text
-        line=$(echo "$line" | sed -E 's/\[([^]]*)\]\([^)]*\)/\1/g')
-
-        # 4. Remove HTML tags
-        line=$(echo "$line" | sed -E 's/<[^>]*>//g')
-
-        # 5. Remove headers (# Header)
-        line=$(echo "$line" | sed -E 's/^#+ +//g')
-
-        # 6. Remove emphasis/code markers (**, __, *, _, `)
-        line=$(echo "$line" | sed -E 's/\*\*([^*]+)\*\*/\1/g') # Bold (**text**)
-        line=$(echo "$line" | sed -E 's/__([^_]+)__/\1/g')     # Bold (__text__)
-        line=$(echo "$line" | sed -E 's/\*([^*]+)\*/\1/g')     # Italic (*text*)
-        line=$(echo "$line" | sed -E 's/_([^_]+)_/\1/g')       # Italic (_text_)
-        line=$(echo "$line" | sed -E 's/`([^`]+)`/\1/g')       # Code (`text`)
-
-        # 7. Remove blockquotes (> text)
-        line=$(echo "$line" | sed -E 's/^> +//g')
-
-        # 8. Remove list markers (*, +, -, 1.)
-        line=$(echo "$line" | sed -E 's/^([*+-]|[0-9]+\.) +//g')
-
-        # 9. Remove horizontal rules (---, ___, ***)
-        if ! echo "$line" | grep -qE '^[[:space:]]*([-*_])([[:space:]]*\1){2,}[[:space:]]*$'; then
-            echo "$line"
-        fi
-    done)
-
-    # 10. Normalize whitespace and remove extra line breaks
-    content=$(echo "$content" | tr '\n' ' ' | tr -s '[:space:]' ' ' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-
-    # 11. Escape HTML special characters (basic set)
-    content=$(echo "$content" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g; s/\x27/\&apos;/g')
-
-    # Truncate to approximately max_length chars at word boundary
-    local truncated
-    if [ ${#content} -gt $max_length ]; then
-        truncated=$(echo "$content" | cut -c 1-$max_length)
-        # Remove trailing partial word
-        truncated=${truncated% * }
-        # Add ellipsis if truncation occurred
-        if [ "$truncated" != "$content" ]; then
-            truncated="${truncated}..."
-        fi
-    else
-        truncated="$content"
+    # Add ellipsis if truncated
+    if [ "$(echo -n "$sanitized_content" | wc -c)" -gt "$max_length" ]; then
+        excerpt+="..."
+    fi
+    
+    # Ensure description is not empty after all this
+    if [ -z "$excerpt" ]; then
+        # Fallback: use the filename if excerpt is still empty
+        excerpt=$(basename "$file" | sed 's/\.[^.]*$//')
     fi
 
-    echo "$truncated"
+    echo "$excerpt"
 }
 
 # Convert provided markdown content string to HTML

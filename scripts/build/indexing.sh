@@ -23,7 +23,147 @@ declare -A file_index_data
 
 # --- Indexing Functions --- START ---
 
-# Optimized file index building with parallel processing and smarter caching
+# Step 1: Build a raw index using centralized awk (fast extraction only)
+_build_raw_file_index() {
+    local all_files_list="$1" # Input: file containing list of source files
+    local output_raw_index="$2" # Output: path for the raw index file
+
+    # Awk script to parse frontmatter - only extracts found fields
+    # No fallbacks handled here. Output includes filename and basename.
+    awk -f - $(<"$all_files_list") <<'EOF' > "$output_raw_index"
+    BEGIN { 
+        FS="|"; OFS="|"; 
+    }
+    function reset_vars() {
+        vars["title"] = ""; vars["date"] = ""; vars["lastmod"] = "";
+        vars["tags"] = ""; vars["slug"] = ""; vars["image"] = "";
+        vars["image_caption"] = ""; vars["description"] = "";
+        in_fm = 0; found_fm = 0;
+        is_html = (FILENAME ~ /\.html$/);
+        is_md = (FILENAME ~ /\.md$/);
+    }
+    FNR == 1 { 
+        if (NR > 1) {
+             # Print previous file raw data
+             print current_filename, current_basename, vars["title"], vars["date"], vars["lastmod"], \
+                   vars["tags"], vars["slug"], vars["image"], vars["image_caption"], vars["description"];
+        }
+        reset_vars();
+        current_filename = FILENAME;
+        current_basename = FILENAME;
+        sub(/.*\//, "", current_basename); # Get basename
+    }
+    # Markdown Parsing
+    is_md && /^---$/ {
+        if (!in_fm && !found_fm) { in_fm = 1; found_fm = 1; next; }
+        if (in_fm) { in_fm = 0; next; }
+    }
+    is_md && in_fm {
+        # Use compatible match for key-value extraction
+        if (match($0, /^([^:]+):[[:space:]]*(.*[^[:space:]])[[:space:]]*$/)) {
+            full_match = substr($0, RSTART, RLENGTH)
+            # Extract key part
+            key_start = match(full_match, /^[^:]+/)
+            key_str = substr(full_match, RSTART, RLENGTH)
+            # Extract value part (handle potential quotes)
+            value_start = match(full_match, /:[[:space:]]*(.*)$/)
+            value = substr(full_match, RSTART + 1, RLENGTH - 1)
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", key_str);
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", value);
+            key = tolower(key_str);
+            # Remove surrounding quotes from value if present
+            if ( (match(value, /^"(.*)"$/) || match(value, /^\'(.*)\'$/)) && length(value) > 1 ) {
+                value = substr(value, 2, length(value)-2);
+            }
+            if (key in vars) { vars[key] = value; }
+        }
+        next; 
+    }
+    # HTML Parsing
+    is_html && match($0, /<title>([^<]*)<\/title>/) { 
+        # Extract content within <title> tags
+        title_content = substr($0, RSTART + 7, RLENGTH - 15)
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", title_content); # Trim whitespace
+        # Only set title if it wasn't already set by frontmatter (e.g., in markdown)
+        if (vars["title"] == "") {
+           vars["title"] = title_content; 
+        }
+    }
+    is_html && match($0, /<meta[^>]+name="([^"]+)"[^>]+content="([^"]*)"[^>]*>/) {
+        # Extract key (name attribute)
+        key_match_start = RSTART + index($0, "name=") + 5 # Position after name="
+        key_match_len = index(substr($0, key_match_start), "\"") -1
+        key = tolower(substr($0, key_match_start, key_match_len));
+        
+        # Extract value (content attribute)
+        content_match_start = RSTART + index($0, "content=") + 8 # Position after content="
+        content_match_len = index(substr($0, content_match_start), "\"") -1
+        value = substr($0, content_match_start, content_match_len);
+
+        # Only set if the key is one we care about and not already set
+        if (key in vars && vars[key] == "") { vars[key] = value; }
+    }
+    END {
+        if (NR > 0) {
+             # Print last file raw data
+             print current_filename, current_basename, vars["title"], vars["date"], vars["lastmod"], \
+                   vars["tags"], vars["slug"], vars["image"], vars["image_caption"], vars["description"];
+        }
+    }
+EOF
+}
+
+# Step 2: Process the raw index, applying fallbacks for missing essential fields
+_process_raw_file_index() {
+    local input_raw_index="$1" # Input: path to the raw index file
+    local output_processed_index="$2" # Output: path for the final processed index
+
+    # Export functions needed in the loop
+    export -f get_file_mtime format_date_from_timestamp generate_slug generate_excerpt
+    export DATE_FORMAT # Needed by format_date_from_timestamp
+    export SRC_DIR # Needed indirectly by generate_excerpt if path is relative?
+
+    > "$output_processed_index" # Ensure output file is empty
+
+    local file filename title date lastmod tags slug image image_caption description
+    local file_mtime
+    while IFS='|' read -r file filename title date lastmod tags slug image image_caption description || [[ -n "$file" ]]; do
+        # Fallback for Title (use filename without extension)
+        if [ -z "$title" ]; then
+            title="${filename%.*}"
+        fi
+        
+        # Fallback for Date (use file modification time)
+        if [ -z "$date" ]; then
+            file_mtime=$(get_file_mtime "$file")
+            date=$(format_date_from_timestamp "$file_mtime")
+        fi
+
+        # Fallback for Last Modified Date (use date if lastmod is missing)
+        if [ -z "$lastmod" ]; then
+            lastmod="$date"
+        fi
+
+        # Fallback for Slug (generate from title)
+        if [ -z "$slug" ]; then
+            # Ensure title is available for slug generation
+            if [ -z "$title" ]; then title="${filename%.*}"; fi 
+            slug=$(generate_slug "$title")
+        fi
+
+        # Fallback for Description (generate excerpt)
+        # Check if description is empty or contains only whitespace
+        if [[ -z "$description" || "$description" =~ ^[[:space:]]*$ ]]; then
+            description=$(generate_excerpt "$file")
+        fi
+        
+        # Output the fully processed line to the final index file
+        echo "$file|$filename|$title|$date|$lastmod|$tags|$slug|$image|$image_caption|$description" >> "$output_processed_index"
+    done < "$input_raw_index"
+    wait # Ensure background processes from potential subshells (like generate_excerpt) finish
+}
+
+# Optimized file index building - orchestrates raw build and processing
 optimized_build_file_index() {
     echo -e "${YELLOW}Building file index...${NC}"
     
@@ -31,140 +171,76 @@ optimized_build_file_index() {
     local index_marker="${CACHE_DIR:-.bssg_cache}/index_marker"
     local frontmatter_changes_marker="${CACHE_DIR:-.bssg_cache}/frontmatter_changes_marker"
     
-    # Check if rebuild is needed by comparing the newest file in src directory with our marker
+    # Check if rebuild is needed
     if [ "${FORCE_REBUILD:-false}" = false ] && [ -f "$file_index" ] && [ -f "$index_marker" ]; then
         local newest_file_time=0
         # Use find -printf for efficiency if available (GNU find)
         if find --version >/dev/null 2>&1 && grep -q GNU <<< "$(find --version)"; then
              newest_file_time=$(find "${SRC_DIR:-src}" -type f \( -name "*.md" -o -name "*.html" \) -not -path "*/.*" -printf '%T@\n' 2>/dev/null | sort -nr | head -n 1)
              newest_file_time=${newest_file_time:-0} # Handle empty dir
-             # Convert float timestamp to integer
              newest_file_time=$(printf "%.0f" "$newest_file_time")
-        else
-            # Fallback for non-GNU find (less efficient)
+        else # POSIX/BSD find
             local src_files
-            src_files=$(find "${SRC_DIR:-src}" -type f \( -name "*.md" -o -name "*.html" \) -not -path "*/.*" 2>/dev/null)
-            for f in $src_files; do
-                local f_time=$(get_file_mtime "$f")
-                if (( f_time > newest_file_time )); then
-                    newest_file_time=$f_time
-                fi
-            done
+            # Use -exec stat for better portability than parsing ls
+            # This might still be slow on very large sites compared to GNU find -printf
+            newest_file_time=$(find "${SRC_DIR:-src}" -type f \( -name "*.md" -o -name "*.html" \) -not -path "*/.*" -exec stat -f %m {} \; 2>/dev/null | sort -nr | head -n 1)
+            newest_file_time=${newest_file_time:-0} # Handle empty dir
         fi
         
         local marker_time=$(get_file_mtime "$index_marker")
-        
-        if [ "$newest_file_time" -le "$marker_time" ]; then
+        # Defensive check: if marker_time is 0 or invalid, force rebuild
+        [[ -z "$marker_time" || "$marker_time" -eq 0 ]] && marker_time=0 
+
+        # Check if any source file is newer than the marker
+        if [[ "$newest_file_time" -gt 0 && "$marker_time" -gt 0 && "$newest_file_time" -le "$marker_time" ]]; then
             echo -e "${GREEN}File index is up to date, skipping...${NC}"
             return 0
+        else
+            echo -e "${YELLOW}File index rebuild needed (newest file: $newest_file_time, marker: $marker_time).${NC}"
         fi
     fi
     
     lock_file "$file_index"
     
-    # Find all markdown/html files in the source directory, excluding hidden
-    local all_files_tmp="${CACHE_DIR:-.bssg_cache}/all_files.tmp.$$"
-    find "${SRC_DIR:-src}" -type f \( -name "*.md" -o -name "*.html" \) -not -path "*/.*" | sort > "$all_files_tmp"
+    # Find all markdown/html files
+    local all_files_list="${CACHE_DIR:-.bssg_cache}/all_files_list.$$"
+    find "${SRC_DIR:-src}" -type f \( -name "*.md" -o -name "*.html" \) -not -path "*/.*" | sort > "$all_files_list"
+    trap 'rm -f "$all_files_list"' EXIT # Ensure cleanup
     
-    local total_files=$(wc -l < "$all_files_tmp")
+    local total_files=$(wc -l < "$all_files_list")
     if [ "$total_files" -eq 0 ]; then
         echo -e "${YELLOW}No source files found in ${SRC_DIR:-src}. Skipping index build.${NC}"
         > "$file_index" # Create empty index
         touch "$index_marker"
         unlock_file "$file_index"
-        rm -f "$all_files_tmp"
+        rm -f "$all_files_list"
+        trap - EXIT # Remove trap
         return 0
     fi
     echo "Found $total_files files in source directory."
-    
-    # Create temp directory for parallel processing
-    local temp_dir="${CACHE_DIR:-.bssg_cache}/temp_index_$$"
-    rm -rf "$temp_dir" # Clean up previous run just in case
-    mkdir -p "$temp_dir"
-    
-    # Ensure metadata cache directory exists
-    mkdir -p "${CACHE_DIR:-.bssg_cache}/meta"
-    
-    # Get number of available CPU cores
-    local cores=1
-    if command -v nproc > /dev/null 2>&1; then cores=$(nproc); 
-    elif command -v sysctl > /dev/null 2>&1; then cores=$(sysctl -n hw.ncpu 2>/dev/null || echo 1); fi
-    
-    # Calculate batch size
-    local batch_size=$(( (total_files + cores - 1) / cores ))
-    [ "$batch_size" -lt 1 ] && batch_size=1
-    
-    echo -e "${YELLOW}Processing $total_files files using $cores cores (batch size: $batch_size)...${NC}"
-    
-    # Export required functions and variables
-    export DATE_FORMAT CACHE_DIR SRC_DIR FORCE_REBUILD # Add others as needed
-    export -f extract_metadata get_file_mtime format_date_from_timestamp generate_slug generate_excerpt lock_file unlock_file parse_metadata convert_markdown_to_html
-    
-    # Split files into batches
-    split -l "$batch_size" "$all_files_tmp" "$temp_dir/batch_"
-    rm -f "$all_files_tmp" # Clean up original list
-    
-    # Function to process a single batch file
-    process_batch() {
-        local batch_file="$1"
-        local output_batch="${batch_file}.out"
-        > "$output_batch"  # Initialize empty file
-        
-        while IFS= read -r file; do
-            # Get filename without extension
-            local filename=$(basename "$file" | sed 's/\\.[^.]*$//')
-            
-            # Extract metadata from file
-            local metadata
-            metadata=$(extract_metadata "$file")
-            # Check for errors
-            if [[ $? -ne 0 || "$metadata" == "ERROR_FILE_NOT_FOUND" ]]; then
-                 echo -e "${RED}Error processing metadata for $file, skipping.${NC}" >&2
-                 continue
-            fi
-            
-            local title date lastmod tags slug image image_caption description
-            IFS='|' read -r title date lastmod tags slug image image_caption description <<< "$metadata"
-            
-            # Sanitize description: remove newlines
-            description=$(echo "$description" | tr '\n' ' ')
 
-            # Add to batch file
-            echo "$file|$filename|$title|$date|$lastmod|$tags|$slug|$image|$image_caption|$description" >> "$output_batch"
-        done < "$batch_file"
-        rm "$batch_file" # Remove processed input batch
-    }
-    export -f process_batch
-
-    # Process batches in parallel using GNU Parallel if available
-    if command -v parallel > /dev/null 2>&1 && [ "${HAS_PARALLEL:-false}" = true ]; then
-        find "$temp_dir" -name "batch_*" -not -name "*.out" | parallel --jobs "$cores" process_batch {}
-    else
-        # Fallback to sequential processing
-        echo -e "${YELLOW}GNU Parallel not found or disabled, processing batches sequentially...${NC}"
-        for batch_file in "$temp_dir"/batch_*; do
-            [[ "$batch_file" == *.out ]] && continue
-            process_batch "$batch_file"
-        done
-    fi
-    
-    # Merge batch output files and ensure uniqueness
-    local file_index_tmp="${CACHE_DIR:-.bssg_cache}/file_index.tmp.$$"
-    find "$temp_dir" -name "*.out" -type f -exec cat {} + > "$file_index_tmp" 2>/dev/null || true
-    rm -rf "$temp_dir" # Clean up temp directory
-
-    # Filter by unique file path (first field)
-    local file_index_filtered="${CACHE_DIR:-.bssg_cache}/file_index.filtered.$$"
-    awk -F'|' '!seen[$1]++' "$file_index_tmp" > "$file_index_filtered"
-    rm -f "$file_index_tmp"
-
-    # Sort the filtered index by date (field 4) in reverse chronological order
+    # Define temporary file paths
+    local file_index_raw="${CACHE_DIR:-.bssg_cache}/file_index.raw.$$"
+    local file_index_processed="${CACHE_DIR:-.bssg_cache}/file_index.processed.$$"
     local file_index_sorted="${CACHE_DIR:-.bssg_cache}/file_index.sorted.$$"
-    # Sort by date field (YYYY-MM-DD HH:MM:SS format). The default string sort works correctly in reverse.
-    sort -t '|' -k 4,4r "$file_index_filtered" > "$file_index_sorted"
-    rm -f "$file_index_filtered" # Remove the unsorted filtered file
+    trap 'rm -f "$all_files_list" "$file_index_raw" "$file_index_processed" "$file_index_sorted"' EXIT # Ensure cleanup
 
-    # Check if file_index has changed
+    # Step 1: Build raw index (fast awk extraction)
+    echo "Step 1: Processing $total_files files using centralized awk for raw data..."
+    _build_raw_file_index "$all_files_list" "$file_index_raw"
+    rm -f "$all_files_list" # Clean up file list immediately after use
+
+    # Step 2: Process raw index (apply fallbacks)
+    echo "Step 2: Applying fallbacks for missing fields..."
+    _process_raw_file_index "$file_index_raw" "$file_index_processed"
+    rm -f "$file_index_raw"
+
+    # Step 3: Sort the final processed index by date (field 4) reverse chronologically
+    echo "Step 3: Sorting processed index..."
+    sort -t '|' -k 4,4r -k 1,1 "$file_index_processed" > "$file_index_sorted" # Add secondary sort by filename
+    rm -f "$file_index_processed"
+
+    # Check if file_index content has changed
     local index_content_changed=false
     if [ -f "$file_index" ]; then
         if ! cmp -s "$file_index" "$file_index_sorted"; then
@@ -175,6 +251,7 @@ optimized_build_file_index() {
         index_content_changed=true # No previous index exists
     fi
 
+    # Move sorted index to final location
     mv "$file_index_sorted" "$file_index"
     
     # Update frontmatter changes marker if content changed
@@ -183,11 +260,13 @@ optimized_build_file_index() {
         echo -e "${YELLOW}File index changed, updating frontmatter marker.${NC}"
     fi
     
+    # Update the main index marker timestamp
     touch "$index_marker"
     
     unlock_file "$file_index"
+    trap - EXIT # Remove trap upon successful completion
     
-    echo -e "${GREEN}File index built with $(wc -l < "$file_index") files!${NC}"
+    echo -e "${GREEN}File index built with $(wc -l < "$file_index") complete entries!${NC}"
 }
 
 # Build tags index from the file index
@@ -235,27 +314,31 @@ build_tags_index() {
 
     lock_file "$tags_index_file"
     
-    > "$tags_index_file"  # Clear the file
+    # > "$tags_index_file"  # Clear the file - AWK will overwrite
 
     # Read from file index and extract tags
-    local line file filename title date lastmod tags slug image image_caption description
-    while IFS= read -r line || [[ -n "$line" ]]; do
-        IFS='|' read -r file filename title date lastmod tags slug image image_caption description <<< "$line"
+    # Use awk for efficient processing and slug generation
+    awk -F'|' -v OFS='|' '{
+        # $1=file, $2=filename, $3=title, $4=date, $5=lastmod, 
+        # $6=tags, $7=slug, $8=image, $9=image_caption, $10=description
+        if (length($6) > 0) { # Check if tags field is not empty
+            split($6, tags_array, ","); # Split tags by comma
+            for (i in tags_array) {
+                tag = tags_array[i];
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", tag); # Trim whitespace
+                if (length(tag) == 0) continue; # Skip empty tags
 
-        if [ -n "$tags" ]; then
-            local tag_slug
-            echo "$tags" | tr ',' '\n' | while IFS= read -r tag; do
-                # Remove leading/trailing whitespace
-                tag=$(echo "$tag" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-                [[ -z "$tag" ]] && continue # Skip empty tags
+                # Generate slug within awk (replicating generate_slug logic)
+                tag_slug = tolower(tag);
+                gsub(/[^a-z0-9]+/, "-", tag_slug); # Replace non-alphanumeric with hyphens
+                gsub(/^-+|-+$/, "", tag_slug); # Trim leading/trailing hyphens
+                if (length(tag_slug) == 0) tag_slug = "-"; # Handle empty slugs
                 
-                tag_slug=$(generate_slug "$tag")
-
-                # Output: TagName|TagSlug|PostTitle|PostDate|PostLastMod|PostFilename|PostSlug|PostImage|PostImageCaption|PostDescription
-                echo "$tag|$tag_slug|$title|$date|$lastmod|$filename|$slug|$image|$image_caption|$description" >> "$tags_index_file"
-            done
-        fi
-    done < "$file_index"
+                # Print: TagName|TagSlug|PostTitle|PostDate|PostLastMod|PostFilename|PostSlug|PostImage|PostImageCaption|PostDescription
+                print tag, tag_slug, $3, $4, $5, $2, $7, $8, $9, $10;
+            }
+        }
+    }' "$file_index" > "$tags_index_file" 
     
     unlock_file "$tags_index_file"
 

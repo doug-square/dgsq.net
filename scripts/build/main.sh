@@ -188,7 +188,7 @@ echo "Generated post HTML files."
 
 # --- Post Generation --- END ---
 
-# --- Page Generation --- START ---
+# --- Page Generation --- START --
 # Source the page generation script
 # shellcheck source=generate_pages.sh disable=SC1091
 source "$SCRIPT_DIR/generate_pages.sh" || { echo -e "${RED}Error: Failed to source generate_pages.sh${NC}"; exit 1; }
@@ -231,7 +231,9 @@ echo "Generated main index/pagination pages."
 # shellcheck source=generate_feeds.sh disable=SC1091
 source "$SCRIPT_DIR/generate_feeds.sh" || { echo -e "${RED}Error: Failed to source generate_feeds.sh${NC}"; exit 1; }
 # Call the functions from the sourced script
+echo "Timing sitemap generation..."
 generate_sitemap || echo -e "${YELLOW}Sitemap generation failed, continuing build...${NC}" # Allow failure
+echo "Timing RSS feed generation..."
 generate_rss || echo -e "${YELLOW}RSS feed generation failed, continuing build...${NC}" # Allow failure
 echo "Generated RSS feed and sitemap."
 # --- Feed Generation --- END ---
@@ -248,7 +250,7 @@ if [ -n "$SECONDARY_PAGES" ] && [ "$SECONDARY_PAGES" != "()" ]; then
     generate_pages_index || echo -e "${YELLOW}Secondary pages index generation failed, continuing build...${NC}" # Allow failure
     echo "Generated secondary pages index."
 else
-    echo "No secondary pages found, skipping secondary pages index."
+    echo "No secondary pages defined, skipping secondary index generation."
 fi
 # --- Secondary Pages Index Generation --- END ---
 
@@ -257,8 +259,10 @@ fi
 # shellcheck source=assets.sh disable=SC1091
 source "$SCRIPT_DIR/assets.sh" || { echo -e "${RED}Error: Failed to source assets.sh${NC}"; exit 1; }
 # Copy static assets
+echo "Timing static files copy..."
 copy_static_files || { echo -e "${RED}Error: Failed to copy static assets.${NC}"; exit 1; }
-# Process CSS files
+# Process CSS files (includes theme asset copy)
+echo "Timing CSS/Theme processing..."
 create_css "$OUTPUT_DIR" "$THEME" || { echo -e "${RED}Error: Failed to process CSS.${NC}"; exit 1; } # Pass OUTPUT_DIR and THEME
 echo "Handled static assets and CSS."
 # --- Asset Handling --- END ---
@@ -267,10 +271,16 @@ echo "Handled static assets and CSS."
 # Source and run Post Processor
 # shellcheck source=post_process.sh disable=SC1091
 source "$SCRIPT_DIR/post_process.sh" || { echo -e "${RED}Error: Failed to source post_process.sh${NC}"; exit 1; }
+echo "Timing URL post-processing..."
 post_process_urls || echo -e "${YELLOW}URL post-processing failed, continuing...${NC}" # Allow failure
+echo "Timing output permissions fix..."
 fix_output_permissions || echo -e "${YELLOW}Fixing output permissions failed, continuing...${NC}" # Allow failure
 echo "Completed post-processing."
 # --- Post Processing --- END ---
+
+# --- Final Cache Update --- START ---
+create_config_hash
+# --- Final Cache Update --- END ---
 
 # --- Deployment --- START ---
 deploy_now="false"
