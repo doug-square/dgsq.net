@@ -4,12 +4,6 @@
 # Functions for parsing metadata, generating excerpts, and converting markdown.
 #
 
-# Ensure necessary color variables are available if sourced independently
-# RED='${RED:-\033[0;31m}'
-# GREEN='${GREEN:-\033[0;32m}'
-# YELLOW='${YELLOW:-\033[0;33m}'
-# NC='${NC:-\033[0m}'
-
 # Source Utilities if needed by functions below
 # shellcheck source=utils.sh disable=SC1091
 source "$(dirname "$0")/utils.sh" || { echo >&2 "Error: Failed to source utils.sh from content.sh"; exit 1; }
@@ -264,12 +258,18 @@ generate_excerpt() {
         awk 'NF {print; exit}' 
     )
 
-    # Truncate to max length
+    # Truncate to max length using dd for portability
     local excerpt
-    excerpt=$(echo "$sanitized_content" | head -c "$max_length")
+    if [ -z "$sanitized_content" ]; then
+        excerpt=""
+    else
+        # Use dd: bs=1 reads byte by byte, count limits the total bytes
+        # 2>/dev/null suppresses dd's status messages
+        excerpt=$(echo "$sanitized_content" | dd bs=1 count="$max_length" 2>/dev/null)
+    fi
 
     # Add ellipsis if truncated
-    if [ "$(echo -n "$sanitized_content" | wc -c)" -gt "$max_length" ]; then
+    if [ ${#sanitized_content} -gt $max_length ]; then
         excerpt+="..."
     fi
     

@@ -4,12 +4,6 @@
 # Functions for converting markdown posts to HTML.
 #
 
-# Ensure necessary color variables are available if sourced independently
-# RED='${RED:-\\033[0;31m}' # Removed - Should be inherited from main export
-# GREEN='${GREEN:-\\033[0;32m}' # Removed - Should be inherited from main export
-# YELLOW='${YELLOW:-\\033[0;33m}' # Removed - Should be inherited from main export
-# NC='${NC:-\\033[0m}' # Removed - Should be inherited from main export
-
 # Source dependencies
 # shellcheck source=utils.sh disable=SC1091
 source "$(dirname "$0")/utils.sh" || { echo >&2 "Error: Failed to source utils.sh from generate_posts.sh"; exit 1; }
@@ -330,6 +324,8 @@ process_all_markdown_files() {
     echo -e "${YELLOW}Processing markdown posts...${NC}"
 
     local file_index="${CACHE_DIR:-.bssg_cache}/file_index.txt"
+    local modified_tags_list="${CACHE_DIR:-.bssg_cache}/modified_tags.list" # Define path for modified tags
+    local file_index_prev="${CACHE_DIR:-.bssg_cache}/file_index_prev.txt" # Path to previous index
 
     if [ ! -f "$file_index" ]; then
         echo -e "${RED}Error: File index not found at '$file_index'. Run indexing first.${NC}" >&2
@@ -342,6 +338,12 @@ process_all_markdown_files() {
         return 0
     fi
     echo -e "Checking ${GREEN}$total_file_count${NC} potential posts listed in index."
+
+    # --- Start Change: Clear previous modified tags list ---
+    echo "Clearing previous modified tags list: $modified_tags_list" >&2 # Debug message
+    rm -f "$modified_tags_list"
+    touch "$modified_tags_list" # Ensure file exists even if empty
+    # --- End Change ---
 
     # Pre-filter files that need rebuilding
     local files_to_process_list=()
@@ -411,12 +413,43 @@ process_all_markdown_files() {
         if $needs_rebuild; then
             files_to_process_list+=("$line")
             files_to_process_count=$((files_to_process_count + 1))
+            # --- Start Change: Track ALL modified tags (old and new) ---
+            # 'tags' variable holds the NEW tags from the current file_index line
+            local new_tags="$tags"
+            local old_tags=""
+            # Try to get old tags from the previous index snapshot
+            if [ -f "$file_index_prev" ]; then
+                # Grep for the exact file path ($file), assuming it's the first field
+                # Extract the 6th field (tags)
+                old_tags=$(grep "^${file}|" "$file_index_prev" | cut -d'|' -f6)
+            fi
+            
+            # Combine old and new tags
+            local combined_tags="${old_tags},${new_tags}"
+            
+            #echo "Tracking combined tags for modified file: $file -> Old: '$old_tags' New: '$new_tags' Combined: '$combined_tags'" >&2 # Debug message
+
+            if [ -n "$combined_tags" ]; then
+                # Split by comma, trim, filter empty, sort unique, and add each tag on a new line
+                echo "$combined_tags" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep . | sort -u >> "$modified_tags_list"
+            fi
+            # --- End Change ---
         else
             # Only print skip message if not rebuilding
             echo -e "Skipping unchanged file: ${YELLOW}$(basename "$file")${NC}"
             skipped_count=$((skipped_count + 1))
         fi
     done < "$file_index"
+
+    # --- Start Change: Unique sort the modified tags list (redundant now but safe) ---
+    if [ -f "$modified_tags_list" ]; then
+        echo "Sorting and making modified tags list unique: $modified_tags_list" >&2 # Debug message
+        local temp_tags_list=$(mktemp)
+        # Sort unique again just in case duplicates were added somehow
+        sort -u "$modified_tags_list" > "$temp_tags_list"
+        mv "$temp_tags_list" "$modified_tags_list"
+    fi
+    # --- End Change ---
 
     # Check if any files need processing
     if [ $files_to_process_count -eq 0 ]; then
@@ -482,7 +515,7 @@ process_all_markdown_files() {
         export CONFIG_HASH_FILE BSSG_CONFIG_CHANGED_STATUS # Export status for common_rebuild_check
 
         # Process filtered lines in parallel
-        printf "%s\n" "${files_to_process_list[@]}" | parallel --jobs "$cores" process_single_file_for_rebuild {} || { echo -e "${RED}Parallel post processing failed.${NC}"; exit 1; }
+        printf "%s\n" "${files_to_process_list[@]}" | parallel --jobs "$cores" --will-cite process_single_file_for_rebuild {} || { echo -e "${RED}Parallel post processing failed.${NC}"; exit 1; }
     else
         # Sequential processing for filtered list
         echo -e "${YELLOW}Using sequential processing for $files_to_process_count posts${NC}"

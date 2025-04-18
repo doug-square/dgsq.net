@@ -10,12 +10,6 @@ source "$(dirname "$0")/utils.sh" || { echo >&2 "Error: Failed to source utils.s
 # shellcheck source=content.sh disable=SC1091
 source "$(dirname "$0")/content.sh" || { echo >&2 "Error: Failed to source content.sh from templates.sh"; exit 1; }
 
-# Ensure necessary color variables are available if sourced independently
-# RED='${RED:-\033[0;31m}'
-# GREEN='${GREEN:-\033[0;32m}'
-# YELLOW='${YELLOW:-\033[0;33m}'
-# NC='${NC:-\033[0m}'
-
 # --- Global Template Variables and Cache --- START ---
 HEADER_TEMPLATE=""
 FOOTER_TEMPLATE=""
@@ -186,6 +180,20 @@ preload_templates() {
     # Add primary pages to menu
     for page in "${primary_pages[@]}"; do
         IFS='|' read -r title url _ _ <<< "$page" # Ignore date and source file for menu
+
+        # Extract path part from the URL (relative to SITE_URL)
+        local path_part="${url#$SITE_URL}" # Remove SITE_URL prefix
+        path_part="${path_part#/}"       # Remove leading slash if exists
+        path_part="${path_part%/}"      # Remove trailing slash if exists
+        
+        # Extract the final component (slug) using basename
+        local current_slug=$(basename "$path_part")
+        
+        # Skip adding the 'index' page to the menu
+        if [[ "$current_slug" == "index" ]]; then
+            continue
+        fi
+
         menu_items+=" <a href=\"$url\">$title</a>"
         footer_items+=" <a href=\"$url\">$title</a> &middot;"
     done
@@ -197,7 +205,12 @@ preload_templates() {
     fi
 
     # Add standard menu items
-    menu_items+=" <a href=\"${SITE_URL}/tags/\">${MSG_TAGS:-"Tags"}</a>"
+    local tags_flag_file="${CACHE_DIR:-.bssg_cache}/has_tags.flag"
+    # Add tags link only if the flag file exists (meaning tags were found in the last indexing run)
+    if [ -f "$tags_flag_file" ]; then
+        menu_items+=" <a href=\"${SITE_URL}/tags/\">${MSG_TAGS:-"Tags"}</a>"
+    fi
+
     # Only add Archives link if enabled
     if [ "${ENABLE_ARCHIVES:-true}" = true ]; then
       menu_items+=" <a href=\"${SITE_URL}/archives/\">${MSG_ARCHIVES:-"Archives"}</a>"
@@ -205,7 +218,10 @@ preload_templates() {
     fi
     menu_items+=" <a href=\"${SITE_URL}/rss.xml\">${MSG_RSS:-"RSS"}</a>"
 
-    footer_items+=" <a href=\"${SITE_URL}/tags/\">${MSG_TAGS:-"Tags"}</a> &middot;"
+    # Add tags link to footer only if the flag file exists
+    if [ -f "$tags_flag_file" ]; then
+        footer_items+=" <a href=\"${SITE_URL}/tags/\">${MSG_TAGS:-"Tags"}</a> &middot;"
+    fi
     footer_items+=" <a href=\"${SITE_URL}/rss.xml\">${MSG_SUBSCRIBE_RSS:-"Subscribe via RSS"}</a>"
 
     # Replace menu placeholders in templates

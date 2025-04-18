@@ -4,12 +4,6 @@
 # Functions for handling build cache and rebuild checks.
 #
 
-# Ensure necessary color variables are available if sourced independently
-# RED='${RED:-\\033[0;31m}' # Removed - Should be inherited from main export
-# GREEN='${GREEN:-\\033[0;32m}' # Removed - Should be inherited from main export
-# YELLOW='${YELLOW:-\\033[0;33m}' # Removed - Should be inherited from main export
-# NC='${NC:-\\033[0m}' # Removed - Should be inherited from main export
-
 # Define cache paths (should match exported config, but useful here too)
 CACHE_DIR=".bssg_cache"
 CONFIG_HASH_FILE="$CACHE_DIR/config_hash.md5"
@@ -175,6 +169,8 @@ clean_stale_cache() {
         rm -f "$CACHE_DIR/tags_index.txt"
         rm -f "$CACHE_DIR/archive_index.txt"
         rm -f "$CACHE_DIR/index_marker"
+        # Remove the tags flag file as well
+        rm -f "${CACHE_DIR:-.bssg_cache}/has_tags.flag"
         # IMPORTANT: Requires OUTPUT_DIR to be exported/available
         rm -f "${OUTPUT_DIR:-output}/sitemap.xml"
         rm -f "${OUTPUT_DIR:-output}/rss.xml"
@@ -206,66 +202,17 @@ common_rebuild_check() {
         return 0  # Rebuild needed
     fi
 
-    # Check if templates have changed
-    # IMPORTANT: Requires TEMPLATES_DIR, LOCALE_DIR, SITE_LANG to be exported/available
-    # Assumes get_file_mtime is sourced from utils.sh
-    local template_dir="${TEMPLATES_DIR:-templates}"
-    # Adjust template paths based on theme existence if necessary
-    if [ -d "$template_dir/${THEME:-default}" ]; then
-        template_dir="$template_dir/${THEME:-default}"
-    fi
-    local header_template="$template_dir/header.html"
-    local footer_template="$template_dir/footer.html"
-
-    # Also check the active locale file
-    local active_locale_file=""
-    if [ -f "${LOCALE_DIR:-locales}/${SITE_LANG:-en}.sh" ]; then
-        active_locale_file="${LOCALE_DIR:-locales}/${SITE_LANG:-en}.sh"
-    elif [ -f "${LOCALE_DIR:-locales}/en.sh" ]; then
-        active_locale_file="${LOCALE_DIR:-locales}/en.sh"
-    fi
-
+    # Check if output file exists. If not, rebuild needed.
+    # Moved this basic check here for clarity.
     if [ ! -f "$output_file_to_check" ]; then 
         # echo "DEBUG_CACHE: Output file '$output_file_to_check' missing, returning 0" >&2
-        return 0
-    fi
-    
-    if [ -f "$output_file_to_check" ]; then
-        # IMPORTANT: Assumes get_file_mtime is sourced/available
-        local output_time
-        output_time=$(get_file_mtime "$output_file_to_check")
-        local header_time
-        header_time=$(get_file_mtime "$header_template")
-        local footer_time
-        footer_time=$(get_file_mtime "$footer_template")
-        local locale_time
-        locale_time=$(get_file_mtime "$active_locale_file")
-
-        # DEBUG: Print timestamps for comparison
-        # echo "DEBUG_CACHE: Checking $output_file_to_check" >&2
-        # echo "DEBUG_CACHE:   Output Time:  $output_time" >&2
-        # echo "DEBUG_CACHE:   Header Time:  $header_time ($header_template)" >&2
-        # echo "DEBUG_CACHE:   Footer Time:  $footer_time ($footer_template)" >&2
-        # echo "DEBUG_CACHE:   Locale Time:  $locale_time ($active_locale_file)" >&2
-
-        # Force rebuild if any template or the locale file is newer than the output
-        if (( header_time > output_time )) || (( footer_time > output_time )) || (( locale_time > output_time )); then
-            # echo "DEBUG_CACHE: Template/locale newer than output, returning 0" >&2
-            # If locale file changed, print a message
-            if (( locale_time > output_time )); then
-                echo -e "${YELLOW}Locale file change detected, forcing rebuild for '$output_file_to_check'${NC}"
-            fi
-            return 0  # Rebuild needed
-        fi
-
-        # echo "DEBUG_CACHE: Output file exists and is newer than templates/locale, returning 2" >&2
-        # Return this info to the calling function
-        return 2  # Valid output file exists, continue with specific checks
+        return 0 # Rebuild needed
     fi
 
-    # Fallback - should not be reached if ! -f check is above
-    # echo "DEBUG_CACHE: Fallback, output file missing? returning 0" >&2 
-    return 0  # No output file, rebuild needed
+    # Removed template/locale checks here. They are done in file_needs_rebuild now.
+
+    # echo "DEBUG_CACHE: common_rebuild_check returning 1 (passed common checks)" >&2 
+    return 1 # Common checks passed (config ok, not forced, output exists)
 }
 
 # Check if a rebuild is needed based on file timestamps and templates
@@ -274,7 +221,7 @@ file_needs_rebuild() {
     local output_file="$2"
     # echo "DEBUG_CACHE: file_needs_rebuild check for Input='$input_file' Output='$output_file'" >&2
 
-    # Call the common rebuild check function
+    # Call the common rebuild check function (checks force, config, output existence)
     common_rebuild_check "$output_file"
     local common_result=$?
     # echo "DEBUG_CACHE: common_rebuild_check returned $common_result for '$output_file'" >&2
@@ -284,16 +231,26 @@ file_needs_rebuild() {
         return 0  # Rebuild needed
     fi
 
-    # At this point, output_file exists and is newer than templates/locale
-    # Now check if output is newer than input
+    # At this point: Not forced, config OK, output file exists.
+    # Now check against pre-calculated max template/locale time and input file time.
+
     # IMPORTANT: Assumes get_file_mtime is sourced from utils.sh
-    local input_time
-    input_time=$(get_file_mtime "$input_file")
+    # IMPORTANT: Requires BSSG_MAX_TEMPLATE_LOCALE_TIME to be exported from main.sh
     local output_time
     output_time=$(get_file_mtime "$output_file")
 
-    # Rebuild if input file is newer than output file
+    # Check if templates/locale are newer than output
+    # Default to 0 if variable is unset (should not happen if main.sh ran)
+    if (( ${BSSG_MAX_TEMPLATE_LOCALE_TIME:-0} > output_time )); then
+        # echo "DEBUG_CACHE: Templates/locale newer than output ($BSSG_MAX_TEMPLATE_LOCALE_TIME > $output_time), returning 0" >&2
+        return 0 # Rebuild needed
+    fi
+
+    # Check if input file is newer than output file
+    local input_time
+    input_time=$(get_file_mtime "$input_file")
     if (( input_time > output_time )); then
+        # echo "DEBUG_CACHE: Input newer than output ($input_time > $output_time), returning 0" >&2
         return 0  # Rebuild needed
     fi
 

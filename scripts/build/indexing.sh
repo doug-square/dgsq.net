@@ -4,12 +4,6 @@
 # Functions for building intermediate file, tag, and archive indexes.
 #
 
-# Ensure necessary color variables are available if sourced independently
-# RED='${RED:-\033[0;31m}' # Removed - Should be inherited from main export
-# GREEN='${GREEN:-\033[0;32m}' # Removed - Should be inherited from main export
-# YELLOW='${YELLOW:-\033[0;33m}' # Removed - Should be inherited from main export
-# NC='${NC:-\033[0m}' # Removed - Should be inherited from main export
-
 # Source Utilities and Content functions needed by indexing functions
 # shellcheck source=utils.sh disable=SC1091
 source "$(dirname "$0")/utils.sh" || { echo >&2 "Error: Failed to source utils.sh from indexing.sh"; exit 1; }
@@ -243,26 +237,50 @@ optimized_build_file_index() {
     # Check if file_index content has changed
     local index_content_changed=false
     if [ -f "$file_index" ]; then
-        if ! cmp -s "$file_index" "$file_index_sorted"; then
+        # Check if the first byte differs using cmp (portable)
+        if ! cmp -s -n 1 "$file_index_sorted" "$file_index"; then
+            # cmp exits 1 if files differ (within the first byte), 0 if same
             index_content_changed=true
-            echo -e "${YELLOW}File index content has changed.${NC}"
+            echo -e "${YELLOW}File index has changed (first byte differs).${NC}" >&2
+        else
+            # First byte is the same, check full content hash if possible
+            local hash_cmd=""
+            if command -v portable_md5sum &> /dev/null; then hash_cmd="portable_md5sum";
+            elif command -v md5sum &> /dev/null; then hash_cmd="md5sum"; fi
+
+            if [ -n "$hash_cmd" ]; then
+                local sorted_hash=$($hash_cmd < "$file_index_sorted" | awk '{print $1}')
+                local old_hash=$($hash_cmd < "$file_index" | awk '{print $1}')
+                if [ "$sorted_hash" != "$old_hash" ]; then
+                    index_content_changed=true
+                    echo -e "${YELLOW}File index has changed (full hash differs).${NC}" >&2
+                fi
+            else
+                # Cannot compare hashes, assume changed if we got here (first byte matched)
+                # This is conservative, but avoids missing changes if hash command missing
+                echo -e "${YELLOW}Cannot compare full index hash, assuming changed.${NC}" >&2
+                index_content_changed=true
+            fi
         fi
     else
         index_content_changed=true # No previous index exists
     fi
 
-    # Move sorted index to final location
-    mv "$file_index_sorted" "$file_index"
-    
-    # Update frontmatter changes marker if content changed
-    if $index_content_changed ; then
+    # Move sorted index to final location if content changed
+    if [ "$index_content_changed" = true ]; then
+        echo -e "${YELLOW}Updating file index.${NC}" >&2
+        mv "$file_index_sorted" "$file_index"
+        # Update frontmatter changes marker if content changed
         touch "$frontmatter_changes_marker"
-        echo -e "${YELLOW}File index changed, updating frontmatter marker.${NC}"
+        echo -e "${YELLOW}File index changed, updating frontmatter marker.${NC}" >&2
+        # Update the main index marker timestamp
+        touch "$index_marker"
+    else
+        echo -e "${GREEN}File index content unchanged, discarding sorted version.${NC}" >&2
+        rm -f "$file_index_sorted"
+        # Keep the old marker timestamp
     fi
-    
-    # Update the main index marker timestamp
-    touch "$index_marker"
-    
+
     unlock_file "$file_index"
     trap - EXIT # Remove trap upon successful completion
     
@@ -341,6 +359,14 @@ build_tags_index() {
     }' "$file_index" > "$tags_index_file" 
     
     unlock_file "$tags_index_file"
+
+    # Check if the generated index is not empty and create/remove flag file
+    local tags_flag_file="${CACHE_DIR:-.bssg_cache}/has_tags.flag"
+    if [ -s "$tags_index_file" ]; then
+        touch "$tags_flag_file"
+    else
+        rm -f "$tags_flag_file"
+    fi
 
     echo -e "${GREEN}Tags index built!${NC}"
 }
@@ -425,6 +451,85 @@ build_archive_index() {
     unlock_file "$archive_index_file"
 
     echo -e "${GREEN}Archive index built!${NC}"
+}
+
+# Compare current and previous archive index to find affected months and check if index needs rebuild
+# Exports: AFFECTED_ARCHIVE_MONTHS (space-separated list of "YYYY|MM")
+#          ARCHIVE_INDEX_NEEDS_REBUILD ("true" or "false")
+identify_affected_archive_months() {
+    local archive_index_file="${CACHE_DIR:-.bssg_cache}/archive_index.txt"
+    local archive_index_prev_file="${CACHE_DIR:-.bssg_cache}/archive_index_prev.txt"
+
+    export AFFECTED_ARCHIVE_MONTHS=""
+    export ARCHIVE_INDEX_NEEDS_REBUILD="false"
+
+    # If previous index doesn't exist, all months in the current index are affected,
+    # and the main index needs rebuilding.
+    if [ ! -f "$archive_index_prev_file" ]; then
+        if [ -s "$archive_index_file" ]; then # Check if current index has content
+            echo "Previous archive index not found. Marking all months as affected." >&2 # Debug
+            AFFECTED_ARCHIVE_MONTHS=$(cut -d'|' -f1,2 "$archive_index_file" | sort -u | tr '\n' ' ')
+            ARCHIVE_INDEX_NEEDS_REBUILD="true"
+        else
+             echo "Both previous and current archive indexes are missing or empty. No months affected." >&2 # Debug
+        fi
+        export AFFECTED_ARCHIVE_MONTHS
+        export ARCHIVE_INDEX_NEEDS_REBUILD
+        return 0
+    fi
+    
+    # If current index doesn't exist (but previous did), means all posts were deleted?
+    # Mark months from previous index as affected, index needs rebuild.
+    if [ ! -f "$archive_index_file" ] || [ ! -s "$archive_index_file" ]; then
+        echo "Current archive index not found or empty. Marking all previous months as affected." >&2 # Debug
+        AFFECTED_ARCHIVE_MONTHS=$(cut -d'|' -f1,2 "$archive_index_prev_file" | sort -u | tr '\n' ' ')
+        ARCHIVE_INDEX_NEEDS_REBUILD="true"
+        export AFFECTED_ARCHIVE_MONTHS
+        export ARCHIVE_INDEX_NEEDS_REBUILD
+        return 0
+    fi
+
+    # Extract YYYY|MM|Filename from both files for precise comparison
+    local current_entries="${CACHE_DIR:-.bssg_cache}/archive_curr_ymf.$$"
+    local prev_entries="${CACHE_DIR:-.bssg_cache}/archive_prev_ymf.$$"
+    trap 'rm -f "$current_entries" "$prev_entries"' RETURN
+    
+    cut -d'|' -f1,2,7 "$archive_index_file" | sort > "$current_entries"
+    cut -d'|' -f1,2,7 "$archive_index_prev_file" | sort > "$prev_entries"
+
+    # Find differences (lines unique to current or previous)
+    local diff_output
+    diff_output=$(comm -3 "$current_entries" "$prev_entries")
+    
+    # Extract unique YYYY|MM pairs from the differences
+    if [ -n "$diff_output" ]; then
+        AFFECTED_ARCHIVE_MONTHS=$(echo "$diff_output" | sed 's/^[[:space:]]*//' | cut -d'|' -f1,2 | sort -u | tr '\n' ' ')
+        echo "Affected months identified: $AFFECTED_ARCHIVE_MONTHS" >&2 # Debug
+    else
+        echo "No difference in posts per month found." >&2 # Debug
+        AFFECTED_ARCHIVE_MONTHS=""
+    fi
+
+    # Compare month counts (YYYY|MM|Count) to see if the main index needs rebuilding
+    local current_counts="${CACHE_DIR:-.bssg_cache}/archive_curr_counts.$$"
+    local prev_counts="${CACHE_DIR:-.bssg_cache}/archive_prev_counts.$$"
+    trap 'rm -f "$current_entries" "$prev_entries" "$current_counts" "$prev_counts"' RETURN
+
+    cut -d'|' -f1,2 "$archive_index_file" | sort | uniq -c | awk '{print $2"|"$1}' | sort > "$current_counts"
+    cut -d'|' -f1,2 "$archive_index_prev_file" | sort | uniq -c | awk '{print $2"|"$1}' | sort > "$prev_counts"
+    
+    if ! cmp -s "$current_counts" "$prev_counts"; then
+        echo "Month counts differ. Main archive index needs rebuild." >&2 # Debug
+        ARCHIVE_INDEX_NEEDS_REBUILD="true"
+    else
+        echo "Month counts are the same." >&2 # Debug
+        ARCHIVE_INDEX_NEEDS_REBUILD="false"
+    fi
+
+    export AFFECTED_ARCHIVE_MONTHS
+    export ARCHIVE_INDEX_NEEDS_REBUILD
+    rm -f "$current_entries" "$prev_entries" "$current_counts" "$prev_counts"
+    trap - RETURN # Remove trap upon successful completion
 }
 
 # --- Indexing Functions --- END --- 

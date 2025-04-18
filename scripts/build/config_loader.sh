@@ -92,37 +92,7 @@ if [ -f "$LOCAL_CONFIG_OVERRIDE" ]; then
     print_success "Local configuration loaded from ${LOCAL_CONFIG_OVERRIDE}"
 fi
 
-# --- Handle Random Theme --- START ---
-# NOTE: This logic was moved to main.sh to run AFTER CLI argument parsing
-# Check if theme is set to random after loading configs
-# if [[ "${THEME:-default}" == "random" ]]; then
-#     echo -e "${YELLOW}Theme set to random, selecting a random theme...${NC}"
-#     # Find available themes (directories in THEMES_DIR)
-#     local available_themes=()
-#     if [ -d "${THEMES_DIR:-themes}" ]; then
-#         for d in "${THEMES_DIR:-themes}"/*; do
-#             if [ -d "$d" ]; then
-#                 local theme_name=$(basename "$d")
-#                 # Exclude "random" itself if it exists as a directory
-#                 if [[ "$theme_name" != "random" ]]; then
-#                     available_themes+=("$theme_name")
-#                 fi
-#             fi
-#         done
-#     fi
-#     
-#     local num_themes=${#available_themes[@]}
-#     if [ "$num_themes" -gt 0 ]; then
-#         # Select a random theme index
-#         local random_index=$(( RANDOM % num_themes ))
-#         THEME="${available_themes[$random_index]}"
-#         echo -e "${GREEN}Randomly selected theme: $THEME${NC}"
-#     else
-#         echo -e "${RED}Error: No themes found in '$THEMES_DIR' to select randomly. Defaulting to 'default'.${NC}"
-#         THEME="default"
-#     fi
-# fi
-# --- Handle Random Theme --- END ---
+
 
 # ---- Start Locale Loading ----
 # Function to print error messages in red (specific to locale loading)

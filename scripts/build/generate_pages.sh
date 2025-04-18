@@ -4,12 +4,6 @@
 # Functions for converting markdown/HTML pages.
 #
 
-# Ensure necessary color variables are available if sourced independently
-# RED='${RED:- [0;31m}'   # Removed - Incorrect & should be inherited from main export
-# GREEN='${GREEN:- [0;32m}' # Removed - Incorrect & should be inherited from main export
-# YELLOW='${YELLOW:- [0;33m}' # Removed - Incorrect & should be inherited from main export
-# NC='${NC:- [0m}'         # Removed - Incorrect & should be inherited from main export
-
 # Source dependencies
 # shellcheck source=utils.sh disable=SC1091
 source "$(dirname "$0")/utils.sh" || { echo >&2 "Error: Failed to source utils.sh from generate_pages.sh"; exit 1; }
@@ -216,7 +210,7 @@ process_all_pages() {
         export CONFIG_HASH_FILE # Export path to hash file
 
         # Process page files in parallel using newline separation
-        printf '%s\n' "${page_files[@]}" | parallel --jobs "$cores" process_single_page_file {}
+        printf '%s\n' "${page_files[@]}" | parallel --jobs "$cores" --will-cite process_single_page_file {}
     else
         # Fallback to sequential processing
         echo -e "${YELLOW}Using sequential processing for pages${NC}"

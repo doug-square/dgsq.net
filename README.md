@@ -56,6 +56,7 @@
 - Custom URL slugs with SEO-friendly permalinks
 - Featured images in posts are displayed in index, tag, and archive pages
 - Support for static pages with custom URLs
+- Support for custom homepage - useful if you want to build a website, not a blog
 
 ## Quick Start
 
@@ -565,6 +566,8 @@ When you specify an image, it will appear:
 ## Customization
 
 To customize the appearance of your site, you can edit:
+
+- Custom Homepage Content: If you want a custom landing page instead of the default "Latest Posts" list (useful for non-blog websites), simply create a file named `index.md` inside your `pages/` directory (`${PAGES_DIR}`). BSSG will automatically use the content of this file for the homepage (`index.html`) and will *not* display the post list. Ensure the `index.md` file has the frontmatter `slug: index` set.
 
 - `templates/header.html` - Site header and navigation
 - `templates/footer.html` - Site footer

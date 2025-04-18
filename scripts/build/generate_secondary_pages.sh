@@ -59,19 +59,6 @@ generate_pages_index() {
     fi
     # --- Read secondary pages from cache file --- END ---
 
-    # Access the exported array string and reconstruct the array safely (REMOVED)
-    # local temp_secondary_pages=()
-    # if [ -n "$SECONDARY_PAGES" ]; then
-    #     # Read each entry separated by space/newline (default IFS)
-    #     while read -r page_data; do
-    #         # Trim leading/trailing whitespace just in case
-    #         page_data=$(echo "$page_data" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    #         if [ -n "$page_data" ]; then
-    #             temp_secondary_pages+=("$page_data")
-    #         fi
-    #     done <<< "$SECONDARY_PAGES"
-    # fi
-
     # Skip if there are no secondary pages
     if [ ${#temp_secondary_pages[@]} -eq 0 ]; then
         echo -e "${YELLOW}No secondary pages found, skipping pages index${NC}"

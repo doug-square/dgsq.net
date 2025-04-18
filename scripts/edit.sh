@@ -50,12 +50,14 @@ if [ -z "$EDITOR" ]; then
 fi
 
 # Check OS type for sed compatibility
-sed_inplace_arg=()
+sed_inplace_arg=""
+sed_requires_backup_cleanup=false
 if [[ "$(uname)" == "Linux" ]]; then
-    sed_inplace_arg=("-i")
+    sed_inplace_arg="-i" # GNU sed: -i without arg
 else
-    # Assume BSD/macOS sed syntax
-    sed_inplace_arg=("-i" "")
+    # BSD sed: -i with extension immediately following
+    sed_inplace_arg="-i.bak"
+    sed_requires_backup_cleanup=true
 fi
 
 # Function to generate a slug from a title
@@ -111,10 +113,22 @@ edit_post() {
     # Use sed to update the lastmod line/meta tag based on file type
     case "$file_ext" in
         md)
-            sed "${sed_inplace_arg[@]}" "s/^lastmod:.*/lastmod: $current_datetime/" "$post_file"
+            # Check if lastmod line exists before trying to replace it
+            if grep -q "^lastmod:" "$post_file"; then
+                sed "$sed_inplace_arg" "s/^lastmod:.*/lastmod: $current_datetime/" "$post_file" && \
+                if [ "$sed_requires_backup_cleanup" = true ]; then rm -f "$post_file.bak"; fi
+            else
+                echo "DEBUG: lastmod line not found in $post_file, skipping update." >&2 # Debug
+            fi
             ;;
         html)
-            sed "${sed_inplace_arg[@]}" "s|<meta name=\"lastmod\" content=\".*\"\>|<meta name=\"lastmod\" content=\"$current_datetime\"\>|" "$post_file"
+            # Check if lastmod meta tag exists before trying to replace it
+            if grep -q '<meta name="lastmod"' "$post_file"; then
+                sed "$sed_inplace_arg" "s|<meta name=\"lastmod\" content=\".*\"\>|<meta name=\"lastmod\" content=\"$current_datetime\"\>|" "$post_file" && \
+                if [ "$sed_requires_backup_cleanup" = true ]; then rm -f "$post_file.bak"; fi
+            else
+                echo "DEBUG: lastmod meta tag not found in $post_file, skipping update." >&2 # Debug
+            fi
             ;;
         *)
             echo -e "${YELLOW}Warning: Unknown file type for '$post_file'. Cannot automatically update lastmod.${NC}"

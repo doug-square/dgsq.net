@@ -136,31 +136,118 @@ if [ "${CLEAN_OUTPUT:-false}" = true ]; then
     fi
 fi
 
-# Load Templates (and generate dynamic menus, exports vars like HEADER_TEMPLATE)
-# shellcheck source=templates.sh
-source "${SCRIPT_DIR}/templates.sh" || { echo -e "${RED}Error: Failed to source templates.sh${NC}"; exit 1; }
-preload_templates # Call the function
-echo "Loaded and processed templates."
-
 # Source Content Processor (defines functions like extract_metadata, convert_markdown_to_html)
+# Moved up before indexing as indexing uses some content functions (e.g., generate_slug)
 # shellcheck source=content.sh
 source "${SCRIPT_DIR}/content.sh" || { echo -e "${RED}Error: Failed to source content.sh${NC}"; exit 1; }
 echo "Loaded content processing functions."
 
 # Source Indexing Script (defines index building functions)
+# Moved up before preload_templates
 # shellcheck source=indexing.sh
 source "${SCRIPT_DIR}/indexing.sh" || { echo -e "${RED}Error: Failed to source indexing.sh${NC}"; exit 1; }
 echo "Loaded indexing functions."
 
 # --- Build Intermediate Indexes ---
+# Moved up before preload_templates
+# --- Start Change: Snapshot previous file index ---
+file_index_file="${CACHE_DIR:-.bssg_cache}/file_index.txt"
+file_index_prev_file="${CACHE_DIR:-.bssg_cache}/file_index_prev.txt"
+if [ -f "$file_index_file" ]; then
+    echo "Snapshotting previous file index to $file_index_prev_file" >&2 # Debug
+    cp "$file_index_file" "$file_index_prev_file"
+else
+    # Ensure previous file doesn't exist if current doesn't
+    rm -f "$file_index_prev_file"
+fi
+# --- End Change ---
 optimized_build_file_index || { echo -e "${RED}Error: Failed to build file index.${NC}"; exit 1; }
+
+# --- Start Change: Snapshot previous tags index ---
+tags_index_file="${CACHE_DIR:-.bssg_cache}/tags_index.txt"
+tags_index_prev_file="${CACHE_DIR:-.bssg_cache}/tags_index_prev.txt"
+if [ -f "$tags_index_file" ]; then
+    echo "Snapshotting previous tags index to $tags_index_prev_file" >&2 # Debug
+    cp "$tags_index_file" "$tags_index_prev_file"
+else
+    # Ensure previous file doesn't exist if current doesn't
+    rm -f "$tags_index_prev_file"
+fi
+# --- End Change ---
 
 build_tags_index || { echo -e "${RED}Error: Failed to build tags index.${NC}"; exit 1; }
 
+# --- Start Debug: Show tags_index.txt content ---
+# echo "DEBUG: Content of $tags_index_file after build:" >&2
+# cat "$tags_index_file" >&2
+# echo "--- End $tags_index_file DEBUG ---" >&2
+# --- End Debug ---
+
 if [ "${ENABLE_ARCHIVES:-false}" = true ]; then
+    # --- Start Change: Snapshot previous archive index ---
+    archive_index_file="${CACHE_DIR:-.bssg_cache}/archive_index.txt"
+    archive_index_prev_file="${CACHE_DIR:-.bssg_cache}/archive_index_prev.txt"
+    if [ -f "$archive_index_file" ]; then
+        echo "Snapshotting previous archive index to $archive_index_prev_file" >&2 # Debug
+        cp "$archive_index_file" "$archive_index_prev_file"
+    else
+        # Ensure previous file doesn't exist if current doesn't
+        rm -f "$archive_index_prev_file"
+    fi
+    # --- End Change ---
     build_archive_index || { echo -e "${RED}Error: Failed to build archive index.${NC}"; exit 1; }
+    # --- Start Change: Identify affected archive months ---
+    identify_affected_archive_months || { echo -e "${RED}Error: Failed to identify affected archive months.${NC}"; exit 1; }
+    # --- End Change ---
 fi
 echo "Built intermediate cache indexes."
+
+# Load Templates (and generate dynamic menus, exports vars like HEADER_TEMPLATE)
+# Moved down after indexing
+# shellcheck source=templates.sh
+source "${SCRIPT_DIR}/templates.sh" || { echo -e "${RED}Error: Failed to source templates.sh${NC}"; exit 1; }
+preload_templates # Call the function
+echo "Loaded and processed templates."
+
+# --- Pre-calculate Max Template/Locale Time --- START ---
+# Moved down, should happen after templates are loaded
+echo "Pre-calculating latest template/locale modification time..."
+# IMPORTANT: Requires TEMPLATES_DIR, THEMES_DIR, THEME, LOCALE_DIR, SITE_LANG, get_file_mtime to be available
+latest_template_locale_time=0
+
+# Determine active template directory
+active_template_dir="${TEMPLATES_DIR:-templates}"
+if [ -d "$active_template_dir/${THEME:-default}" ]; then
+    active_template_dir="$active_template_dir/${THEME:-default}"
+fi
+header_template_file="$active_template_dir/header.html"
+footer_template_file="$active_template_dir/footer.html"
+
+# Determine active locale file
+active_locale_file=""
+if [ -f "${LOCALE_DIR:-locales}/${SITE_LANG:-en}.sh" ]; then
+    active_locale_file="${LOCALE_DIR:-locales}/${SITE_LANG:-en}.sh"
+elif [ -f "${LOCALE_DIR:-locales}/en.sh" ]; then # Fallback to en.sh
+    active_locale_file="${LOCALE_DIR:-locales}/en.sh"
+fi
+
+# Get timestamps (returns 0 if file doesn't exist)
+header_time=$(get_file_mtime "$header_template_file")
+footer_time=$(get_file_mtime "$footer_template_file")
+locale_time=$(get_file_mtime "$active_locale_file")
+
+# Find the maximum time
+latest_template_locale_time=$header_time
+if (( footer_time > latest_template_locale_time )); then
+    latest_template_locale_time=$footer_time
+fi
+if (( locale_time > latest_template_locale_time )); then
+    latest_template_locale_time=$locale_time
+fi
+
+export BSSG_MAX_TEMPLATE_LOCALE_TIME=$latest_template_locale_time
+echo "Latest template/locale time: $BSSG_MAX_TEMPLATE_LOCALE_TIME (Header: $header_time, Footer: $footer_time, Locale: $locale_time)"
+# --- Pre-calculate Max Template/Locale Time --- END ---
 
 # --- Prepare for Parallel Processing ---
 if [ "${HAS_PARALLEL:-false}" = true ]; then
@@ -175,6 +262,8 @@ if [ "${HAS_PARALLEL:-false}" = true ]; then
     export CACHE_DIR FORCE_REBUILD POSTS_DIR PAGES_DIR OUTPUT_DIR SITE_URL SITE_TITLE SITE_DESCRIPTION AUTHOR_NAME
     export HEADER_TEMPLATE FOOTER_TEMPLATE POST_URL_FORMAT PAGE_URL_FORMAT BASE_URL PRETTY_URLS
     export CACHE_READING_TIME READING_TIME_WPM MARKDOWN_PROCESSOR MARKDOWN_PL_PATH DATE_FORMAT TIMEZONE SHOW_TIMEZONE
+    # Export the pre-calculated time for parallel jobs
+    export BSSG_MAX_TEMPLATE_LOCALE_TIME
 
     echo "Core parallel exports complete."
 fi
@@ -208,12 +297,14 @@ echo "Generated tag list pages."
 # --- Archive Page Generation --- START ---
 # Source and run Archive Page Generator (if enabled)
 if [ "${ENABLE_ARCHIVES:-false}" = true ]; then
+    # Source the script (loads functions)
     # shellcheck source=generate_archives.sh disable=SC1091
     source "$SCRIPT_DIR/generate_archives.sh" || { echo -e "${RED}Error: Failed to source generate_archives.sh${NC}"; exit 1; }
-    generate_archive_pages || { echo -e "${RED}Error: Archive page generation failed.${NC}"; exit 1; } # Call the main function
+    
+    # Call the main generation function 
+    # It will internally use AFFECTED_ARCHIVE_MONTHS and ARCHIVE_INDEX_NEEDS_REBUILD
+    generate_archive_pages || { echo -e "${RED}Error: Archive page generation failed.${NC}"; exit 1; }
     echo "Generated archive pages."
-else
-     echo "Archives disabled, skipping generation."
 fi
 # --- Archive Page Generation --- END ---
 
@@ -281,6 +372,17 @@ echo "Completed post-processing."
 # --- Final Cache Update --- START ---
 create_config_hash
 # --- Final Cache Update --- END ---
+
+# --- Final Cleanup --- START ---
+echo "Cleaning up previous index files..."
+rm -f "${CACHE_DIR:-.bssg_cache}/file_index_prev.txt"
+rm -f "${CACHE_DIR:-.bssg_cache}/tags_index_prev.txt"
+rm -f "${CACHE_DIR:-.bssg_cache}/archive_index_prev.txt"
+
+# Remove the frontmatter changes marker if it exists
+rm -f "${CACHE_DIR:-.bssg_cache}/frontmatter_changes_marker"
+
+# --- Final Cleanup --- END ---
 
 # --- Deployment --- START ---
 deploy_now="false"

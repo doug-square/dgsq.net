@@ -4,12 +4,6 @@
 # Checks for required tools and sets up environment variables.
 #
 
-# Ensure necessary color variables are available if sourced independently
-# RED='${RED:-\\033[0;31m}' # Removed - Should be inherited from main export
-# GREEN='${GREEN:-\\033[0;32m}' # Removed - Should be inherited from main export
-# YELLOW='${YELLOW:-\\033[0;33m}' # Removed - Should be inherited from main export
-# NC='${NC:-\\033[0m}' # Removed - Should be inherited from main export
-
 # Portable md5sum wrapper
 portable_md5sum() {
     if command -v md5sum > /dev/null 2>&1; then
@@ -99,7 +93,10 @@ check_dependencies() {
     done
 
     # Check for GNU parallel
-    if command -v parallel > /dev/null 2>&1; then
+    if [[ "$(uname)" == "NetBSD" ]]; then
+        echo -e "${YELLOW}Parallel processing is unreliable on NetBSD. Using sequential processing.${NC}"
+        export HAS_PARALLEL=false
+    elif command -v parallel > /dev/null 2>&1; then
         echo -e "${GREEN}GNU parallel found! Using parallel processing.${NC}"
         export HAS_PARALLEL=true
     else
