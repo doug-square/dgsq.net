@@ -237,7 +237,7 @@ EOF
 EOF
                     fi
                     cat >> "$output_file" << EOF
-                <a href="$(fix_url "$post_link")" class="read-more">${MSG_READ_MORE:-"Read More"}</a>
+
             </article>
 EOF
                 done # End of while loop reading posts
