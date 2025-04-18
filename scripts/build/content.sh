@@ -248,6 +248,11 @@ generate_excerpt() {
         sed 's/^> //' | \
         # Remove list markers
         sed -E 's/^\* |^- |^[0-9]+\. //' | \
+        # Remove inline markdown: bold, italics, strikethrough, code
+        sed -E 's/\*\*([^*]+)\*\*/\1/g; s/__([^_]+)__/\1/g' | \
+        sed -E 's/\*([^*]+)\*/\1/g; s/_([^_]+)_/\1/g' | \
+        sed -E 's/~~([^~]+)~~/\1/g' | \
+        sed -E 's/`([^`]+)`/\1/g' | \
         # Remove HTML tags
         sed -E 's/<[^>]*>//g' | \
         # Escape basic HTML entities (ampersand, less than, greater than)
