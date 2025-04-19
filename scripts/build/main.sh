@@ -104,6 +104,17 @@ export BSSG_CONFIG_CHANGED_STATUS
 
 # --- Initial Cache Setup & Cleaning --- START
 # IMPORTANT: CACHE_DIR must be defined (usually in config) and available
+
+# --- Add check for CLEAN_OUTPUT influencing FORCE_REBUILD --- START ---
+if [ "${CLEAN_OUTPUT:-false}" = true ]; then
+    if [ "${FORCE_REBUILD:-false}" != true ]; then
+        echo -e "${YELLOW}Clean output requested (--clean-output), forcing rebuild (--force-rebuild)...${NC}"
+        FORCE_REBUILD=true
+        export FORCE_REBUILD # Ensure the variable is exported if changed here
+    fi
+fi
+# --- Add check for CLEAN_OUTPUT influencing FORCE_REBUILD --- END ---
+
 # Handle --force-rebuild first
 if [ "${FORCE_REBUILD:-false}" = true ]; then
     echo -e "${YELLOW}Force rebuild enabled, deleting entire cache directory (${CACHE_DIR:-.bssg_cache})...${NC}"
