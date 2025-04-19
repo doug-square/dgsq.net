@@ -235,9 +235,12 @@ generate_rss() {
         rebuild_needed=true # Rebuild if RSS file doesn't exist
     else
         local rss_mtime=$(get_file_mtime "$rss")
-        # Check only file index mtime
-        if [ -f "$file_index" ] && [ "$(get_file_mtime "$file_index")" -gt "$rss_mtime" ]; then rebuild_needed=true; fi
-        # Removed checks for script, config, locale mtime for simplicity
+        # Check file index mtime AND config hash mtime
+        if { [ -f "$file_index" ] && [ "$(get_file_mtime "$file_index")" -gt "$rss_mtime" ]; } || \
+           { [ -f "$config_hash_file" ] && [ "$(get_file_mtime "$config_hash_file")" -gt "$rss_mtime" ]; }; then \
+            rebuild_needed=true
+        fi
+        # Removed checks for script, locale mtime for simplicity, kept config hash check
     fi
 
     # If no rebuild needed, skip
