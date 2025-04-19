@@ -23,7 +23,7 @@ DRAFTS_DIR="drafts" # Directory for drafts
 THEME="default"
 
 # Build configuration
-CLEAN_OUTPUT=false
+CLEAN_OUTPUT=false # If true, BSSG will always perform a full rebuild
 REBUILD_AFTER_POST=true # Build site automatically after creating a new post (scripts/post.sh)
 REBUILD_AFTER_EDIT=true # Build site automatically after editing a post (scripts/edit.sh)
 
