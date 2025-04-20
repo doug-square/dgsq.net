@@ -412,12 +412,25 @@ fi
 
 if [[ "$deploy_now" == "true" ]]; then
     if [[ -n "${DEPLOY_SCRIPT:-}" ]]; then
-        # Ensure the deploy script path is treated correctly (absolute or relative to project root)
+        # Ensure the deploy script path is treated correctly (absolute, relative to project root, or starting with ~)
         effective_deploy_script="$DEPLOY_SCRIPT"
+
+        # Handle tilde expansion first
+        if [[ "$effective_deploy_script" == "~/"* ]]; then
+            # Replace leading "~/" with "$HOME/"
+            effective_deploy_script="$HOME/${effective_deploy_script#\~/}"
+        elif [[ "$effective_deploy_script" == "~" ]]; then
+            # Handle the case where the path is just "~"
+            effective_deploy_script="$HOME"
+        fi
+
+        # Now check if it's absolute or relative (after potential tilde expansion)
         if [[ ! "$effective_deploy_script" = /* ]]; then
+            # If not absolute (doesn't start with /), assume relative to project root
             effective_deploy_script="${PROJECT_ROOT}/${effective_deploy_script}"
         fi
 
+        # Check if the effective path exists and is a file
         if [[ -f "$effective_deploy_script" ]]; then
             if [[ -x "$effective_deploy_script" ]]; then
                 echo -e "${GREEN}Executing deployment script: $effective_deploy_script...${NC}"
