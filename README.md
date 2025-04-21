@@ -730,7 +730,7 @@ fi
 
 ## Themes
 
-BSSG includes a variety of themes to customize the look of your site. Themes are organized in the `themes/` directory.  
+BSSG includes a variety of themes to customize the look of your site. Themes are organized in the `themes/` directory. You can see a list and preview of the available themes [here](https://bssg.dragas.net/example)
 
 ### Some of the Available Themes
 
