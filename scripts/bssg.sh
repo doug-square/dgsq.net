@@ -57,7 +57,7 @@ chmod +x scripts/*.sh 2>/dev/null || true
 # Function to display help information
 show_help() {
     echo "BSSG - Bash Static Site Generator (v0.15)"
-    echo "=================================="
+    echo "========================================="
     echo ""
     echo "Usage: $0 command [options]"
     echo ""
