@@ -237,30 +237,11 @@ optimized_build_file_index() {
     # Check if file_index content has changed
     local index_content_changed=false
     if [ -f "$file_index" ]; then
-        # Check if the first byte differs using cmp (portable)
-        if ! cmp -s -n 1 "$file_index_sorted" "$file_index"; then
-            # cmp exits 1 if files differ (within the first byte), 0 if same
+        # Check if the file content differs using cmp (portable)
+        if ! cmp -s "$file_index_sorted" "$file_index"; then
+            # cmp exits 1 if files differ, 0 if same
             index_content_changed=true
-            echo -e "${YELLOW}File index has changed (first byte differs).${NC}" >&2
-        else
-            # First byte is the same, check full content hash if possible
-            local hash_cmd=""
-            if command -v portable_md5sum &> /dev/null; then hash_cmd="portable_md5sum";
-            elif command -v md5sum &> /dev/null; then hash_cmd="md5sum"; fi
-
-            if [ -n "$hash_cmd" ]; then
-                local sorted_hash=$($hash_cmd < "$file_index_sorted" | awk '{print $1}')
-                local old_hash=$($hash_cmd < "$file_index" | awk '{print $1}')
-                if [ "$sorted_hash" != "$old_hash" ]; then
-                    index_content_changed=true
-                    echo -e "${YELLOW}File index has changed (full hash differs).${NC}" >&2
-                fi
-            else
-                # Cannot compare hashes, assume changed if we got here (first byte matched)
-                # This is conservative, but avoids missing changes if hash command missing
-                echo -e "${YELLOW}Cannot compare full index hash, assuming changed.${NC}" >&2
-                index_content_changed=true
-            fi
+            echo -e "${YELLOW}File index has changed.${NC}" >&2
         fi
     else
         index_content_changed=true # No previous index exists
