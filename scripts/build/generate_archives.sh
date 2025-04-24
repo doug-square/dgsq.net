@@ -20,6 +20,7 @@ _check_archive_index_rebuild_needed() {
     local archives_index_page="$OUTPUT_DIR/archives/index.html"
     local rebuild_reason=""
 
+    # --- Core Rebuild Reasons ---
     # 1. Force rebuild flag
     if [ "$FORCE_REBUILD" = true ]; then
         rebuild_reason="Force rebuild flag set."
@@ -41,15 +42,28 @@ _check_archive_index_rebuild_needed() {
         if (( header_time > output_time )) || (( footer_time > output_time )); then
              rebuild_reason="Header or footer template changed."
         fi
-    # 5. Explicit rebuild needed based on month count comparison
-    elif [ "${ARCHIVE_INDEX_NEEDS_REBUILD:-false}" = true ]; then
-        rebuild_reason="Archive month counts changed (detected by identify_affected_archive_months)."
     fi
+
+    # --- Content-based Rebuild Reasons ---
+    # If no core reason found yet, check if content changed and if it affects the main index page.
+    if [ -z "$rebuild_reason" ]; then
+        if [ -n "$AFFECTED_ARCHIVE_MONTHS" ]; then # Check if any month had post changes
+            if [ "${ARCHIVES_LIST_ALL_POSTS:-false}" = true ]; then
+                # If listing all posts, ANY change in affected months requires main index rebuild
+                rebuild_reason="List all posts enabled and archive content changed."
+            elif [ "${ARCHIVE_INDEX_NEEDS_REBUILD:-false}" = true ]; then
+                # If *not* listing all posts, only rebuild main index if month *counts* changed
+                rebuild_reason="Archive month counts changed."
+            fi
+        fi
+    fi
+    # --- End Content-based Check ---
 
     if [ -n "$rebuild_reason" ]; then
         echo -e "${YELLOW}Main archive index rebuild needed: $rebuild_reason${NC}" >&2 # Debug
         return 0 # Needs rebuild
     else
+        # No message here - generate_archive_pages will print the skipping message if needed.
         return 1 # No rebuild needed
     fi
 }
