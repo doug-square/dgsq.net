@@ -143,6 +143,34 @@ show_help() {
     echo "For more information, refer to the README.md file."
 }
 
+# Function to display help specific to the build command
+show_build_help() {
+    echo "Usage: $0 build [options]"
+    echo ""
+    echo "Build Options:"
+    echo "  --src DIR               Override Source directory (from config: ${SRC_DIR:-src})"
+    echo "  --pages DIR             Override Pages directory (from config: ${PAGES_DIR:-pages})"
+    echo "  --drafts DIR            Override Drafts directory (from config: ${DRAFTS_DIR:-drafts})"
+    echo "  --output DIR            Override Output directory (from config: ${OUTPUT_DIR:-output})"
+    echo "  --templates DIR         Override Templates directory (from config: ${TEMPLATES_DIR:-templates})"
+    echo "  --themes-dir DIR        Override Themes parent directory (from config: ${THEMES_DIR:-themes})"
+    echo "  --theme NAME            Override Theme to use (from config: ${THEME:-default})"
+    echo "  --static DIR            Override Static directory (from config: ${STATIC_DIR:-static})"
+    echo "  --clean-output [bool]   Clean output directory before building (default from config: ${CLEAN_OUTPUT:-false})"
+    echo "  --force-rebuild         Force rebuild of all files regardless of modification time"
+    echo "  --site-title TITLE      Override Site title"
+    echo "  --site-url URL          Override Site URL"
+    echo "  --site-description DESC Override Site description"
+    echo "  --author-name NAME      Override Author name"
+    echo "  --author-email EMAIL    Override Author email"
+    echo "  --posts-per-page NUM    Override Posts per page (from config: ${POSTS_PER_PAGE:-10})"
+    echo "  --deploy                Force deployment after successful build (overrides config)"
+    echo "  --no-deploy             Prevent deployment after build (overrides config)"
+    echo "  --help                  Display this build-specific help message and exit"
+    echo ""
+    echo "Note: These options override settings from configuration files for this build run."
+}
+
 # Main function
 main() {
     # Arguments are already parsed and filtered by the time main() is called.
@@ -192,9 +220,108 @@ main() {
             ;;
         build)
             # Call the new build orchestrator script in the build/ directory
-            # Pass along any additional arguments (e.g., --force-rebuild)
-            echo "Invoking new build process..."
-            scripts/build/main.sh "$@"
+            # Parse build-specific arguments first and export them as environment variables
+            echo "Parsing build-specific arguments..."
+            export CMD_DEPLOY_OVERRIDE="unset" # Reset deploy override for this build command
+
+            declare -a build_args=("$@") # Capture args passed to build
+            set -- "${build_args[@]}" # Set positional params for parsing
+
+            while [[ $# -gt 0 ]]; do
+                case "$1" in
+                    --src)
+                        export SRC_DIR="$2"
+                        shift 2
+                        ;;
+                    --pages)
+                        export PAGES_DIR="$2"
+                        shift 2
+                        ;;
+                    --drafts)
+                        export DRAFTS_DIR="$2"
+                        shift 2
+                        ;;
+                    --output)
+                        export OUTPUT_DIR="$2"
+                        shift 2
+                        ;;
+                    --templates)
+                        export TEMPLATES_DIR="$2"
+                        shift 2
+                        ;;
+                    --themes-dir)
+                        export THEMES_DIR="$2"
+                        shift 2
+                        ;;
+                    --theme)
+                        export THEME="$2"
+                        shift 2
+                        ;;
+                    --static)
+                        export STATIC_DIR="$2"
+                        shift 2
+                        ;;
+                    --clean-output)
+                        # Handle both flag style (--clean-output) and value style (--clean-output true/false)
+                        if [[ "$2" == "true" || "$2" == "false" ]]; then
+                            export CLEAN_OUTPUT="$2"
+                            shift 2
+                        else
+                            export CLEAN_OUTPUT=true
+                            shift 1
+                        fi
+                        ;;
+                    --force-rebuild)
+                        export FORCE_REBUILD=true
+                        shift 1
+                        ;;
+                    --site-title)
+                        export SITE_TITLE="$2"
+                        shift 2
+                        ;;
+                    --site-url)
+                        export SITE_URL="$2"
+                        shift 2
+                        ;;
+                    --site-description)
+                        export SITE_DESCRIPTION="$2"
+                        shift 2
+                        ;;
+                    --author-name)
+                        export AUTHOR_NAME="$2"
+                        shift 2
+                        ;;
+                    --author-email)
+                        export AUTHOR_EMAIL="$2"
+                        shift 2
+                        ;;
+                    --posts-per-page)
+                        export POSTS_PER_PAGE="$2"
+                        shift 2
+                        ;;
+                    --deploy)
+                        export CMD_DEPLOY_OVERRIDE="true"
+                        shift 1
+                        ;;
+                    --no-deploy)
+                        export CMD_DEPLOY_OVERRIDE="false"
+                        shift 1
+                        ;;
+                    --help)
+                        show_build_help
+                        exit 0
+                        ;;
+                    *)
+                        echo -e "${RED}Error: Unknown build option: $1${NC}"
+                        show_build_help
+                        exit 1
+                        ;;
+                esac
+            done
+
+            echo "Invoking build process (scripts/build/main.sh)..."
+            # Execute the main build script. It will inherit the exported variables.
+            scripts/build/main.sh
             ;;
         init)
             # Check if directory argument is provided

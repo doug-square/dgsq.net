@@ -203,7 +203,8 @@ BSSG_CONFIG_VARS_ARRAY=(
     DRAFTS_DIR REBUILD_AFTER_POST REBUILD_AFTER_EDIT
     CUSTOM_CSS
     ENABLE_TAG_RSS
-    BACKUP_DIR CACHE_DIR # Added CACHE_DIR
+    BACKUP_DIR CACHE_DIR 
+    DEPLOY_AFTER_BUILD DEPLOY_SCRIPT 
     # Add any other custom config variables here if needed
 )
 
@@ -247,7 +248,9 @@ export REBUILD_AFTER_EDIT
 export CUSTOM_CSS
 export ENABLE_TAG_RSS
 export BACKUP_DIR
-export CACHE_DIR # Added CACHE_DIR
+export CACHE_DIR 
+export DEPLOY_AFTER_BUILD
+export DEPLOY_SCRIPT 
 
 # Export ALL MSG_* locale variables explicitly
 # These are generally NOT included in BSSG_CONFIG_VARS as they don't affect the config hash directly,
