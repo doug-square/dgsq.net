@@ -205,6 +205,7 @@ BSSG_CONFIG_VARS_ARRAY=(
     ENABLE_TAG_RSS
     BACKUP_DIR CACHE_DIR 
     DEPLOY_AFTER_BUILD DEPLOY_SCRIPT 
+    ARCHIVES_LIST_ALL_POSTS
     # Add any other custom config variables here if needed
 )
 
@@ -251,6 +252,7 @@ export BACKUP_DIR
 export CACHE_DIR 
 export DEPLOY_AFTER_BUILD
 export DEPLOY_SCRIPT 
+export ARCHIVES_LIST_ALL_POSTS
 
 # Export ALL MSG_* locale variables explicitly
 # These are generally NOT included in BSSG_CONFIG_VARS as they don't affect the config hash directly,
