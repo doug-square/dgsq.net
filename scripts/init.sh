@@ -89,6 +89,10 @@ DRAFTS_DIR="$TARGET_DIR/drafts"
 STATIC_DIR="$TARGET_DIR/static"
 OUTPUT_DIR="$TARGET_DIR/output" # Site output directory
 
+# --- Build Specific Overrides ---
+# Place the cache directory within this site's directory
+CACHE_DIR="$TARGET_DIR/.bssg_cache"
+
 # --- Site Specific Overrides (Examples) ---
 # SITE_TITLE="My New Site"
 # SITE_URL="http://example.com"
@@ -105,7 +109,11 @@ echo "This will modify '$CORE_CONFIG_LOCAL' in your BSSG installation directory.
 echo "It will add a line to source '$SITE_CONFIG_LOCAL' whenever you run ./bssg.sh from the core directory."
 echo "This avoids needing to specify '--config $SITE_CONFIG_LOCAL' for every build."
 
-read -p "Modify '$CORE_CONFIG_LOCAL' to source the new site config? (y/N): " confirm </dev/tty
+# Ask for confirmation, defaulting to Yes
+read -p "Modify '$CORE_CONFIG_LOCAL' to source the new site config? [Y/n]: " confirm </dev/tty
+
+# Default to 'yes' if user just presses Enter
+confirm=${confirm:-Y}
 
 if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
     echo "Modifying core config: $CORE_CONFIG_LOCAL" 
@@ -129,8 +137,9 @@ if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
     fi
 else
     echo "Skipping modification of core config."
-    echo "To use this site, run BSSG commands with the --config flag:"
+    echo "To use this site, run BSSG commands with the --config flag or set BSSG_LCONF environment variable:"
     echo "  ./bssg.sh build --config $SITE_CONFIG_LOCAL"
+    echo "  export BSSG_LCONF=\"$SITE_CONFIG_LOCAL\" && ./bssg.sh build"
 fi
 
 echo

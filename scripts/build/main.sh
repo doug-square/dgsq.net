@@ -22,22 +22,20 @@ else
 fi
 
 # --- Load Config First ---
-# Source Config Loader (sets defaults using :-, loads config.sh, config.sh.local)
-# This establishes the base config (Config File > Default)
-# shellcheck source=config_loader.sh
-source "${SCRIPT_DIR}/config_loader.sh" || { echo -e "${RED}Error: Failed to source config_loader.sh${NC}"; exit 1; }
-echo "Loaded base configuration ('${CONFIG_FILE:-config.sh}') and locales."
+# Configuration and arguments are now expected to be handled by the calling script (bssg.sh)
+# and passed via exported environment variables. We assume variables like SRC_DIR,
+# OUTPUT_DIR, THEME, FORCE_REBUILD, etc., are already set in the environment.
 
 # --- Parse CLI Arguments ---
-# Source CLI handler (defines parse_args, show_help)
-# shellcheck source=cli.sh
-source "${SCRIPT_DIR}/cli.sh" || { echo -e "${RED}Error: Failed to source cli.sh${NC}"; exit 1; }
+# Argument parsing is now handled by bssg.sh. Specific build options might still
+# be passed, but core config like --config is handled before this script runs.
+# We may need to parse specific build flags later if needed.
 
-# Now parse args. This applies CLI overrides (CLI > Config File > Default)
-parse_args "$@"
-echo "Parsed command line arguments (CLI overrides applied)."
+# Placeholder for any potential build-specific argument parsing if necessary in the future
 
 # --- Handle Random Theme (after CLI parsing) --- START ---
+# Random theme logic might need adjustment if THEME is purely from env var
+# Check if THEME is set to 'random' from the environment
 if [[ "${THEME:-default}" == "random" ]]; then
     echo -e "${YELLOW}Theme set to random, selecting a random theme...${NC}"
     # Find available themes (directories in THEMES_DIR)
@@ -67,21 +65,25 @@ if [[ "${THEME:-default}" == "random" ]]; then
 fi
 # --- Handle Random Theme --- END ---
 
-# Print the theme being used for this build (final value after CLI override)
-echo -e "${GREEN}Using theme: ${THEME}${NC}"
-
 # Re-export variables potentially overridden by parse_args.
-# This ensures subsequent scripts see the final values.
-echo "Re-exporting variables potentially set by CLI..."
-export SRC_DIR OUTPUT_DIR TEMPLATES_DIR THEMES_DIR STATIC_DIR THEME
-export SITE_TITLE SITE_DESCRIPTION SITE_URL AUTHOR_NAME AUTHOR_EMAIL
-export POSTS_PER_PAGE CLEAN_OUTPUT FORCE_REBUILD CONFIG_FILE
-export PAGES_DIR DRAFTS_DIR
+# This is no longer strictly necessary as the calling script exports them,
+# but keep it for now in case some build-specific args modify env vars locally.
+# echo "Re-exporting variables potentially set by CLI..."
+# export SRC_DIR OUTPUT_DIR TEMPLATES_DIR THEMES_DIR STATIC_DIR THEME
+# export SITE_TITLE SITE_DESCRIPTION SITE_URL AUTHOR_NAME AUTHOR_EMAIL
+# export POSTS_PER_PAGE CLEAN_OUTPUT FORCE_REBUILD CONFIG_FILE
+# export PAGES_DIR DRAFTS_DIR
 # Add any other variable that parse_args can change
 
 # Source Utilities (needs sourced colors) AFTER config/cli
+# Source Utilities - MUST BE SOURCED FIRST to get print_info etc.
+# Needs to happen before any potential print statements.
 # shellcheck source=utils.sh
-source "${SCRIPT_DIR}/utils.sh" || { echo -e "${RED}Error: Failed to source utils.sh${NC}"; exit 1; }
+source "${SCRIPT_DIR}/utils.sh" || { echo -e "\033[0;31mError: Failed to source utils.sh\033[0m"; exit 1; }
+
+# Print the theme being used for this build (final value after potential random selection)
+echo -e "${GREEN}Using theme: ${THEME}${NC}"
+
 echo "Loaded utilities."
 
 # Check Dependencies

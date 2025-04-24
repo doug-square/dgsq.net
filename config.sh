@@ -21,6 +21,7 @@ THEMES_DIR="themes"
 STATIC_DIR="static"
 DRAFTS_DIR="drafts" # Directory for drafts
 THEME="default"
+CACHE_DIR=".bssg_cache" # Default cache directory location (relative to BSSG root)
 
 # Build configuration
 CLEAN_OUTPUT=false # If true, BSSG will always perform a full rebuild

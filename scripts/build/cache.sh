@@ -5,8 +5,8 @@
 #
 
 # Define cache paths (should match exported config, but useful here too)
-CACHE_DIR=".bssg_cache"
-CONFIG_HASH_FILE="$CACHE_DIR/config_hash.md5"
+# CACHE_DIR=".bssg_cache" # Redundant: CACHE_DIR is now set and exported by config_loader.sh
+CONFIG_HASH_FILE="${CACHE_DIR}/config_hash.md5" # Use variable directly
 # Add other cache-related paths if directly used by functions below
 # (Example: $CACHE_DIR/theme.txt, $CACHE_DIR/file_index.txt, etc. are used)
 
@@ -20,7 +20,9 @@ create_config_hash() {
     # IMPORTANT: Requires BSSG_CONFIG_VARS to be exported from config_loader.sh
     local config_string=""
     local var_name
-    local config_vars_array=($BSSG_CONFIG_VARS) 
+    local config_vars_array
+    # Read exported vars into an array
+    read -r -a config_vars_array <<< "$BSSG_CONFIG_VARS"
     for var_name in "${config_vars_array[@]}"; do
         # Use printf -v to append safely, ensuring literal newlines
         printf -v config_string '%s%s=%s\n' "$config_string" "$var_name" "${!var_name}"
@@ -57,7 +59,9 @@ config_has_changed() {
     # IMPORTANT: Requires BSSG_CONFIG_VARS to be exported from config_loader.sh
     local config_string=""
     local var_name
-    local config_vars_array=($BSSG_CONFIG_VARS)
+    local config_vars_array
+    # Read exported vars into an array
+    read -r -a config_vars_array <<< "$BSSG_CONFIG_VARS"
     for var_name in "${config_vars_array[@]}"; do
         # Use printf -v to append safely, ensuring literal newlines
         printf -v config_string '%s%s=%s\n' "$config_string" "$var_name" "${!var_name}"
@@ -87,20 +91,22 @@ config_has_changed() {
 # other implicit theme-related changes that weren't previously tracked.
 # For now, it assumes `config_has_changed` correctly reflects all non-theme changes.
 only_theme_changed() {
+    local theme_cache_file="${CACHE_DIR}/theme.txt"
     # If no hash file exists, more than just theme has changed
-    if [ ! -f "$CONFIG_HASH_FILE" ] || [ ! -f "$CACHE_DIR/theme.txt" ]; then
+    if [ ! -f "$CONFIG_HASH_FILE" ] || [ ! -f "$theme_cache_file" ]; then
         return 1  # False, more than theme has changed
     fi
 
     # Read the stored theme
-    local stored_theme=$(cat "$CACHE_DIR/theme.txt")
+    local stored_theme
+    stored_theme=$(cat "$theme_cache_file")
 
     # Compare current theme with stored theme
     if [ "$THEME" != "$stored_theme" ]; then
         echo -e "${YELLOW}Theme has changed from $stored_theme to $THEME${NC}"
 
         # Store the current theme for next time
-        echo "$THEME" > "$CACHE_DIR/theme.txt"
+        echo "$THEME" > "$theme_cache_file"
 
         # Check if any other config has changed
         if ! config_has_changed; then
@@ -118,7 +124,6 @@ clean_stale_cache() {
     if [ "${FORCE_REBUILD:-false}" = true ]; then # Check exported FORCE_REBUILD
         echo -e "${YELLOW}Force rebuild enabled, deleting entire cache...${NC}"
         rm -rf "$CACHE_DIR"
-        mkdir -p "$CACHE_DIR"
         mkdir -p "$CACHE_DIR/meta"
         mkdir -p "$CACHE_DIR/content"
         echo -e "${GREEN}Cache deleted!${NC}"
@@ -166,11 +171,11 @@ clean_stale_cache() {
     if [ "$posts_removed" = true ]; then
         echo -e "${YELLOW}Posts were removed, forcing regeneration of index, tags, archives, sitemap, and RSS feed${NC}"
         # Remove marker files to force regeneration
-        rm -f "$CACHE_DIR/tags_index.txt"
-        rm -f "$CACHE_DIR/archive_index.txt"
-        rm -f "$CACHE_DIR/index_marker"
+        rm -f "${CACHE_DIR}/tags_index.txt"
+        rm -f "${CACHE_DIR}/archive_index.txt"
+        rm -f "${CACHE_DIR}/index_marker"
         # Remove the tags flag file as well
-        rm -f "${CACHE_DIR:-.bssg_cache}/has_tags.flag"
+        rm -f "${CACHE_DIR}/has_tags.flag"
         # IMPORTANT: Requires OUTPUT_DIR to be exported/available
         rm -f "${OUTPUT_DIR:-output}/sitemap.xml"
         rm -f "${OUTPUT_DIR:-output}/rss.xml"

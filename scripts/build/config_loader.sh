@@ -4,6 +4,10 @@
 # Sets default variables, loads user config and locale files, and exports them.
 #
 
+# Capture the command-line config file path, if provided by the main script.
+CMD_LINE_CONFIG_FILE="$1"
+shift || true # Shift arguments even if only one was passed (or none)
+
 # --- Default Configuration Variables --- START ---
 # Use :- syntax to only set defaults if the variable is unset or null.
 # This allows values set by CLI parsing (before this script is sourced) to persist.
@@ -13,6 +17,7 @@ OUTPUT_DIR="${OUTPUT_DIR:-output}"
 TEMPLATES_DIR="${TEMPLATES_DIR:-templates}"
 THEMES_DIR="${THEMES_DIR:-themes}"
 STATIC_DIR="${STATIC_DIR:-static}"
+CACHE_DIR="${CACHE_DIR:-.bssg_cache}" # Default cache directory
 THEME="${THEME:-default}"
 SITE_TITLE="${SITE_TITLE:-My Journal}"
 SITE_DESCRIPTION="${SITE_DESCRIPTION:-A personal journal and introspective newspaper}"
@@ -66,8 +71,18 @@ if [ -f "$UTILS_SCRIPT" ]; then
         exit 1
     fi
 else
-    # Fallback to standard error echo if utils not found, but this is critical
-    echo "Error: Utilities script not found at '$UTILS_SCRIPT'. Required by config_loader.sh." >&2
+    # Define basic color functions as fallback if utils.sh is missing
+    # Needed for messages printed *before* utils.sh is sourced, or if it fails.
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[0;33m'
+    NC='\033[0m' # No Color
+    print_error() { echo -e "${RED}Error: $1${NC}" >&2; }
+    print_warning() { echo -e "${YELLOW}Warning: $1${NC}"; }
+    print_success() { echo -e "${GREEN}$1${NC}"; }
+    print_info() { echo "Info: $1"; }
+    # Print the critical error and exit
+    print_error "Utilities script not found at '$UTILS_SCRIPT'. Required by config_loader.sh."
     exit 1
 fi
 # --- Source Utilities --- END ---
@@ -79,17 +94,32 @@ fi
 if [ -f "$CONFIG_FILE" ]; then
     # shellcheck source=/dev/null disable=SC1090,SC1091
     source "$CONFIG_FILE"
-    echo -e "${GREEN}Configuration loaded from $CONFIG_FILE${NC}"
+    print_success "Default configuration loaded from $CONFIG_FILE"
 else
-    print_warning "Configuration file '$CONFIG_FILE' not found, using defaults."
+    print_warning "Default configuration file '$CONFIG_FILE' not found, using defaults."
 fi
 
-# Check for local override config file (relative to the main config file)
-LOCAL_CONFIG_OVERRIDE="${CONFIG_FILE}.local"
-if [ -f "$LOCAL_CONFIG_OVERRIDE" ]; then
-    # shellcheck source=/dev/null disable=SC1090,SC1091
-    source "$LOCAL_CONFIG_OVERRIDE"
-    print_success "Local configuration loaded from ${LOCAL_CONFIG_OVERRIDE}"
+# Now, handle the override configuration file
+# Prioritize the --config command line argument if provided
+if [ -n "$CMD_LINE_CONFIG_FILE" ]; then
+    if [ -f "$CMD_LINE_CONFIG_FILE" ]; then
+        # shellcheck source=/dev/null disable=SC1090,SC1091
+        source "$CMD_LINE_CONFIG_FILE"
+        print_success "Command-line configuration loaded from ${CMD_LINE_CONFIG_FILE}"
+    else
+        print_error "Specified configuration file '${CMD_LINE_CONFIG_FILE}' not found."
+        exit 1
+    fi
+else
+    # If --config was not used, check for the default local override file
+    LOCAL_CONFIG_OVERRIDE="${CONFIG_FILE}.local"
+    if [ -f "$LOCAL_CONFIG_OVERRIDE" ]; then
+        # shellcheck source=/dev/null disable=SC1090,SC1091
+        source "$LOCAL_CONFIG_OVERRIDE"
+        print_success "Local configuration loaded from ${LOCAL_CONFIG_OVERRIDE}"
+    # else
+        # No local config file found, which is normal. No message needed.
+    fi
 fi
 
 
@@ -136,7 +166,7 @@ export LOCAL_CONFIG_FILE # Export it for other scripts
 # After all configs are sourced, expand ~ in relevant paths before exporting.
 # This ensures scripts use the resolved paths, even if config stores portable '~'.
 print_info "Expanding tilde (~) in configuration paths..."
-PATHS_TO_EXPAND=("SRC_DIR" "PAGES_DIR" "DRAFTS_DIR" "OUTPUT_DIR" "TEMPLATES_DIR" "THEMES_DIR" "STATIC_DIR" "BACKUP_DIR") # Added BACKUP_DIR
+PATHS_TO_EXPAND=("SRC_DIR" "PAGES_DIR" "DRAFTS_DIR" "OUTPUT_DIR" "TEMPLATES_DIR" "THEMES_DIR" "STATIC_DIR" "BACKUP_DIR" "CACHE_DIR") # Added CACHE_DIR
 for var_name in "${PATHS_TO_EXPAND[@]}"; do
     # Get the current value using indirect reference
     current_value="${!var_name}"
@@ -173,7 +203,7 @@ BSSG_CONFIG_VARS_ARRAY=(
     DRAFTS_DIR REBUILD_AFTER_POST REBUILD_AFTER_EDIT
     CUSTOM_CSS
     ENABLE_TAG_RSS
-    BACKUP_DIR
+    BACKUP_DIR CACHE_DIR # Added CACHE_DIR
     # Add any other custom config variables here if needed
 )
 
@@ -217,6 +247,7 @@ export REBUILD_AFTER_EDIT
 export CUSTOM_CSS
 export ENABLE_TAG_RSS
 export BACKUP_DIR
+export CACHE_DIR # Added CACHE_DIR
 
 # Export ALL MSG_* locale variables explicitly
 # These are generally NOT included in BSSG_CONFIG_VARS as they don't affect the config hash directly,
