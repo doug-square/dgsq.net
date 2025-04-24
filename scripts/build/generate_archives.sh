@@ -146,8 +146,8 @@ _generate_main_archive_index() {
 
                     local post_year post_month post_day url_path post_url
 
-                    # Grep posts for this specific year and numeric month, sort chronologically
-                    grep "^$year|$month|" "$archive_index_file" 2>/dev/null | sort -t'|' -k5,5 | while IFS='|' read -r _ _ _ title date _ filename slug _; do
+                    # Grep posts for this specific year and numeric month, sort REVERSE chronologically
+                    grep "^$year|$month|" "$archive_index_file" 2>/dev/null | sort -t'|' -k5,5r | while IFS='|' read -r _ _ _ title date _ filename slug _; do
                         # Construct post URL (logic adapted from process_single_month)
                         if [[ "$date" =~ ^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2}) ]]; then
                             post_year="${BASH_REMATCH[1]}"
