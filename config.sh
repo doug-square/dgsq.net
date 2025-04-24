@@ -48,6 +48,9 @@ ENABLE_ARCHIVES=true  # Enable or disable archive pages
 URL_SLUG_FORMAT="Year/Month/Day/slug"  # Format for post URLs: Year/Month/Day/slug will create Year/Month/Day/slug/index.html
 ENABLE_TAG_RSS=true # Enable or disable tag-specific RSS feed generation (default: true)
 
+# Archive Page Configuration
+ARCHIVES_LIST_ALL_POSTS="false" # Options: "true", "false". If true, list all posts on the main archive page.
+
 # Page configuration
 PAGE_URL_FORMAT="pages/slug"  # Format for page URLs: pages/slug will create pages/slug/index.html
 

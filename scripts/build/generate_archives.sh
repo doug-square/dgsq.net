@@ -99,7 +99,7 @@ _generate_main_archive_index() {
         echo "<h1>${MSG_ARCHIVES:-"Archives"}</h1>"
         echo "<div class=\"archives-list year-list\">"
 
-        # Loop through years
+        # Loop through years (Existing logic for Year/Month links)
         echo "$unique_years" | while IFS= read -r year; do
             [ -z "$year" ] && continue
 
@@ -107,7 +107,8 @@ _generate_main_archive_index() {
             year_url=$(fix_url "/archives/$year/")
 
             echo "    <h2><a href=\"$year_url\">$year</a></h2>"
-            echo "    <ul class=\"month-list-inline\">"
+            # Changed class to support potential block layout for month + posts
+            echo "    <ul class=\"month-list-detailed\">" 
 
             # Get unique months for this year, sorted descending by month number
             local months_in_year=""
@@ -115,14 +116,16 @@ _generate_main_archive_index() {
                 months_in_year=$(grep "^$year|" "$archive_index_file" 2>/dev/null | cut -d'|' -f2,3 | sort -t'|' -k1,1nr | uniq)
             fi
 
-            # Add month links
+            # Add month links and potentially post lists
             echo "$months_in_year" | while IFS= read -r month_line; do
                 local month month_name
+                # IMPORTANT: month is the numeric month (1-12) from the index
                 IFS='|' read -r month month_name <<< "$month_line"
                 [ -z "$month" ] && continue
 
                 local month_post_count=0
                 if [ -f "$archive_index_file" ] && [ -s "$archive_index_file" ]; then
+                     # Use the numeric month for grep
                      month_post_count=$(grep -c "^$year|$month|" "$archive_index_file" 2>/dev/null || echo 0)
                 fi
 
@@ -132,13 +135,56 @@ _generate_main_archive_index() {
                 local month_url
                 month_url=$(fix_url "/archives/$year/$month_idx_formatted/")
 
-                echo "            <li><a href=\"$month_url\">$current_month_name ($month_post_count)</a></li>"
+                # Start the list item for the month
+                echo "        <li>"
+                # Print the month link itself
+                echo "            <a href=\"$month_url\">$current_month_name ($month_post_count)</a>"
+
+                # --- START: Add nested post list if configured ---
+                if [ "${ARCHIVES_LIST_ALL_POSTS:-false}" = true ] && [ "$month_post_count" -gt 0 ]; then
+                    echo "            <ul class=\"post-list-condensed-inline\">" # Nested list for posts
+
+                    local post_year post_month post_day url_path post_url
+
+                    # Grep posts for this specific year and numeric month, sort chronologically
+                    grep "^$year|$month|" "$archive_index_file" 2>/dev/null | sort -t'|' -k5,5 | while IFS='|' read -r _ _ _ title date _ filename slug _; do
+                        # Construct post URL (logic adapted from process_single_month)
+                        if [[ "$date" =~ ^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2}) ]]; then
+                            post_year="${BASH_REMATCH[1]}"
+                            post_month=$(printf "%02d" "$((10#${BASH_REMATCH[2]}))")
+                            post_day=$(printf "%02d" "$((10#${BASH_REMATCH[3]}))")
+                        else
+                            post_year=$(date +%Y); post_month=$(date +%m); post_day=$(date +%d) # Fallback
+                        fi
+                        
+                        url_path="${URL_SLUG_FORMAT:-Year/Month/Day/slug}"
+                        url_path="${url_path//Year/$post_year}"
+                        url_path="${url_path//Month/$post_month}"
+                        url_path="${url_path//Day/$post_day}"
+                        url_path="${url_path//slug/$slug}"
+                        
+                        post_url="/$(echo "$url_path" | sed 's|^/||; s|/*$|/|')"
+                        post_url=$(fix_url "$post_url") # Use fix_url for BASE_URL prefixing if needed
+
+                        # Extract just the date part (YYYY-MM-DD)
+                        local display_date=$(echo "$date" | cut -d' ' -f1)
+
+                        echo "                <li><a href=\"$post_url\">[$display_date] $title</a></li>"
+                    done
+
+                    echo "            </ul>" # Close nested post list
+                fi
+                # --- END: Add nested post list ---
+
+                # Close the list item for the month
+                echo "        </li>"
             done
 
-            echo "    </ul>"
+            echo "    </ul>" # End of month-list-detailed
         done
 
-        echo "</div>"
+        echo "</div>" # End of year-list div
+
         echo "$footer_content"
 
     } > "$archives_index_page"
