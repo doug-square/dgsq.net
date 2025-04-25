@@ -9,26 +9,15 @@
 
 set -e
 
-# Load configuration
-CONFIG_FILE="config.sh"
-if [ -f "$CONFIG_FILE" ]; then
-    source "$CONFIG_FILE"
-else
-    echo "Error: Configuration file '$CONFIG_FILE' not found"
-    exit 1
-fi
+# Configuration is now loaded and exported by the main bssg.sh script
+# via config_loader.sh. This script relies on environment variables like
+# SRC_DIR, PAGES_DIR, DRAFTS_DIR etc. being set.
 
-# Load local configuration overrides if they exist
-LOCAL_CONFIG_FILE="config.sh.local"
-if [ -f "$LOCAL_CONFIG_FILE" ]; then
-    source "$LOCAL_CONFIG_FILE"
-fi
-
-# Terminal colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-NC='\033[0m' # No Color
+# Terminal colors (Assuming they are exported by the caller or config_loader)
+RED='${RED:-\033[0;31m}'
+GREEN='${GREEN:-\033[0;32m}'
+YELLOW='${YELLOW:-\033[0;33m}'
+NC='${NC:-\033[0m}' # No Color
 
 # Function to extract a post's title
 get_post_title() {
