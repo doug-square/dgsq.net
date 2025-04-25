@@ -13,11 +13,7 @@ set -e
 # via config_loader.sh. This script relies on environment variables like
 # SRC_DIR, PAGES_DIR, DRAFTS_DIR etc. being set.
 
-# Terminal colors (Assuming they are exported by the caller or config_loader)
-RED='${RED:-\033[0;31m}'
-GREEN='${GREEN:-\033[0;32m}'
-YELLOW='${YELLOW:-\033[0;33m}'
-NC='${NC:-\033[0m}' # No Color
+# Terminal colors definitions removed, assuming they are exported by the caller.
 
 # Function to extract a post's title
 get_post_title() {
