@@ -127,7 +127,7 @@
 
 BSSG requires the following tools:
 
-- Bash
+- Bash (Note: On macOS, the default bash is too old and not compatible. You need to install a newer version using Homebrew: `brew install bash`)
 - pandoc, commonmark, or markdown.pl (configurable in config.sh.local)
 - Standard Unix utilities (awk, sed, grep, find, date)
 
