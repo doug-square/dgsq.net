@@ -275,6 +275,10 @@ main() {
                         export FORCE_REBUILD=true
                         shift 1
                         ;;
+                    -f)
+                        export FORCE_REBUILD=true
+                        shift 1
+                        ;;
                     --site-title)
                         export SITE_TITLE="$2"
                         shift 2
