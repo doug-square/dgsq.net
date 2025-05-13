@@ -184,9 +184,9 @@ generate_tag_pages() {
 
         if [ -n "$tag" ]; then
             local tag_page_html_file="$OUTPUT_DIR/tags/$tag_url/index.html"
-            local tag_rss_file="$OUTPUT_DIR/tags/$tag_url/rss.xml"
+            local tag_rss_file="$OUTPUT_DIR/tags/$tag_url/${RSS_FILENAME:-rss.xml}"
             local tag_page_rel_url="/tags/${tag_url}/"
-            local tag_rss_rel_url="/tags/${tag_url}/rss.xml"
+            local tag_rss_rel_url="/tags/${tag_url}/${RSS_FILENAME:-rss.xml}"
             local rebuild_html=false
             local rebuild_rss=false
 
@@ -417,6 +417,7 @@ EOF
                 else
                     # Call the reusable function from generate_feeds.sh
                     # Ensure necessary vars like SITE_URL, SITE_LANG etc. are exported/available
+                    # echo "DEBUG: In process_tag for '$tag', RSS_FILENAME='${RSS_FILENAME:-rss.xml}', tag_rss_file='${tag_rss_file}'" >&2 # DEBUG
                     _generate_rss_feed "$tag_rss_file" "$feed_title" "$feed_desc" "$feed_link_rel" "$feed_atom_link_rel" "$tag_post_data"
                     echo -e "  Generated RSS feed for: ${GREEN}$tag${NC}"
                 fi
@@ -451,7 +452,7 @@ EOF
         local tag tag_url
         IFS='|' read -r tag tag_url <<< "$tag_line"
         local tag_page_html_file="$OUTPUT_DIR/tags/$tag_url/index.html"
-        local tag_rss_file="$OUTPUT_DIR/tags/$tag_url/rss.xml"
+        local tag_rss_file="$OUTPUT_DIR/tags/$tag_url/${RSS_FILENAME:-rss.xml}"
         local process_this_tag=false # Flag to decide if this tag needs processing
 
         # --- Refined Check: Check if tag needs processing ---

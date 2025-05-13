@@ -172,7 +172,7 @@ optimized_build_file_index() {
         if find --version >/dev/null 2>&1 && grep -q GNU <<< "$(find --version)"; then
              newest_file_time=$(find "${SRC_DIR:-src}" -type f \( -name "*.md" -o -name "*.html" \) -not -path "*/.*" -printf '%T@\n' 2>/dev/null | sort -nr | head -n 1)
              newest_file_time=${newest_file_time:-0} # Handle empty dir
-             newest_file_time=$(printf "%.0f" "$newest_file_time")
+             newest_file_time=${newest_file_time%.*} # Truncate to integer
         else # POSIX/BSD find
             local src_files
             # Use -exec stat for better portability than parsing ls

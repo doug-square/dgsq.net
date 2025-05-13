@@ -216,13 +216,13 @@ preload_templates() {
       menu_items+=" <a href=\"${SITE_URL}/archives/\">${MSG_ARCHIVES:-"Archives"}</a>"
       footer_items+=" <a href=\"${SITE_URL}/archives/\">${MSG_ARCHIVES:-"Archives"}</a> &middot;"
     fi
-    menu_items+=" <a href=\"${SITE_URL}/rss.xml\">${MSG_RSS:-"RSS"}</a>"
+    menu_items+=" <a href=\"${SITE_URL}/${RSS_FILENAME:-rss.xml}\">${MSG_RSS:-"RSS"}</a>"
 
     # Add tags link to footer only if the flag file exists
     if [ -f "$tags_flag_file" ]; then
         footer_items+=" <a href=\"${SITE_URL}/tags/\">${MSG_TAGS:-"Tags"}</a> &middot;"
     fi
-    footer_items+=" <a href=\"${SITE_URL}/rss.xml\">${MSG_SUBSCRIBE_RSS:-"Subscribe via RSS"}</a>"
+    footer_items+=" <a href=\"${SITE_URL}/${RSS_FILENAME:-rss.xml}\">${MSG_SUBSCRIBE_RSS:-"Subscribe via RSS"}</a>"
 
     # Replace menu placeholders in templates
     HEADER_TEMPLATE=${HEADER_TEMPLATE//\{\{menu_items\}\}/"$menu_items"}
@@ -248,6 +248,10 @@ preload_templates() {
 
     # Replace language code placeholder using POSIX whitespace class
     HEADER_TEMPLATE=$(echo "$HEADER_TEMPLATE" | sed "s|{{[[:space:]]*site_lang_code[[:space:]]*}}|${SITE_LANG:-en}|g")
+
+    # --- Add RSS Filename Placeholder --- START ---
+    HEADER_TEMPLATE=$(echo "$HEADER_TEMPLATE" | sed "s|{{[[:space:]]*rss_filename[[:space:]]*}}|${RSS_FILENAME:-rss.xml}|g")
+    # --- Add RSS Filename Placeholder --- END ---
 
     # --- Handle Custom CSS --- START ---
     local custom_css_tag=""

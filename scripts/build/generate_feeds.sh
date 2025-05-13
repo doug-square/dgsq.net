@@ -214,7 +214,7 @@ generate_rss() {
     if [ -z "${CACHE_DIR:-}" ]; then
         echo -e "${RED}Error: CACHE_DIR is not set.${NC}" >&2; return 1; fi
 
-    local rss="$OUTPUT_DIR/rss.xml"
+    local rss="$OUTPUT_DIR/${RSS_FILENAME:-rss.xml}"
     local file_index="$CACHE_DIR/file_index.txt"
     local config_hash_file="$CONFIG_HASH_FILE"
     local script_path="$BSSG_SCRIPT_DIR/build/generate_feeds.sh"
@@ -258,7 +258,7 @@ generate_rss() {
     local feed_title="${MSG_RSS_FEED_TITLE:-${SITE_TITLE} - RSS Feed}"
     local feed_desc="${MSG_RSS_FEED_DESCRIPTION:-${SITE_DESCRIPTION}}"
     local feed_link_rel="/"
-    local feed_atom_link_rel="/rss.xml"
+    local feed_atom_link_rel="/${RSS_FILENAME:-rss.xml}" # Use the config variable
     local rss_item_limit=${RSS_ITEM_LIMIT:-15}
 
     # Read file_index.txt, sort by original date (field 4), take top N
@@ -267,6 +267,7 @@ generate_rss() {
     sorted_posts=$(sort -t'|' -k4,4r -k5,5r "$file_index" | head -n "$rss_item_limit")
 
     # Call the reusable function
+    # echo "DEBUG: In generate_rss, RSS_FILENAME='${RSS_FILENAME:-rss.xml}', output_file='${rss}'" >&2 # DEBUG
     _generate_rss_feed "$rss" "$feed_title" "$feed_desc" "$feed_link_rel" "$feed_atom_link_rel" "$sorted_posts"
 
     # The reusable function already prints the success message

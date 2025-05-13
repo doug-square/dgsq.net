@@ -178,7 +178,7 @@ clean_stale_cache() {
         rm -f "${CACHE_DIR}/has_tags.flag"
         # IMPORTANT: Requires OUTPUT_DIR to be exported/available
         rm -f "${OUTPUT_DIR:-output}/sitemap.xml"
-        rm -f "${OUTPUT_DIR:-output}/rss.xml"
+        rm -f "${OUTPUT_DIR:-output}/${RSS_FILENAME:-rss.xml}"
         rm -f "${OUTPUT_DIR:-output}/index.html"
 
         # Also remove tag and archive pages to force their regeneration
@@ -323,7 +323,7 @@ indexes_need_rebuild() {
              newest_meta_time=$(find "$meta_cache_dir" -type f -printf '%T@\n' 2>/dev/null | sort -nr | head -n 1)
              newest_meta_time=${newest_meta_time:-0} # Handle empty dir
              # Convert float timestamp to integer
-             newest_meta_time=$(printf "%.0f" "$newest_meta_time")
+             newest_meta_time=${newest_meta_time%.*} # Truncate to integer
         else
              # Fallback for non-GNU find (less efficient)
              local meta_files
