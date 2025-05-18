@@ -143,27 +143,27 @@ BSSG requires the following tools:
 #### On Debian/Ubuntu:
 ```bash
 sudo apt-get update
-sudo apt-get install cmark
+sudo apt-get install cmark socat
 ```
 
 #### On macOS (using Homebrew):
 ```bash
-brew install bash cmark
+brew install bash cmark socat
 ```
 
 #### On FreeBSD:
 ```bash
-pkg install bash cmark
+pkg install bash cmark socat
 ```
 
 #### On OpenBSD:
 ```bash
-pkg_add bash cmark 
+pkg_add bash cmark socat
 ```
 
 #### On NetBSD:
 ```bash
-pkgin in bash cmark
+pkgin in bash cmark socat
 ```
 
 ### Using markdown.pl instead of commonmark
