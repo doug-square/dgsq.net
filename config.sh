@@ -62,6 +62,11 @@ MARKDOWN_PROCESSOR="commonmark" # Options: "pandoc", "commonmark", or "markdown.
 # Language Configuration
 SITE_LANG="en"  # Default language code (e.g., en, es, fr). See locales/ directory.
 
+# Server Configuration (for 'bssg.sh server' command)
+# These are the defaults used by 'bssg.sh server' if not overridden by command-line options.
+BSSG_SERVER_PORT_DEFAULT="8000"    # Default port for the local development server
+BSSG_SERVER_HOST_DEFAULT="localhost" # Default host for the local development server
+
 # Deployment configuration
 DEPLOY_AFTER_BUILD="false" # Options: "true", "false". Automatically deploy after a successful build.
 DEPLOY_SCRIPT=""           # Path to the deployment script to execute if DEPLOY_AFTER_BUILD is true.

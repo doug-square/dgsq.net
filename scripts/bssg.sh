@@ -97,7 +97,9 @@ fi
 # --- Centralized Configuration Loading --- END ---
 
 # Terminal colors (still needed here if config_loader doesn't export them, though it should)
-RED='${RED:-$(tput setaf 1)}' # Use tput for wider compatibility if not set
+# These are now primarily set and exported by config_loader.sh based on config files.
+# The ':-' syntax provides a fallback if they somehow aren't set, using tput.
+RED='${RED:-$(tput setaf 1)}'
 GREEN='${GREEN:-$(tput setaf 2)}'
 YELLOW='${YELLOW:-$(tput setaf 3)}'
 NC='${NC:-$(tput sgr0)}' # Reset color
@@ -136,7 +138,10 @@ show_help() {
     echo "  restore [backup_file|ID]     Restore from a backup (all content by default)"
     echo "                               Options: --no-content, --no-config"
     echo "  backups                      List all available backups"
-    echo "  build                        Build the site"
+    echo "  build [-f] [more...]    Build the site (use 'build --help' for all options)"
+    echo "  server [-h] [options]        Build & run local server (use 'server --help' for options)"
+    echo "                               Options: --port <PORT> (default from config: ${BSSG_SERVER_PORT_DEFAULT:-8000})"
+    echo "                                        --host <HOST> (default from config: ${BSSG_SERVER_HOST_DEFAULT:-localhost})"
     echo "  init <target_directory>       Initialize a new site in the specified directory"
     echo "  help                         Show this help message"
     echo ""
@@ -157,7 +162,7 @@ show_build_help() {
     echo "  --theme NAME            Override Theme to use (from config: ${THEME:-default})"
     echo "  --static DIR            Override Static directory (from config: ${STATIC_DIR:-static})"
     echo "  --clean-output [bool]   Clean output directory before building (default from config: ${CLEAN_OUTPUT:-false})"
-    echo "  --force-rebuild         Force rebuild of all files regardless of modification time"
+    echo "  --force-rebuild, -f     Force rebuild of all files regardless of modification time"
     echo "  --site-title TITLE      Override Site title"
     echo "  --site-url URL          Override Site URL"
     echo "  --site-description DESC Override Site description"
@@ -169,6 +174,24 @@ show_build_help() {
     echo "  --help                  Display this build-specific help message and exit"
     echo ""
     echo "Note: These options override settings from configuration files for this build run."
+}
+
+# Function to display help specific to the server command
+show_server_help() {
+    echo "Usage: $0 server [options]"
+    echo ""
+    echo "Builds the site and starts a local development server."
+    echo "The SITE_URL will be temporarily overridden to match the server's address during the build."
+    echo ""
+    echo "Server Options:"
+    echo "  --port <PORT>           Specify the port for the server to listen on."
+    echo "                          (Default from config: ${BSSG_SERVER_PORT_DEFAULT:-8000})"
+    echo "  --host <HOST>           Specify the host/IP address for the server."
+    echo "                          (Default from config: ${BSSG_SERVER_HOST_DEFAULT:-localhost})"
+    echo "  --no-build              Skip the build step and start the server with existing"
+    echo "                          content in the output directory."
+    echo "  -h, --help              Display this help message and exit."
+    echo ""
 }
 
 # Main function
@@ -271,10 +294,6 @@ main() {
                             shift 1
                         fi
                         ;;
-                    --force-rebuild)
-                        export FORCE_REBUILD=true
-                        shift 1
-                        ;;
                     -f)
                         export FORCE_REBUILD=true
                         shift 1
@@ -326,6 +345,94 @@ main() {
             echo "Invoking build process (scripts/build/main.sh)..."
             # Execute the main build script. It will inherit the exported variables.
             scripts/build/main.sh
+            ;;
+        server)
+            # Use defaults from config (via exported BSSG_SERVER_PORT_DEFAULT, BSSG_SERVER_HOST_DEFAULT),
+            # which can be overridden by CLI options --port and --host for this specific run.
+            SERVER_CMD_PORT="${BSSG_SERVER_PORT_DEFAULT}"
+            SERVER_CMD_HOST="${BSSG_SERVER_HOST_DEFAULT}"
+            PERFORM_BUILD=true
+            # SERVER_SCRIPT_ARGS=() # Not currently used to pass to server.sh itself beyond port/doc_root
+
+            # Parse server-specific arguments
+            TEMP_ARGS=("$@") # Work with a copy of arguments
+            set -- "${TEMP_ARGS[@]}" # Set positional parameters for server command parsing
+
+            while [[ $# -gt 0 ]]; do
+                case "$1" in
+                    -h | --help)
+                        show_server_help
+                        exit 0
+                        ;;
+                    --port)
+                        if [[ -z "$2" || "$2" == -* ]]; then
+                            echo -e "${RED}Error: --port option requires a numeric argument.${NC}" >&2
+                            exit 1
+                        fi
+                        SERVER_CMD_PORT="$2"
+                        shift 2
+                        ;;
+                    --host)
+                        if [[ -z "$2" || "$2" == -* ]]; then
+                            echo -e "${RED}Error: --host option requires a hostname or IP argument.${NC}" >&2
+                            exit 1
+                        fi
+                        SERVER_CMD_HOST="$2"
+                        shift 2
+                        ;;
+                    --no-build)
+                        PERFORM_BUILD=false
+                        shift 1
+                        ;;
+                    *)
+                        # Collect unrecognized arguments if server.sh were to take more.
+                        # For now, they are ignored or could be passed to build if we design it that way.
+                        echo -e "${YELLOW}Warning: Unrecognized server option: $1${NC}"
+                        shift # Consume unrecognized option
+                        ;;
+                esac
+            done
+
+            # Ensure OUTPUT_DIR is loaded (it should be by config_loader.sh)
+            if [ -z "${OUTPUT_DIR}" ]; then
+                echo -e "${RED}Error: OUTPUT_DIR is not set. Configuration issue? Ensure config is loaded.${NC}" >&2
+                exit 1
+            fi
+            
+            # scripts/server.sh will resolve this path to absolute and check if it's a directory.
+            local effective_output_dir="${OUTPUT_DIR}"
+
+            if [ "$PERFORM_BUILD" = true ]; then
+                echo "Info: Server command will update SITE_URL to http://${SERVER_CMD_HOST}:${SERVER_CMD_PORT} for the build."
+                export SITE_URL="http://${SERVER_CMD_HOST}:${SERVER_CMD_PORT}" # Override SITE_URL for the build
+
+                echo "Info: Initiating build before starting server..."
+                if [ -f "${BSSG_SCRIPT_DIR}/scripts/build/main.sh" ]; then
+                    # Call the main build script. It will pick up the exported SITE_URL.
+                    # We are not passing any server-specific arguments to the build script directly.
+                    # If build needs arguments, they should be passed via general bssg.sh build options
+                    # or configured in config files.
+                    "${BSSG_SCRIPT_DIR}/scripts/build/main.sh"
+                    BUILD_EXIT_CODE=$?
+                    if [ $BUILD_EXIT_CODE -ne 0 ]; then
+                        echo -e "${RED}Error: Build failed with exit code $BUILD_EXIT_CODE. Server not started.${NC}" >&2
+                        exit $BUILD_EXIT_CODE
+                    fi
+                    echo -e "${GREEN}Build complete.${NC}"
+                else
+                    echo -e "${RED}Error: Build script (${BSSG_SCRIPT_DIR}/scripts/build/main.sh) not found.${NC}" >&2
+                    exit 1
+                fi
+            else
+                echo "Info: Skipping build step due to --no-build flag."
+            fi
+
+            echo "Info: Starting server on http://${SERVER_CMD_HOST}:${SERVER_CMD_PORT}"
+            echo "Info: Serving files from ${effective_output_dir}"
+            # The server script (scripts/server.sh) takes PORT as $1 and WWW_ROOT as $2.
+            # WWW_ROOT should be the $OUTPUT_DIR from config.
+            # scripts/server.sh will perform its own validation for the output directory existence and type.
+            "${BSSG_SCRIPT_DIR}/scripts/server.sh" "$SERVER_CMD_PORT" "$effective_output_dir"
             ;;
         init)
             # Check if directory argument is provided

@@ -46,6 +46,10 @@ ENABLE_TAG_RSS="${ENABLE_TAG_RSS:-false}" # Generate RSS feed for each tag
 # --- Backup Directory --- Added ---
 BACKUP_DIR="${BACKUP_DIR:-backup}" # Default backup location
 
+# --- Server Defaults --- Added for 'bssg.sh server' ---
+BSSG_SERVER_PORT_DEFAULT="${BSSG_SERVER_PORT_DEFAULT:-8000}"
+BSSG_SERVER_HOST_DEFAULT="${BSSG_SERVER_HOST_DEFAULT:-localhost}"
+
 # Customization Defaults
 CUSTOM_CSS="${CUSTOM_CSS:-}" # Default to empty string
 
@@ -208,6 +212,7 @@ BSSG_CONFIG_VARS_ARRAY=(
     DEPLOY_AFTER_BUILD DEPLOY_SCRIPT 
     ARCHIVES_LIST_ALL_POSTS
     # Add any other custom config variables here if needed
+    BSSG_SERVER_PORT_DEFAULT BSSG_SERVER_HOST_DEFAULT # Server defaults
 )
 
 # Convert array to space-separated string for export
@@ -255,6 +260,13 @@ export CACHE_DIR
 export DEPLOY_AFTER_BUILD
 export DEPLOY_SCRIPT 
 export ARCHIVES_LIST_ALL_POSTS
+
+# Server defaults export
+export BSSG_SERVER_PORT_DEFAULT
+export BSSG_SERVER_HOST_DEFAULT
+
+# Export colors too, as they might be customized in config and needed by scripts
+export RED GREEN YELLOW BLUE NC
 
 # Export ALL MSG_* locale variables explicitly
 # These are generally NOT included in BSSG_CONFIG_VARS as they don't affect the config hash directly,

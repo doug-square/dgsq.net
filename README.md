@@ -18,6 +18,7 @@
 - [Performance Features](#performance-features)
 - [Site Configuration](#site-configuration)
 - [Future Plans](#future-plans)
+- [Local Development Server](#local-development-server)
 - [Troubleshooting](#troubleshooting)
 - [Author and License](#author-and-license)
 - [Documentation](#documentation)
@@ -57,6 +58,7 @@
 - Featured images in posts are displayed in index, tag, and archive pages
 - Support for static pages with custom URLs
 - Support for custom homepage - useful if you want to build a website, not a blog
+- Built-in local development server for easy previewing
 
 ## Quick Start
 
@@ -79,11 +81,16 @@
 
 4. View your site in the `output` directory or serve it locally:
    ```bash
+   ./bssg.sh server
+   ```
+   This will build your site and start a local web server. By default, you can access your site at `http://localhost:8000`.
+   Alternatively, to manually serve the `output` directory (e.g., if you want to use a different server):
+   ```bash
    cd output
-   python3 -m http.server 8000
+   python3 -m http.server 8000 # Or any other simple HTTP server
    ```
 
-5. Open your browser and navigate to http://localhost:8000
+5. Open your browser and navigate to the URL provided by the server (e.g., http://localhost:8000).
 
 ## Recommended Setup: Separating Content from Core
 
@@ -936,12 +943,48 @@ Other possible formats include:
 - `Year/slug` - For `/2023/post-title/` URLs
 - `Year/Month/slug` - For `/2023/01/post-title/` URLs
 
+## Local Development Server
+
+BSSG includes a simple built-in web server to help you preview your site locally.
+
+```bash
+./bssg.sh server [options]
+```
+
+This command will:
+1.  **Build your site**: It automatically runs the build process.
+2.  **Adjust `SITE_URL`**: For the duration of this build, it temporarily sets `SITE_URL` to match the local server's address (e.g., `http://localhost:8000` or `http://<your-host>:<your-port>`). This ensures that all generated links and asset paths work correctly during local preview. The original `SITE_URL` in your configuration files remains unchanged for regular builds.
+3.  **Start the server**: It serves files from your configured `OUTPUT_DIR`.
+
+**Server Options:**
+
+-   `--port <PORT>`: Specifies the port for the server to listen on.
+    -   Default: Value of `BSSG_SERVER_PORT_DEFAULT` from your configuration (typically `8000`).
+-   `--host <HOST>`: Specifies the host/IP address for the server.
+    -   Default: Value of `BSSG_SERVER_HOST_DEFAULT` from your configuration (typically `localhost`).
+-   `--no-build`: Skips the build step and immediately starts the server with the existing content in the `OUTPUT_DIR`. Useful if you have just built the site and want to quickly restart the server.
+
+**Example:**
+
+```bash
+# Build and serve on http://localhost:8080
+./bssg.sh server --port 8080
+
+# Serve on a specific host, accessible on your local network (if firewall allows)
+./bssg.sh server --host 192.168.0.2 --port 8000
+
+# Serve existing build without rebuilding
+./bssg.sh server --no-build
+```
+
+Press `Ctrl+C` to stop the server.
+
+
 ## Future Plans
 
 While BSSG is designed to be simple, there are a few enhancements planned for the future:
 
 - **Stale Content Banner:** Add an option to display a banner on posts that haven't been updated in a configurable amount of time (e.g., more than X days/months).
-- **Performance Refactor:** Address identified performance bottlenecks and improve the overall efficiency of the build process.
 
 ## Troubleshooting
 
@@ -992,3 +1035,4 @@ This project is licensed under the BSD 3-Clause License - see the LICENSE file f
 - **Themes**: Explore the available themes in the `themes` directory.
 - **Backup & Restore**: Use `./bssg.sh backup` and `./bssg.sh restore` to manage content backups. 
 - **Development Blog**: Stay up-to-date with the latest release notes, development progress, and announcements on the official BSSG Dev Blog: [https://blog.bssg.dragas.net](https://blog.bssg.dragas.net)
+
