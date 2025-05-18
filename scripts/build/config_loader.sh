@@ -54,11 +54,11 @@ BSSG_SERVER_HOST_DEFAULT="${BSSG_SERVER_HOST_DEFAULT:-localhost}"
 CUSTOM_CSS="${CUSTOM_CSS:-}" # Default to empty string
 
 # Define default colors here so utils.sh can use them if not overridden by config
-RED='${RED:-\\033[0;31m}'
-GREEN='${GREEN:-\\033[0;32m}'
-YELLOW='${YELLOW:-\\033[0;33m}'
-BLUE='${BLUE:-\\033[0;34m}' # Added Blue for print_info
-NC='${NC:-\\033[0m}' # No Color
+RED="${RED:-$(tput setaf 1)}"
+GREEN="${GREEN:-$(tput setaf 2)}"
+YELLOW="${YELLOW:-$(tput setaf 3)}"
+BLUE="${BLUE:-$(tput setaf 4)}" # Added Blue for print_info, using tput
+NC="${NC:-$(tput sgr0)}"       # No Color, using tput
 # --- Default Configuration Variables --- END ---
 
 

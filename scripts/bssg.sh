@@ -99,10 +99,10 @@ fi
 # Terminal colors (still needed here if config_loader doesn't export them, though it should)
 # These are now primarily set and exported by config_loader.sh based on config files.
 # The ':-' syntax provides a fallback if they somehow aren't set, using tput.
-RED='${RED:-$(tput setaf 1)}'
-GREEN='${GREEN:-$(tput setaf 2)}'
-YELLOW='${YELLOW:-$(tput setaf 3)}'
-NC='${NC:-$(tput sgr0)}' # Reset color
+RED="${RED:-$(tput setaf 1)}"
+GREEN="${GREEN:-$(tput setaf 2)}"
+YELLOW="${YELLOW:-$(tput setaf 3)}"
+NC="${NC:-$(tput sgr0)}" # Reset color
 
 # Make sure all scripts are executable
 chmod +x scripts/*.sh 2>/dev/null || true
