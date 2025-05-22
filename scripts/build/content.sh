@@ -177,8 +177,10 @@ EOF
     if [ -z "$lastmod" ]; then
         lastmod="$date"
     fi
-    if [ -z "$slug" ]; then
+       if [ -z "$slug" ]; then
         slug=$(generate_slug "$title")
+    else
+        slug=$(generate_slug "$slug")
     fi
     if [ -z "$description" ]; then
         # Generate excerpt only if description is missing
