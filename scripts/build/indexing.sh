@@ -138,10 +138,14 @@ _process_raw_file_index() {
             lastmod="$date"
         fi
 
+        if [ -n "$slug" ]; then
+            # Ensure slug is sanitized
+            slug=$(generate_slug "$slug")
+        fi
         # Fallback for Slug (generate from title)
         if [ -z "$slug" ]; then
             # Ensure title is available for slug generation
-            if [ -z "$title" ]; then title="${filename%.*}"; fi 
+            if [ -z "$title" ]; then title="${filename%.*}"; fi
             slug=$(generate_slug "$title")
         fi
 
