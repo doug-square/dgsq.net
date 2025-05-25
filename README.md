@@ -15,6 +15,7 @@
 - [Themes](#themes)
 - [Theme Previews](#theme-previews)
 - [Admin Interface](#admin-interface)
+- [BSSG Post Editor](#bssg-post-editor)
 - [Performance Features](#performance-features)
 - [Site Configuration](#site-configuration)
 - [Future Plans](#future-plans)
@@ -30,7 +31,8 @@
 - Supports `lastmod` timestamp in frontmatter for tracking content updates (used in sitemap, RSS feed, and optionally displayed on posts).
 - Full date and time support with timezone awareness
 - Post descriptions/summaries for previews, OpenGraph, and RSS
-- Admin interface for managing posts and scheduling publications
+- Admin interface for managing posts and scheduling publications (planned for future release)
+- Standalone post editor with modern Ghost-like interface for visual content creation
 - Creates tag index pages
 - Archives by year and month for chronological browsing
 - Dynamic menu generation based on available pages
@@ -197,6 +199,7 @@ Commonmark provides a stricter and more standardized Markdown implementation and
 ```
 BSSG/
 ├── bssg.sh                        # Main command interface script
+├── bssg-editor.html               # Standalone post editor (Ghost-like interface)
 ├── generate_theme_previews.sh     # Script to generate previews of all themes
 ├── scripts/                       # Supporting scripts
 │   ├── build/                     # Modular build scripts
@@ -839,36 +842,135 @@ Each theme preview will be accessible at `SITE_URL/theme` (e.g., `https://exampl
 
 ## Admin Interface
 
-BSSG includes an admin interface for managing your blog. To use the admin interface:
+**Note: The admin interface is currently in development and has not been released yet. This section describes planned features for a future release.**
 
-1. Make sure you have Node.js installed
-2. Navigate to the `admin` directory
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-4. Start the admin server:
-   ```bash
-   npm start
-   ```
-
-The admin interface provides a user-friendly way to:
+BSSG will include an admin interface for managing your blog. When released, the admin interface will provide a user-friendly way to:
 - Create and edit posts with a WYSIWYG Markdown editor
 - Create and manage drafts
 - Schedule posts for future publication
 - Organize posts with tags
 - View statistics about your blog
 
-For more detailed information about the admin interface, see the [admin/README.md](admin/README.md) file.
+The admin interface will feature:
+1. Node.js-based server
+2. Modern web interface
+3. Post scheduling capabilities
+4. Draft management
+5. Blog statistics and analytics
 
-### Post Scheduling
+### Post Scheduling (Planned Feature)
 
-The admin interface allows you to schedule posts for future publication. When you create or edit a post, you can:
+The planned admin interface will allow you to schedule posts for future publication. When available, you will be able to:
 
 1. Choose "Schedule for later" option
 2. Select the date and time for publication
 3. The post will be stored as a draft until the scheduled time
 4. At the scheduled time, the post will be automatically published
+
+## BSSG Post Editor
+
+BSSG includes a standalone post editor (`bssg-editor.html`) that provides a modern, Ghost-like writing experience entirely in your browser. This editor is perfect for users who prefer a visual interface over command-line tools.
+
+### Features
+
+- **Modern Interface**: Clean, distraction-free design inspired by Ghost CMS
+- **Split-Pane Editor**: Side-by-side markdown editor and live preview (toggleable)
+- **Complete BSSG Integration**: Full support for all BSSG frontmatter fields
+- **Smart Auto-Save**: Automatically saves your work every 10 words or after 5 seconds of inactivity
+- **Article Management**: Save, load, search, and organize multiple articles locally
+- **Unsplash Integration**: Built-in image browser with search and automatic attribution
+- **Rich Toolbar**: Quick formatting buttons for headers, lists, links, images, code, and more
+- **Keyboard Shortcuts**: Full keyboard support (Ctrl+B for bold, Ctrl+I for italic, Ctrl+S to save, etc.)
+- **Theme Support**: Dark/light mode toggle
+- **Focus Mode**: Distraction-free writing environment
+- **Export Options**: Export to .md files, copy to clipboard, or import existing files
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
+- **Offline Capable**: No server required - runs entirely in your browser
+
+### Getting Started
+
+1. **Open the Editor**: Simply open `bssg-editor.html` in your web browser
+2. **Configure Settings** (Optional): Add your Unsplash API key in the settings panel for real image search
+3. **Start Writing**: Fill in the post metadata in the sidebar and start writing in the editor
+4. **Save Your Work**: Use Ctrl+S to save articles locally, or use the auto-save feature
+5. **Export**: When ready, export your post as a .md file with proper BSSG formatting
+
+### Usage Tips
+
+- **Frontmatter**: All BSSG frontmatter fields are supported - title, date, tags, slug, description, image, etc.
+- **File Naming**: Exported files follow BSSG naming convention: `YYYY-MM-DD-slug.md`
+- **Image Integration**: Use the Unsplash button (🖼️) to search and insert images with proper attribution
+- **Article Management**: Save multiple articles locally and switch between them using the Load button
+- **Keyboard Shortcuts**:
+  - `Ctrl+N`: New article
+  - `Ctrl+S`: Save article
+  - `Ctrl+O`: Load article
+  - `Ctrl+P`: Toggle preview
+  - `Ctrl+B`: Bold text
+  - `Ctrl+I`: Italic text
+  - `Ctrl+K`: Insert link
+  - `Esc`: Exit focus mode
+
+### Unsplash Integration
+
+To use real Unsplash images instead of demo placeholders:
+
+1. Get a free API key from [Unsplash Developers](https://unsplash.com/developers)
+2. Enter your API key in the Settings section of the editor
+3. Use the image button (🖼️) to search and select professional photos
+4. Images are automatically attributed according to Unsplash guidelines
+
+The editor works without an API key using demo images, but real Unsplash integration provides access to millions of high-quality photos.
+
+### Integration with BSSG Workflow
+
+The BSSG Post Editor generates markdown files that are fully compatible with your BSSG workflow:
+
+1. **Write** your post in the editor
+2. **Export** the .md file to your BSSG `src/` directory
+3. **Build** your site with `./bssg.sh build`
+4. **Publish** as usual
+
+The editor can also import existing BSSG posts for editing, making it easy to update content with a visual interface.
+
+### Embedding the Editor in Your Website
+
+Since the BSSG Post Editor runs entirely in the browser with no server dependencies, you can safely embed it directly in your published website. This allows you to access the editor from anywhere and provides a convenient way to create content on-the-go.
+
+**To embed the editor:**
+
+1. **Copy the editor file** to your static directory:
+   ```bash
+   cp bssg-editor.html static/editor.html
+   ```
+
+2. **Build your site** as usual:
+   ```bash
+   ./bssg.sh build
+   ```
+
+3. **Access the editor** through your website:
+   ```
+   https://yoursite.com/editor.html
+   ```
+
+**Benefits of embedding:**
+
+- **Remote Access**: Write posts from any device with internet access
+- **No Installation**: No need to have BSSG installed locally to create content
+- **Secure**: Since it's client-side only, there are no security implications
+- **Convenient**: Always available alongside your published content
+- **Mobile Friendly**: The responsive design works well on tablets and phones
+
+**Workflow with embedded editor:**
+
+1. **Access** the editor at `yoursite.com/editor.html`
+2. **Write** your post using the visual interface
+3. **Export** the markdown file when finished
+4. **Upload** the file to your `src/` directory (via FTP, Git, or your preferred method)
+5. **Rebuild** your site to publish the new content
+
+**Security Note**: The editor stores data only in your browser's local storage and never transmits content to external servers (except for optional Unsplash image search). All article management and auto-save functionality works entirely offline, making it safe to embed in public websites.
 
 ## Performance Features
 
