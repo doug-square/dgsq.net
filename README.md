@@ -884,7 +884,7 @@ BSSG includes a standalone post editor (`bssg-editor.html`) that provides a mode
 - **Theme Support**: Dark/light mode toggle
 - **Focus Mode**: Distraction-free writing environment
 - **Export Options**: Export to .md files, copy to clipboard, or import existing files
-- **Responsive Design**: Works on desktop, tablet, and mobile devices
+- **Responsive Design**: Works on desktop, tablet, and mobile devices (not perfect on mobile, yet)
 - **Offline Capable**: No server required - runs entirely in your browser
 
 ### Getting Started
