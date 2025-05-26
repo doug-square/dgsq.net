@@ -85,9 +85,9 @@ _generate_rss_feed() {
 <?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 <channel>
-    <title>${feed_title}</title>
+    <title>$(html_escape "$feed_title")</title>
     <link>$(fix_url "$feed_link_rel")</link>
-    <description>${feed_description}</description>
+    <description>$(html_escape "$feed_description")</description>
     <language>${SITE_LANG:-en}</language>
     <lastBuildDate>$(format_date "now" "$rss_date_fmt")</lastBuildDate>
     <atom:link href="$(fix_url "$feed_atom_link_rel")" rel="self" type="application/rss+xml" />
@@ -182,7 +182,7 @@ EOF
 
         cat >> "$output_file" << EOF
     <item>
-        <title>${title}</title>
+        <title>$(html_escape "$title")</title>
         <link>${full_url}</link>
         <guid isPermaLink="true">${full_url}</guid>
         <pubDate>${pub_date}</pubDate>
