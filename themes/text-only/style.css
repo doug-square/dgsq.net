@@ -2,7 +2,18 @@
  * Text-Only Theme for BSSG
  * A step beyond minimalism - uses browser defaults with only 
  * essential typography for readability. Lightning-fast loading.
+ * Enhanced with accessibility and compatibility improvements.
  */
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
 
 /* CSS Variables for consistency */
 :root {
@@ -96,6 +107,12 @@ nav a:hover {
     text-decoration: underline;
 }
 
+nav a:focus {
+    outline: 2px solid var(--color-link);
+    outline-offset: 2px;
+    text-decoration: underline;
+}
+
 /* Simple content area */
 main {
     margin-bottom: var(--spacing-lg);
@@ -133,6 +150,12 @@ a:visited {
 }
 
 a:hover {
+    text-decoration: underline;
+}
+
+a:focus {
+    outline: 2px solid var(--color-link);
+    outline-offset: 2px;
     text-decoration: underline;
 }
 
@@ -230,6 +253,12 @@ hr {
     display: flex;
     justify-content: space-between;
     margin-top: var(--spacing-lg);
+}
+
+.pagination a:focus {
+    outline: 2px solid var(--color-link);
+    outline-offset: 2px;
+    text-decoration: underline;
 }
 
 /* Bare minimum responsive adjustments */

@@ -26,6 +26,8 @@ convert_markdown() {
     local image="$8"
     local image_caption="$9"
     local description="${10}"
+    local author_name="${11}"
+    local author_email="${12}"
     
     local content_cache_file="${CACHE_DIR:-.bssg_cache}/content/$(basename "$input_file")"
     local output_html_file="$output_base_path/index.html"
@@ -239,13 +241,23 @@ convert_markdown() {
              image_url=$(fix_url "$image")
         fi
 
-        # Create JSON-LD
-        schema_json_ld=$(printf '<script type="application/ld+json">\n{\n  "@context": "https://schema.org",\n  "@type": "Article",\n  "headline": "%s",\n  "datePublished": "%s",\n  "dateModified": "%s",\n  "author": {\n    "@type": "Person",\n    "name": "%s",\n    "email": "%s"\n  },\n  "publisher": {\n    "@type": "Organization",\n    "name": "%s",\n    "logo": {\n      "@type": "ImageObject",\n      "url": "%s/logo.png"\n    }\n  },\n  "description": "%s",\n  "mainEntityOfPage": {\n    "@type": "WebPage",\n    "@id": "%s%s"\n  }%s\n}\n</script>' \
+        # Create JSON-LD using post-specific author info
+        local post_author_name="${author_name:-${AUTHOR_NAME:-Anonymous}}"
+        local post_author_email="${author_email:-${AUTHOR_EMAIL:-anonymous@example.com}}"
+        
+        # Build author JSON - only include email if it's provided
+        local author_json
+        if [ -n "$author_email" ]; then
+            author_json=$(printf '{\n    "@type": "Person",\n    "name": "%s",\n    "email": "%s"\n  }' "$post_author_name" "$post_author_email")
+        else
+            author_json=$(printf '{\n    "@type": "Person",\n    "name": "%s"\n  }' "$post_author_name")
+        fi
+        
+        schema_json_ld=$(printf '<script type="application/ld+json">\n{\n  "@context": "https://schema.org",\n  "@type": "Article",\n  "headline": "%s",\n  "datePublished": "%s",\n  "dateModified": "%s",\n  "author": %s,\n  "publisher": {\n    "@type": "Organization",\n    "name": "%s",\n    "logo": {\n      "@type": "ImageObject",\n      "url": "%s/logo.png"\n    }\n  },\n  "description": "%s",\n  "mainEntityOfPage": {\n    "@type": "WebPage",\n    "@id": "%s%s"\n  }%s\n}\n</script>' \
           "$(echo "$title" | sed 's/"/\"/g')" \
           "$iso_date" \
           "$iso_lastmod_date" \
-          "${AUTHOR_NAME:-Anonymous}" \
-          "${AUTHOR_EMAIL:-anonymous@example.com}" \
+          "$author_json" \
           "$SITE_TITLE" \
           "$SITE_URL" \
           "$(echo "$meta_desc" | sed 's/"/\"/g')" \
@@ -281,11 +293,19 @@ convert_markdown() {
     local formatted_lastmod=$(format_date "$lastmod" "$display_date_format")
     local post_meta_reading_time
     post_meta_reading_time=$(printf "${MSG_READING_TIME_TEMPLATE:-%d min read}" "$reading_time")
-    local post_meta="<div class=\"page-meta\">${MSG_PUBLISHED_ON:-Published on}: $formatted_date"
+    local display_author_name="${author_name:-${AUTHOR_NAME:-Anonymous}}"
+    local post_meta="<div class=\"page-meta\">"
+    post_meta+="<p style=\"margin: 0 0 0.5em 0; font-size: 0.9em; color: #666;\">"
+    post_meta+="${MSG_PUBLISHED_ON:-Published on}: <time datetime=\"$date\" style=\"font-weight: 500;\">$formatted_date</time> ${MSG_BY:-by} <strong style=\"color: #333;\">$display_author_name</strong>"
+    post_meta+="</p>"
     if [ "$formatted_date" != "$formatted_lastmod" ]; then
-        post_meta+=" &bull; ${MSG_UPDATED_ON:-Updated on}: $formatted_lastmod"
+        post_meta+="<p style=\"margin: 0; font-size: 0.85em; color: #888; font-style: italic;\">"
+        post_meta+="${MSG_UPDATED_ON:-Updated on}: <time datetime=\"$lastmod\">$formatted_lastmod</time> &bull; $post_meta_reading_time"
+        post_meta+="</p>"
+    else
+        post_meta+="<p style=\"margin: 0; font-size: 0.85em; color: #888; font-style: italic;\">$post_meta_reading_time</p>"
     fi
-    post_meta+=" &bull; $post_meta_reading_time</div>"
+    post_meta+="</div>"
     
     # Construct featured image HTML
     local image_html=""
@@ -300,8 +320,9 @@ convert_markdown() {
 
     # Replace placeholders in footer content
     local current_year=$(date +'%Y')
+    local post_author_name="${author_name:-${AUTHOR_NAME:-Anonymous}}"
     footer_content=${footer_content//\{\{current_year\}\}/$current_year}
-    footer_content=${footer_content//\{\{author_name\}\}/${AUTHOR_NAME:-Anonymous}}
+    footer_content=${footer_content//\{\{author_name\}\}/$post_author_name}
 
     final_html+="${footer_content}"
 
@@ -325,6 +346,7 @@ process_all_markdown_files() {
 
     local file_index="${CACHE_DIR:-.bssg_cache}/file_index.txt"
     local modified_tags_list="${CACHE_DIR:-.bssg_cache}/modified_tags.list" # Define path for modified tags
+    local modified_authors_list="${CACHE_DIR:-.bssg_cache}/modified_authors.list" # Define path for modified authors
     local file_index_prev="${CACHE_DIR:-.bssg_cache}/file_index_prev.txt" # Path to previous index
 
     if [ ! -f "$file_index" ]; then
@@ -339,10 +361,13 @@ process_all_markdown_files() {
     fi
     echo -e "Checking ${GREEN}$total_file_count${NC} potential posts listed in index."
 
-    # --- Start Change: Clear previous modified tags list ---
+    # --- Start Change: Clear previous modified tags and authors lists ---
     echo "Clearing previous modified tags list: $modified_tags_list" >&2 # Debug message
+    echo "Clearing previous modified authors list: $modified_authors_list" >&2 # Debug message
     rm -f "$modified_tags_list"
+    rm -f "$modified_authors_list"
     touch "$modified_tags_list" # Ensure file exists even if empty
+    touch "$modified_authors_list" # Ensure file exists even if empty
     # --- End Change ---
 
     # Pre-filter files that need rebuilding
@@ -369,8 +394,8 @@ process_all_markdown_files() {
     local locale_time=$(get_file_mtime "$active_locale_file")
 
     while IFS= read -r line; do
-        local file filename title date lastmod tags slug image image_caption description
-        IFS='|' read -r file filename title date lastmod tags slug image image_caption description <<< "$line"
+        local file filename title date lastmod tags slug image image_caption description author_name author_email
+        IFS='|' read -r file filename title date lastmod tags slug image image_caption description author_name author_email <<< "$line"
 
         # Basic check if it looks like a post
         if [ -z "$date" ] || [[ "$file" != "$SRC_DIR"* ]]; then
@@ -413,7 +438,7 @@ process_all_markdown_files() {
         if $needs_rebuild; then
             files_to_process_list+=("$line")
             files_to_process_count=$((files_to_process_count + 1))
-            # --- Start Change: Track ALL modified tags (old and new) ---
+            # --- Start Change: Track ALL modified tags and authors (old and new) ---
             # 'tags' variable holds the NEW tags from the current file_index line
             local new_tags="$tags"
             local old_tags=""
@@ -433,6 +458,24 @@ process_all_markdown_files() {
                 # Split by comma, trim, filter empty, sort unique, and add each tag on a new line
                 echo "$combined_tags" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep . | sort -u >> "$modified_tags_list"
             fi
+
+            # Track modified authors (similar logic to tags)
+            local new_author="$author_name"
+            local old_author=""
+            # Try to get old author from the previous index snapshot
+            if [ -f "$file_index_prev" ]; then
+                # Grep for the exact file path ($file), assuming it's the first field
+                # Extract the 11th field (author_name)
+                old_author=$(grep "^${file}|" "$file_index_prev" | cut -d'|' -f11)
+            fi
+            
+            # Add both old and new authors to the modified list (if they exist)
+            if [ -n "$old_author" ] && [ "$old_author" != "" ]; then
+                echo "$old_author" >> "$modified_authors_list"
+            fi
+            if [ -n "$new_author" ] && [ "$new_author" != "" ]; then
+                echo "$new_author" >> "$modified_authors_list"
+            fi
             # --- End Change ---
         else
             # Only print skip message if not rebuilding
@@ -441,13 +484,21 @@ process_all_markdown_files() {
         fi
     done < "$file_index"
 
-    # --- Start Change: Unique sort the modified tags list (redundant now but safe) ---
+    # --- Start Change: Unique sort the modified tags and authors lists (redundant now but safe) ---
     if [ -f "$modified_tags_list" ]; then
         echo "Sorting and making modified tags list unique: $modified_tags_list" >&2 # Debug message
         local temp_tags_list=$(mktemp)
         # Sort unique again just in case duplicates were added somehow
         sort -u "$modified_tags_list" > "$temp_tags_list"
         mv "$temp_tags_list" "$modified_tags_list"
+    fi
+    
+    if [ -f "$modified_authors_list" ]; then
+        echo "Sorting and making modified authors list unique: $modified_authors_list" >&2 # Debug message
+        local temp_authors_list=$(mktemp)
+        # Sort unique to remove duplicates
+        sort -u "$modified_authors_list" > "$temp_authors_list"
+        mv "$temp_authors_list" "$modified_authors_list"
     fi
     # --- End Change ---
 
@@ -466,8 +517,8 @@ process_all_markdown_files() {
         local line="$1"
 
         # Read the line from the argument variable
-        local file filename title date lastmod tags slug image image_caption description
-        IFS='|' read -r file filename title date lastmod tags slug image image_caption description <<< "$line"
+        local file filename title date lastmod tags slug image image_caption description author_name author_email
+        IFS='|' read -r file filename title date lastmod tags slug image image_caption description author_name author_email <<< "$line"
 
         # No need for the basic check here, already done in pre-filter
 
@@ -489,7 +540,7 @@ process_all_markdown_files() {
         # Call the main conversion function
         # We no longer rely on its internal file_needs_rebuild check
         # TODO: Consider modifying convert_markdown to accept a force flag or skip its check
-        if ! convert_markdown "$file" "$output_path" "$title" "$date" "$lastmod" "$tags" "$slug" "$image" "$image_caption" "$description"; then
+        if ! convert_markdown "$file" "$output_path" "$title" "$date" "$lastmod" "$tags" "$slug" "$image" "$image_caption" "$description" "$author_name" "$author_email"; then
             local exit_code=$?
             echo -e "${RED}ERROR:${NC} convert_markdown failed for '$file' with exit code $exit_code. Output HTML may be missing or incomplete." >&2
         fi

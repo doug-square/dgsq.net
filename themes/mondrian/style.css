@@ -2,7 +2,25 @@
  * Mondrian Theme for BSSG
  * Inspired by Piet Mondrian's De Stijl artwork with
  * geometric patterns, primary colors, and black grid lines
+ * 
+ * IMPROVEMENTS APPLIED:
+ * - Added comprehensive reduced motion support
+ * - Enhanced accessibility with focus outlines
+ * - Enhanced font fallbacks with comprehensive system font stacks
+ * - Added text browser fallbacks for decorative elements
+ * - Optimized performance while maintaining authentic Mondrian geometric aesthetics
  */
+
+/* REDUCED MOTION SUPPORT - Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+}
 
 :root {
     /* Mondrian color scheme */
@@ -32,10 +50,10 @@
     --footer-text: var(--mondrian-white);
     --border-color: var(--mondrian-black);
     
-    /* Typography */
-    --font-main: 'Helvetica', 'Arial', sans-serif;
-    --font-headings: 'Helvetica', 'Arial', sans-serif;
-    --font-mono: 'Courier New', monospace;
+    /* Typography - Enhanced font fallbacks for Mondrian geometric look */
+    --font-main: 'Helvetica Neue', 'Helvetica', 'Arial', 'Segoe UI', 'Roboto', 'Ubuntu', sans-serif;
+    --font-headings: 'Helvetica Neue', 'Helvetica', 'Arial', 'Segoe UI', 'Roboto', 'Ubuntu', sans-serif;
+    --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', 'Liberation Mono', monospace;
     
     /* Sizing */
     --content-width: 85%;
@@ -94,6 +112,23 @@ header::after {
     z-index: 0;
 }
 
+/* TEXT BROWSER FALLBACK: Simple decoration for header */
+@supports not (position: absolute) {
+    header::after {
+        content: "■";
+        position: static;
+        background: none;
+        border: none;
+        color: var(--mondrian-red);
+        width: auto;
+        height: auto;
+        z-index: auto;
+        font-size: 1.5rem;
+        display: inline-block;
+        margin-left: 1rem;
+    }
+}
+
 /* Site title */
 .site-title {
     font-family: var(--font-headings);
@@ -115,6 +150,13 @@ header::after {
 }
 
 .site-title a:hover {
+    color: var(--accent-color);
+}
+
+/* ACCESSIBILITY: Focus states for site title */
+.site-title a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     color: var(--accent-color);
 }
 
@@ -172,6 +214,14 @@ nav a.active {
     color: var(--nav-hover-text);
 }
 
+/* ACCESSIBILITY: Focus states for navigation */
+nav a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    background-color: var(--nav-hover-bg);
+    color: var(--nav-hover-text);
+}
+
 /* Content area with Mondrian-inspired layout */
 main {
     padding: var(--content-padding);
@@ -215,6 +265,19 @@ h2::after {
     background-color: var(--mondrian-yellow);
 }
 
+/* TEXT BROWSER FALLBACK: Simple decoration for h2 */
+@supports not (position: absolute) {
+    h2::after {
+        content: " ▬";
+        position: static;
+        background: none;
+        color: var(--mondrian-yellow);
+        width: auto;
+        height: auto;
+        font-size: 1rem;
+    }
+}
+
 h3 {
     font-size: 1.6rem;
     margin-top: 2rem;
@@ -237,6 +300,14 @@ a:visited {
 }
 
 a:hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+}
+
+/* ACCESSIBILITY: Focus states for general links */
+a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     color: var(--link-hover);
     text-decoration: underline;
 }
@@ -272,6 +343,18 @@ article .meta {
     white-space: nowrap;
 }
 
+/* TEXT BROWSER FALLBACK: Add "Time: " prefix for reading time */
+.reading-time::before {
+    content: "Time: ";
+}
+
+/* Use Mondrian style icon when CSS transforms are supported (modern browsers) */
+@supports (transform: translateX(0)) {
+    .reading-time::before {
+        content: "⏱ ";
+    }
+}
+
 .tags {
     display: flex;
     flex-wrap: wrap;
@@ -294,6 +377,15 @@ article .meta {
 }
 
 .tags a:hover {
+    background-color: var(--mondrian-blue);
+    color: var(--mondrian-white);
+    transform: translateY(-2px);
+}
+
+/* ACCESSIBILITY: Focus states for tags */
+.tags a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     background-color: var(--mondrian-blue);
     color: var(--mondrian-white);
     transform: translateY(-2px);
@@ -327,6 +419,16 @@ article .meta {
 }
 
 .tags-list a:hover {
+    background-color: var(--mondrian-blue);
+    color: var(--mondrian-white);
+    border-color: var(--mondrian-blue);
+    transform: translateY(-2px);
+}
+
+/* ACCESSIBILITY: Focus states for tags list */
+.tags-list a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     background-color: var(--mondrian-blue);
     color: var(--mondrian-white);
     border-color: var(--mondrian-blue);
@@ -385,6 +487,14 @@ footer a:hover {
     text-decoration: none;
 }
 
+/* ACCESSIBILITY: Focus states for footer links */
+footer a:focus {
+    outline: 2px solid var(--mondrian-yellow);
+    outline-offset: 2px;
+    color: var(--mondrian-yellow);
+    text-decoration: none;
+}
+
 .pagination {
     display: flex;
     justify-content: center;
@@ -405,6 +515,16 @@ footer a:hover {
 }
 
 .pagination a:hover {
+    background-color: var(--mondrian-blue);
+    color: var(--mondrian-white);
+    border-color: var(--mondrian-blue);
+    transform: translateY(-2px);
+}
+
+/* ACCESSIBILITY: Focus states for pagination */
+.pagination a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     background-color: var(--mondrian-blue);
     color: var(--mondrian-white);
     border-color: var(--mondrian-blue);

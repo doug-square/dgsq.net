@@ -2,35 +2,62 @@
  * Y2K Theme for BSSG
  * Turn of the millennium aesthetic with bold colors and digital futurism
  * Featuring bubble effects, gradients, and elements from early 2000s web design
+ * IMPROVED: Better accessibility, performance, and text browser support
  */
 
-@import url('https://fonts.googleapis.com/css2?family=VT323&family=Titillium+Web:wght@400;700&display=swap');
+/* Reduced motion support - CRITICAL for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    /* Disable performance-heavy animations */
+    .site-title a {
+        animation: none !important;
+    }
+    
+    .marquee-content {
+        animation: none !important;
+        transform: none !important;
+    }
+    
+    /* Simplify hover effects */
+    nav a:hover, .site-title a:hover {
+        transform: none !important;
+    }
+}
+
+/* OPTIMIZED: Using system fonts instead of external Google Fonts for better performance and privacy */
+/* Removed Google Fonts import - using system font alternatives */
 
 :root {
-    /* Y2K color scheme - bold and digital */
-    --bg-color: #CCCCFF;
-    --bg-secondary: #FFCCFF;
-    --text-color: #333366;
-    --text-light: #666699;
-    --link-color: #FF3399;
-    --link-hover: #FF66CC;
-    --accent-blue: #33CCFF;
-    --accent-pink: #FF66FF;
-    --accent-yellow: #FFFF66;
-    --header-color: #6633CC;
-    --border-color: #9999CC;
-    --nav-bg: #EEEEFF;
-    --bubble-gradient-1: rgba(255, 102, 255, 0.5);
-    --bubble-gradient-2: rgba(102, 204, 255, 0.5);
-    --highlight-color: #EEDDFF;
+    /* Y2K color scheme - IMPROVED contrast ratios */
+    --bg-color: #E6E6FF; /* Lighter for better contrast */
+    --bg-secondary: #FFE6FF; /* Lighter for better contrast */
+    --text-color: #1A1A4D; /* Darker for better contrast */
+    --text-light: #4D4D80; /* Improved contrast */
+    --link-color: #CC0066; /* Darker for better contrast */
+    --link-hover: #FF3399;
+    --accent-blue: #0099CC; /* Darker for better contrast */
+    --accent-pink: #FF33CC;
+    --accent-yellow: #FFCC00; /* Darker for better contrast */
+    --header-color: #4D1A99; /* Darker for better contrast */
+    --border-color: #8080B3; /* Improved contrast */
+    --nav-bg: #F0F0FF;
+    --bubble-gradient-1: rgba(255, 102, 255, 0.3); /* Reduced opacity for performance */
+    --bubble-gradient-2: rgba(102, 204, 255, 0.3); /* Reduced opacity for performance */
+    --highlight-color: #E6CCFF;
     --accent-color: var(--accent-blue);
     --accent-secondary: var(--accent-pink);
-    --quote-bg: #EEEEFF;
+    --quote-bg: #F0F0FF;
     
-    /* Typography */
-    --font-main: 'Titillium Web', 'Arial', sans-serif;
-    --font-digital: 'VT323', monospace;
-    --font-mono: 'Courier New', monospace;
+    /* Typography - Using system fonts for better performance and privacy */
+    --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    --font-digital: 'Courier New', 'Monaco', 'Menlo', 'Consolas', 'Liberation Mono', monospace;
+    --font-mono: 'Courier New', 'Monaco', 'Menlo', 'Consolas', 'Liberation Mono', monospace;
     
     /* Font Sizes */
     --text-xs: 0.8rem;
@@ -56,10 +83,10 @@
     --spacing-2xl: 30px;
     --spacing-3xl: 40px;
     
-    /* Transitions */
+    /* Transitions - OPTIMIZED for performance */
     --transition-fast: 0.1s;
-    --transition-base: 0.2s;
-    --transition-slow: 0.3s;
+    --transition-base: 0.15s; /* Reduced for better performance */
+    --transition-slow: 0.2s; /* Reduced for better performance */
     
     /* Sizing */
     --content-width: 960px;
@@ -67,7 +94,7 @@
     --button-radius: 25px;
 }
 
-/* Base elements with background gradient */
+/* Base elements with optimized background gradient */
 body {
     font-family: var(--font-main);
     background: linear-gradient(135deg, var(--bg-color) 0%, var(--bg-secondary) 100%);
@@ -76,14 +103,14 @@ body {
     padding: var(--spacing-xl);
     line-height: var(--line-height-base);
     font-size: var(--text-base);
-    background-attachment: fixed;
+    /* REMOVED: background-attachment: fixed for better mobile performance */
 }
 
-/* Container with early 2000s styling */
+/* Container with early 2000s styling - OPTIMIZED */
 .container {
     max-width: var(--content-width);
     margin: var(--spacing-xl) auto;
-    background-color: rgba(255, 255, 255, 0.7);
+    background-color: rgba(255, 255, 255, 0.8); /* Improved contrast */
     border: 3px solid var(--border-color);
     border-radius: var(--border-radius);
     overflow: hidden;
@@ -91,7 +118,7 @@ body {
     position: relative;
 }
 
-/* Digital stars in the background */
+/* OPTIMIZED: Simplified digital pattern */
 .container::before {
     content: "";
     position: absolute;
@@ -99,12 +126,16 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M20 0L20 40M0 20L40 20M8 8L32 32M32 8L8 32' stroke='%239999CC' stroke-width='0.5' stroke-dasharray='1,4' stroke-linecap='round'/%3E%3C/svg%3E");
-    opacity: 0.2;
+    /* SIMPLIFIED: Basic pattern instead of complex SVG */
+    background-image: 
+        linear-gradient(45deg, transparent 40%, rgba(153, 153, 204, 0.1) 50%, transparent 60%),
+        linear-gradient(-45deg, transparent 40%, rgba(153, 153, 204, 0.1) 50%, transparent 60%);
+    background-size: 20px 20px;
+    opacity: 0.3;
     pointer-events: none;
 }
 
-/* Y2K header with gradient */
+/* Y2K header with gradient - OPTIMIZED */
 header {
     background: linear-gradient(to right, var(--header-color), var(--accent-blue));
     color: white;
@@ -115,17 +146,17 @@ header {
     border-bottom: 3px solid var(--border-color);
 }
 
-/* Bubble effect behind header */
+/* OPTIMIZED: Simplified bubble effect */
 header::before {
     content: "";
     position: absolute;
-    width: 200px;
-    height: 200px;
+    width: 150px; /* Reduced size for performance */
+    height: 150px;
     border-radius: 50%;
     background: radial-gradient(circle, var(--bubble-gradient-1) 0%, var(--bubble-gradient-2) 100%);
-    top: -100px;
+    top: -75px;
     right: -50px;
-    opacity: 0.6;
+    opacity: 0.4; /* Reduced opacity */
     z-index: 0;
 }
 
@@ -139,7 +170,7 @@ header h1 {
     z-index: 1;
 }
 
-/* Site title with Y2K futuristic styling */
+/* Site title with Y2K futuristic styling - IMPROVED accessibility */
 .site-title {
     margin: 0;
     padding: 0;
@@ -148,38 +179,54 @@ header h1 {
     position: relative;
     z-index: 1;
     letter-spacing: 1px;
+    color: white; /* Fallback color */
 }
 
 .site-title a {
     text-decoration: none;
-    background: linear-gradient(45deg, 
-        var(--accent-blue) 0%, 
-        var(--accent-pink) 30%, 
-        var(--link-color) 60%, 
-        var(--accent-yellow) 100%
-    );
-    background-size: 200% 200%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: white; /* Fallback for text browsers */
     text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2);
     display: inline-block;
-    animation: y2k-gradient 5s ease infinite;
     transition: all var(--transition-slow);
 }
 
+/* Progressive enhancement for gradient text */
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+    .site-title a {
+        background: linear-gradient(45deg, 
+            var(--accent-blue) 0%, 
+            var(--accent-pink) 30%, 
+            var(--link-color) 60%, 
+            var(--accent-yellow) 100%
+        );
+        background-size: 200% 200%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        /* CONDITIONAL: Animation only if motion is not reduced */
+        animation: y2k-gradient 5s ease infinite;
+    }
+}
+
 .site-title a:hover {
-    transform: scale(1.05) rotate(-1deg);
+    transform: scale(1.02) rotate(-0.5deg); /* Reduced for better performance */
     text-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
 }
 
-@keyframes y2k-gradient {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+.site-title a:focus {
+    outline: 3px solid var(--accent-yellow);
+    outline-offset: 3px;
+    transform: scale(1.02) rotate(-0.5deg);
+    text-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
 }
 
-/* Y2K-style bubble buttons navigation */
+/* OPTIMIZED: Simplified gradient animation */
+@keyframes y2k-gradient {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+/* Y2K-style bubble buttons navigation - OPTIMIZED */
 nav {
     background-color: var(--nav-bg);
     padding: var(--spacing-md);
@@ -212,7 +259,15 @@ nav a {
 
 nav a:hover {
     background: linear-gradient(to bottom, white, var(--accent-yellow));
-    transform: scale(1.05);
+    transform: scale(1.02); /* Reduced scale for better performance */
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+nav a:focus {
+    outline: 3px solid var(--accent-yellow);
+    outline-offset: 3px;
+    background: linear-gradient(to bottom, white, var(--accent-yellow));
+    transform: scale(1.02);
     box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.15);
 }
 
@@ -238,10 +293,10 @@ nav a:last-child:hover {
 main {
     padding: var(--spacing-2xl);
     position: relative;
-    background-color: rgba(255, 255, 255, 0.5);
+    background-color: rgba(255, 255, 255, 0.6); /* Improved contrast */
 }
 
-/* Y2K-style typography */
+/* Y2K-style typography - IMPROVED contrast */
 h1, h2, h3, h4, h5, h6 {
     color: var(--header-color);
     margin-top: 1.5rem;
@@ -258,12 +313,19 @@ h1 {
 
 h2 {
     font-size: var(--text-xl);
-    background: linear-gradient(to right, var(--header-color), var(--accent-blue));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--header-color); /* Fallback color */
     padding-bottom: var(--spacing-sm);
     border-bottom: 2px dotted var(--border-color);
+}
+
+/* Progressive enhancement for h2 gradient */
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+    h2 {
+        background: linear-gradient(to right, var(--header-color), var(--accent-blue));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
 }
 
 h3 {
@@ -276,7 +338,7 @@ p {
     line-height: var(--line-height-base);
 }
 
-/* Y2K-style links with hover effect */
+/* Y2K-style links with hover effect - IMPROVED contrast */
 a {
     color: var(--link-color);
     text-decoration: none;
@@ -289,10 +351,17 @@ a:hover {
     text-decoration: underline;
 }
 
-/* Digital counter effect */
+a:focus {
+    outline: 2px solid var(--accent-yellow);
+    outline-offset: 2px;
+    color: var(--link-hover);
+    text-decoration: underline;
+}
+
+/* Digital counter effect - IMPROVED contrast */
 .digital-counter {
     font-family: var(--font-digital);
-    background-color: #000033;
+    background-color: #000066; /* Darker for better contrast */
     color: #00FF00;
     padding: var(--spacing-sm) var(--spacing-md);
     border-radius: var(--spacing-sm);
@@ -303,10 +372,10 @@ a:hover {
     box-shadow: inset 0 0 5px rgba(0, 255, 0, 0.5);
 }
 
-/* Y2K-style articles with bubble corners */
+/* Y2K-style articles with bubble corners - OPTIMIZED */
 article {
     margin-bottom: var(--spacing-3xl);
-    background-color: rgba(255, 255, 255, 0.7);
+    background-color: rgba(255, 255, 255, 0.8); /* Improved contrast */
     border: 2px solid var(--border-color);
     border-radius: 15px;
     padding: var(--spacing-xl);
@@ -315,27 +384,27 @@ article {
     overflow: hidden;
 }
 
-/* Decorative Y2K corner bubbles */
+/* OPTIMIZED: Simplified decorative bubbles */
 article::before {
     content: "";
     position: absolute;
-    width: 100px;
-    height: 100px;
+    width: 80px; /* Reduced size for performance */
+    height: 80px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 102, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
-    top: -50px;
-    left: -50px;
+    background: radial-gradient(circle, rgba(255, 102, 255, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+    top: -40px;
+    left: -40px;
 }
 
 article::after {
     content: "";
     position: absolute;
-    width: 80px;
-    height: 80px;
+    width: 60px; /* Reduced size for performance */
+    height: 60px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(102, 204, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
-    bottom: -40px;
-    right: -40px;
+    background: radial-gradient(circle, rgba(102, 204, 255, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+    bottom: -30px;
+    right: -30px;
 }
 
 article:last-child {
@@ -365,209 +434,235 @@ article .meta {
     background-color: var(--header-color);
     color: white;
     padding: var(--spacing-xs) var(--spacing-md);
-    border-radius: var(--spacing-md);
-    font-size: var(--text-xs);
+    border-radius: var(--spacing-sm);
+    font-size: var(--text-sm);
+    display: inline-block;
 }
 
 .tags {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
 }
 
 .tags a {
-    background: linear-gradient(to bottom, white, #f0f0ff);
-    color: var(--text-color);
+    background: linear-gradient(to bottom, var(--accent-pink), var(--link-color));
+    color: white;
     padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--button-radius);
     font-size: var(--text-xs);
-    text-decoration: none;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    transition: all var(--transition-base);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .tags a:hover {
-    background: linear-gradient(to bottom, white, var(--accent-yellow));
-    transform: scale(1.05);
+    background: linear-gradient(to bottom, var(--link-hover), var(--accent-pink));
+    transform: translateY(-1px); /* Reduced for better performance */
+}
+
+.tags a:focus {
+    outline: 2px solid var(--accent-yellow);
+    outline-offset: 2px;
+    background: linear-gradient(to bottom, var(--link-hover), var(--accent-pink));
+    transform: translateY(-1px);
 }
 
 .tags-list {
-    list-style-type: none;
-    padding: 0;
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
 }
 
 .tag-count {
-    background-color: var(--accent-pink);
+    background: var(--accent-blue);
     color: white;
-    font-size: 0.75em;
-    margin-left: 5px;
-    padding: 0 5px;
-    border-radius: 8px;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: 50%;
+    font-size: var(--text-xs);
+    font-weight: bold;
+    margin-left: var(--spacing-sm);
+    min-width: 20px;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
-/* Y2K code blocks */
 code {
-    font-family: var(--font-mono);
-    background-color: #000033;
-    color: #00FF00;
+    background: rgba(0, 0, 102, 0.1); /* Improved contrast */
+    color: var(--header-color);
     padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--spacing-xs);
+    font-family: var(--font-mono);
     font-size: var(--text-sm);
-    border-radius: 3px;
+    border: 1px solid var(--border-color);
 }
 
 pre {
-    background-color: #000033;
-    color: #00FF00;
+    background: rgba(0, 0, 102, 0.05); /* Improved contrast */
+    color: var(--text-color);
     padding: var(--spacing-lg);
-    overflow-x: auto;
-    font-size: var(--text-sm);
     border-radius: var(--spacing-md);
-    margin: var(--spacing-xl) 0;
-    border: 2px solid #333366;
-    font-family: var(--font-mono);
+    overflow-x: auto;
+    border: 2px solid var(--border-color);
+    margin: var(--spacing-lg) 0;
 }
 
 pre code {
-    background-color: transparent;
+    background: none;
+    border: none;
     padding: 0;
+    color: inherit;
 }
 
-/* Y2K images with bubbly border */
 img {
     max-width: 100%;
     height: auto;
-    border: 3px solid var(--accent-blue);
-    border-radius: var(--spacing-lg);
-    padding: var(--spacing-sm);
-    background-color: white;
-    box-shadow: 3px 3px var(--spacing-md) rgba(0, 0, 0, 0.2);
+    border-radius: var(--spacing-md);
+    margin: var(--spacing-lg) 0;
+    border: 2px solid var(--border-color);
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Y2K-style footer */
 footer {
     background: linear-gradient(to right, var(--header-color), var(--accent-blue));
     color: white;
-    padding: var(--spacing-xl) var(--spacing-2xl);
-    font-size: var(--text-sm);
+    padding: var(--spacing-xl);
     text-align: center;
     border-top: 3px solid var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     position: relative;
-    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-xl);
 }
 
-/* Bubble decoration for footer */
+/* OPTIMIZED: Simplified footer decorations */
 footer::before {
     content: "";
     position: absolute;
-    width: 150px;
-    height: 150px;
+    width: 100px;
+    height: 100px;
     border-radius: 50%;
-    background: radial-gradient(circle, var(--bubble-gradient-1) 0%, transparent 70%);
-    bottom: -80px;
-    left: 10%;
+    background: radial-gradient(circle, var(--bubble-gradient-1) 0%, rgba(255, 255, 255, 0) 70%);
+    top: -50px;
+    left: var(--spacing-xl);
     opacity: 0.3;
 }
 
 footer::after {
     content: "";
     position: absolute;
-    width: 120px;
-    height: 120px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
-    background: radial-gradient(circle, var(--bubble-gradient-2) 0%, transparent 70%);
-    top: -60px;
-    right: 10%;
+    background: radial-gradient(circle, var(--bubble-gradient-2) 0%, rgba(255, 255, 255, 0) 70%);
+    bottom: -40px;
+    right: var(--spacing-xl);
     opacity: 0.3;
 }
 
 footer a {
-    color: white;
+    color: var(--accent-yellow);
     text-decoration: none;
     font-weight: bold;
-    position: relative;
-    z-index: 1;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 footer a:hover {
-    color: var(--accent-yellow);
+    color: white;
     text-decoration: underline;
 }
 
-/* Y2K-style pagination */
+footer a:focus {
+    outline: 2px solid var(--accent-yellow);
+    outline-offset: 2px;
+    color: white;
+    text-decoration: underline;
+}
+
 .pagination {
     display: flex;
     justify-content: center;
     align-items: center;
+    gap: var(--spacing-lg);
     margin: var(--spacing-2xl) 0;
-    gap: var(--spacing-md);
 }
 
 .pagination a {
-    background: linear-gradient(to bottom, var(--accent-blue), #0099cc);
-    color: white;
-    padding: var(--spacing-md) var(--spacing-lg);
-    text-decoration: none;
+    background: linear-gradient(to bottom, white, var(--nav-bg));
+    color: var(--text-color);
+    padding: var(--spacing-md) var(--spacing-xl);
     border-radius: var(--button-radius);
-    border: 2px solid #0099cc;
-    font-weight: bold;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
-    transition: all var(--transition-base);
-}
-
-.pagination a:hover {
-    background: linear-gradient(to bottom, #66ddff, #00aadd);
-    transform: scale(1.05);
-    text-decoration: none;
-}
-
-.pagination .page-info {
-    background-color: rgba(255, 255, 255, 0.7);
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: var(--spacing-lg);
     border: 2px solid var(--border-color);
-    font-family: var(--font-digital);
-    color: var(--header-color);
+    text-decoration: none;
+    font-weight: bold;
+    transition: all var(--transition-base);
+    text-transform: uppercase;
+    letter-spacing: 1px;
     font-size: var(--text-sm);
 }
 
-/* Y2K-style horizontal rule with stars */
-hr {
-    border: none;
-    height: 20px;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M10 0l2.4 7.4H20l-6.2 4.5 2.4 7.4-6.2-4.5-6.2 4.5 2.4-7.4L0 7.4h7.6z' fill='%239999CC'/%3E%3C/svg%3E");
-    background-repeat: repeat-x;
-    background-position: center;
-    margin: var(--spacing-xl) 0;
+.pagination a:hover {
+    background: linear-gradient(to bottom, white, var(--accent-yellow));
+    transform: scale(1.02);
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Y2K-style divider */
-.y2k-divider {
-    display: flex;
-    align-items: center;
-    margin: var(--spacing-xl) 0;
+.pagination a:focus {
+    outline: 3px solid var(--accent-yellow);
+    outline-offset: 3px;
+    background: linear-gradient(to bottom, white, var(--accent-yellow));
+    transform: scale(1.02);
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-.y2k-divider::before,
-.y2k-divider::after {
-    content: "";
-    flex: 1;
-    height: 2px;
-    background: linear-gradient(to right, transparent, var(--accent-pink), transparent);
-}
-
-.y2k-divider span {
-    padding: 0 var(--spacing-md);
+.pagination .page-info {
+    font-family: var(--font-digital);
+    background-color: var(--header-color);
+    color: white;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--spacing-md);
     font-size: var(--text-md);
     color: var(--accent-pink);
 }
 
-/* Marquee effect - classic Y2K */
+/* Y2K horizontal rule */
+hr {
+    border: none;
+    height: 3px;
+    background: linear-gradient(to right, var(--accent-blue), var(--accent-pink), var(--accent-yellow));
+    margin: var(--spacing-2xl) 0;
+    border-radius: var(--spacing-xs);
+}
+
+/* Y2K divider with decorative elements */
+.y2k-divider {
+    text-align: center;
+    margin: var(--spacing-2xl) 0;
+    position: relative;
+}
+
+.y2k-divider::before,
+.y2k-divider::after {
+    content: "◆◇◆";
+    color: var(--accent-pink);
+    font-size: var(--text-lg);
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.y2k-divider span {
+    background: var(--bg-color);
+    padding: 0 var(--spacing-lg);
+    color: var(--header-color);
+    font-weight: bold;
+}
+
+/* OPTIMIZED: Marquee effect with reduced motion support */
 .marquee {
     background-color: var(--accent-blue);
     color: white;
@@ -583,16 +678,32 @@ hr {
 
 .marquee-content {
     display: inline-block;
-    animation: marquee 15s linear infinite;
+    /* CONDITIONAL: Animation only if motion is not reduced */
+    animation: marquee 20s linear infinite; /* Slower for better performance */
 }
 
+/* Text browser fallback for marquee */
+@media (max-width: 0) { /* This targets text browsers */
+    .marquee-content {
+        animation: none;
+        transform: none;
+    }
+}
+
+/* OPTIMIZED: Simplified marquee animation */
 @keyframes marquee {
     0% { transform: translateX(100%); }
     100% { transform: translateX(-100%); }
 }
 
-/* Media query for responsive design */
+/* IMPROVED: Better responsive design */
 @media (max-width: 768px) {
+    body {
+        padding: var(--spacing-md);
+        /* OPTIMIZED: Simplified background on mobile */
+        background: linear-gradient(135deg, var(--bg-color) 0%, var(--bg-secondary) 100%);
+    }
+    
     .container {
         margin: var(--spacing-md);
     }
@@ -676,7 +787,7 @@ hr {
     }
 }
 
-/* Featured Images with Y2K styling */
+/* OPTIMIZED: Featured Images with Y2K styling */
 .featured-image {
     margin: 1.5rem 0;
     border: 3px solid var(--border-color);
@@ -688,15 +799,16 @@ hr {
     padding: var(--spacing-sm);
 }
 
+/* OPTIMIZED: Simplified bubble effect */
 .featured-image::before {
     content: "";
     position: absolute;
-    width: 150px;
-    height: 150px;
+    width: 100px; /* Reduced size for performance */
+    height: 100px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 70%);
-    top: -50px;
-    left: -50px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 70%);
+    top: -30px;
+    left: -30px;
     opacity: 0.5;
     z-index: 1;
     pointer-events: none;
@@ -712,8 +824,8 @@ hr {
 }
 
 .featured-image:hover img {
-    transform: scale(1.02);
-    filter: brightness(1.05);
+    transform: scale(1.01); /* Reduced scale for better performance */
+    filter: brightness(1.02);
 }
 
 .featured-image .image-caption {
@@ -787,13 +899,13 @@ hr {
     border: 1px solid rgba(255, 255, 255, 0.7);
 }
 
-/* Selection styling */
+/* IMPROVED: Better text selection */
 ::selection {
     background-color: var(--highlight-color);
     color: var(--text-color);
 }
 
-/* Date header with Y2K styling */
+/* Date header with Y2K styling - IMPROVED contrast */
 .date-header {
     font-family: var(--font-main);
     font-weight: bold;

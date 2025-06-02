@@ -1,7 +1,46 @@
 /* 
  * Web 1.0 Theme for BSSG
  * GeoCities-style theme with animated GIFs, bright backgrounds, and 90s web nostalgia
+ * Enhanced with accessibility, performance, and compatibility improvements
  */
+
+/* Comprehensive reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    /* Disable all Web 1.0 animations for reduced motion */
+    .marquee {
+        animation: none !important;
+        transform: none !important;
+        padding-left: 0 !important;
+    }
+    
+    .rainbow-text,
+    .site-title a {
+        animation: none !important;
+        background: none !important;
+        color: #ff0000 !important;
+    }
+    
+    .site-title {
+        animation: none !important;
+    }
+    
+    .blink {
+        animation: none !important;
+        visibility: visible !important;
+    }
+    
+    /* Remove background-attachment: fixed for better performance */
+    body {
+        background-attachment: scroll !important;
+    }
+}
 
 :root {
     /* Web 1.0 vibrant colors */
@@ -151,14 +190,21 @@ header {
 }
 
 .rainbow-text {
-    background-image: linear-gradient(to right, #ff0000, #ff9900, #ffff00, #00ff00, #0099ff, #6633ff);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: rainbow 6s linear infinite;
     font-size: var(--text-4xl);
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
     font-weight: bold;
+    color: #ff0000; /* Fallback color for text browsers */
+}
+
+/* Progressive enhancement for rainbow text */
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+    .rainbow-text {
+        background-image: linear-gradient(to right, #ff0000, #ff9900, #ffff00, #00ff00, #0099ff, #6633ff);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: rainbow 6s linear infinite;
+    }
 }
 
 @keyframes rainbow {
@@ -180,19 +226,32 @@ header {
 
 .site-title a {
     text-decoration: none;
-    background-image: linear-gradient(to right, #ff0000, #ff9900, #ffff00, #00ff00, #0099ff, #6633ff);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: rainbow 6s linear infinite;
     display: inline-block;
     padding: 0 var(--spacing-md);
     border: 3px outset #ffff00;
-    background-color: #000000;
-    transition: all var(--transition-fast);
+    color: #ff0000; /* Fallback color for text browsers */
+}
+
+/* Progressive enhancement for site title rainbow effect */
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+    .site-title a {
+        background-image: linear-gradient(to right, #ff0000, #ff9900, #ffff00, #00ff00, #0099ff, #6633ff);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: rainbow 6s linear infinite;
+    }
 }
 
 .site-title a:hover {
+    transform: scale(1.05);
+    border: 3px outset #ff00ff;
+    text-shadow: 4px 4px 0 #ff00ff, -4px -4px 0 #00ffff;
+}
+
+.site-title a:focus {
+    outline: 3px solid #ffff00;
+    outline-offset: 3px;
     transform: scale(1.05);
     border: 3px outset #ff00ff;
     text-shadow: 4px 4px 0 #ff00ff, -4px -4px 0 #00ffff;
@@ -235,6 +294,13 @@ nav a {
 }
 
 nav a:hover {
+    background-color: #ff9900;
+    border: 3px inset #ff9900;
+}
+
+nav a:focus {
+    outline: 3px solid #ffff00;
+    outline-offset: 3px;
     background-color: #ff9900;
     border: 3px inset #ff9900;
 }
@@ -342,6 +408,13 @@ article .meta {
     content: "📖 ";
 }
 
+/* Text browser fallback for reading time icon */
+@supports not (content: "📖") {
+    .reading-time::before {
+        content: "Reading time: ";
+    }
+}
+
 .tags {
     display: flex;
     flex-wrap: wrap;
@@ -361,6 +434,13 @@ article .meta {
 }
 
 .tags a:hover {
+    background-color: #ff00ff;
+    border: 2px inset #ff00ff;
+}
+
+.tags a:focus {
+    outline: 2px solid #ffff00;
+    outline-offset: 2px;
     background-color: #ff00ff;
     border: 2px inset #ff00ff;
 }
@@ -483,6 +563,13 @@ footer a:hover {
     background-color: #000000;
 }
 
+footer a:focus {
+    outline: 2px solid #ffff00;
+    outline-offset: 2px;
+    color: #ff00ff;
+    background-color: #000000;
+}
+
 .webring {
     display: flex;
     gap: var(--spacing-3xl);
@@ -510,6 +597,13 @@ footer a:hover {
     border: 2px inset #ff00ff;
 }
 
+.webring a:focus {
+    outline: 2px solid #ffff00;
+    outline-offset: 2px;
+    background-color: #ff00ff;
+    border: 2px inset #ff00ff;
+}
+
 .copyright {
     margin-top: var(--spacing-md);
     font-size: var(--text-xs);
@@ -530,6 +624,13 @@ footer a:hover {
 
 .best-viewed::before {
     content: "🌐 ";
+}
+
+/* Text browser fallback for globe icon */
+@supports not (content: "🌐") {
+    .best-viewed::before {
+        content: "Best viewed with: ";
+    }
 }
 
 /* Email button */
@@ -554,6 +655,13 @@ footer a:hover {
     content: "✉️ ";
 }
 
+/* Text browser fallback for email icon */
+@supports not (content: "✉️") {
+    .email-me::before {
+        content: "Email: ";
+    }
+}
+
 /* Pagination in Web 1.0 style */
 .pagination {
     display: flex;
@@ -576,6 +684,13 @@ footer a:hover {
 }
 
 .pagination a:hover {
+    background-color: #ff00ff;
+    border: 3px inset #ff00ff;
+}
+
+.pagination a:focus {
+    outline: 2px solid #ffff00;
+    outline-offset: 2px;
     background-color: #ff00ff;
     border: 3px inset #ff00ff;
 }

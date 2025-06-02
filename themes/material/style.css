@@ -1,6 +1,7 @@
 /* 
  * Android Material Design Theme for BSSG
  * Modern, clean Material Design styling inspired by Google's design language
+ * Enhanced with accessibility, performance, and compatibility improvements
  */
 
 :root {
@@ -28,10 +29,10 @@
     --dp16: rgba(0, 0, 0, 0.15);
     --dp24: rgba(0, 0, 0, 0.16);
     
-    /* Typography */
-    --font-main: 'Roboto', 'Segoe UI', 'Arial', sans-serif;
-    --font-headings: 'Roboto', 'Segoe UI', 'Arial', sans-serif;
-    --font-mono: 'Roboto Mono', monospace;
+    /* Typography - Enhanced with better fallbacks */
+    --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+    --font-headings: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
     
     /* Sizing */
     --content-width: 1000px;
@@ -47,6 +48,26 @@
     --header-color: var(--on-surface);
     --border-color: var(--dp1);
     --radius: var(--border-radius);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --transition: 0.01s;
+    }
+    
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .featured-image img,
+    .material-fab,
+    article {
+        transform: none !important;
+    }
 }
 
 /* Material Design pattern for body */
@@ -71,132 +92,169 @@ body {
     overflow: hidden;
 }
 
-/* App bar with primary color */
+/* Clean Material Design header */
 header {
     background-color: var(--primary-color);
     color: var(--on-primary);
-    padding: 16px;
+    padding: 20px 24px;
     position: relative;
-    font-size: 1.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-shadow: 0 4px 6px var(--dp4);
+    box-shadow: 0 2px 4px var(--dp2), 0 4px 8px var(--dp4);
     z-index: 2;
 }
 
-/* Site title with Material-style gradient */
+/* Header content wrapper */
+.header-content {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Site title - clean and simple */
 .site-title {
     margin: 0;
     padding: 0;
-    font-size: 1.5rem;
-    font-weight: 500;
+    font-size: 1.75rem;
+    font-weight: 600;
     font-family: var(--font-headings);
-    background: linear-gradient(120deg, var(--on-primary) 0%, rgba(255, 255, 255, 0.8) 100%);
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+    color: var(--on-primary);
+    letter-spacing: -0.02em;
 }
 
 .site-title a {
     text-decoration: none;
-    background: linear-gradient(120deg, var(--on-primary) 0%, rgba(255, 255, 255, 0.8) 100%);
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+    color: var(--on-primary);
     transition: all var(--transition);
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    border-radius: 4px;
+    padding: 4px 8px;
+    margin: -4px -8px;
 }
 
 .site-title a:hover {
     text-decoration: none;
-    background: linear-gradient(120deg, rgba(255, 255, 255, 0.9) 0%, var(--secondary-color) 100%);
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
+    color: rgba(255, 255, 255, 0.9);
     transform: translateY(-1px);
 }
 
-/* Menu icons for Material Design */
-.menu-controls {
-    display: flex;
-    gap: 16px;
+.site-title a:focus {
+    outline-color: rgba(255, 255, 255, 0.5);
 }
 
-.material-icon {
-    width: 24px;
-    height: 24px;
+/* Site description */
+.site-description {
+    margin: 4px 0 0 0;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 400;
+    line-height: 1.3;
+}
+
+/* Header actions - simplified */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.header-button {
+    background: none;
+    border: none;
+    color: var(--on-primary);
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--on-primary);
-    cursor: pointer;
-    border-radius: 50%;
-    transition: background-color 0.2s;
 }
 
-.material-icon:hover {
+.header-button:hover {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-.material-menu::before {
+.header-button:focus {
+    outline-color: rgba(255, 255, 255, 0.5);
+}
+
+.header-button::before {
+    font-size: 18px;
+}
+
+.header-menu::before {
     content: "☰";
-    font-size: 18px;
 }
 
-.material-more::before {
-    content: "⋮";
-    font-size: 18px;
+.header-search::before {
+    content: "🔍";
 }
 
-header h1 {
-    margin: 0;
-    padding: 0;
-    font-size: 1.25rem;
-    font-weight: 500;
-    font-family: var(--font-headings);
-    color: var(--on-primary);
-    background: linear-gradient(120deg, var(--on-primary) 0%, rgba(255, 255, 255, 0.8) 100%);
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+/* Text browser fallbacks */
+@supports not (content: "☰") {
+    .header-menu::before {
+        content: "Menu";
+        font-size: 10px;
+    }
+    
+    .header-search::before {
+        content: "Search";
+        font-size: 10px;
+    }
 }
 
 /* Navigation in Material UI style */
 nav {
     display: flex;
-    flex-wrap: nowrap;
-    background-color: var(--primary-color);
+    flex-wrap: wrap;
+    background-color: var(--surface);
     padding: 0;
-    overflow-x: auto;
+    overflow: visible;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    border-bottom: 1px solid var(--dp1);
+    justify-content: center;
 }
 
 nav a {
-    color: var(--on-primary);
+    color: var(--primary-color);
     text-decoration: none;
-    padding: 15px 20px;
+    padding: 15px 16px;
     margin: 0;
     font-weight: 500;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     position: relative;
     display: inline-block;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     white-space: nowrap;
     transition: all 0.3s;
+    flex: 1;
+    text-align: center;
+    min-width: 0;
+    /* Enhanced focus outline for accessibility */
+    outline: 2px solid transparent;
+    outline-offset: -2px;
 }
 
 nav a:hover, nav a:focus {
-    color: var(--on-primary);
-    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--primary-variant);
+    background-color: rgba(98, 0, 238, 0.08);
+}
+
+nav a:focus {
+    outline-color: var(--primary-color);
 }
 
 /* Active tab with indicator */
 nav a.active {
-    color: var(--on-primary);
+    color: var(--primary-variant);
+    background-color: rgba(98, 0, 238, 0.12);
 }
 
 nav a.active::after {
@@ -206,7 +264,7 @@ nav a.active::after {
     left: 0;
     width: 100%;
     height: 2px;
-    background-color: var(--on-primary);
+    background-color: var(--primary-color);
 }
 
 /* Media query for responsive design */
@@ -220,12 +278,17 @@ nav a.active::after {
     nav {
         flex-direction: row;
         flex-wrap: wrap;
+        justify-content: center;
     }
     
     nav a {
-        flex-grow: 1;
+        flex: 1;
         text-align: center;
-        padding: 12px 10px;
+        padding: 12px 8px;
+        font-size: 0.8rem;
+        min-width: 0;
+        white-space: normal;
+        word-break: break-word;
     }
     
     main {
@@ -329,11 +392,26 @@ nav a.active::after {
     }
     
     header {
-        padding: 12px;
+        padding: 16px 20px;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
     }
     
     .site-title {
-        font-size: 1.25rem;
+        font-size: 1.5rem;
+    }
+    
+    .site-description {
+        font-size: 0.85rem;
+    }
+    
+    .header-actions {
+        align-self: flex-end;
+        margin-top: -32px;
     }
     
     main {
@@ -412,6 +490,8 @@ nav a.active::after {
     nav a {
         padding: 10px 6px;
         font-size: 0.75rem;
+        white-space: normal;
+        word-break: break-word;
     }
     
     h1 {
@@ -467,7 +547,7 @@ h1, h2, h3, h4, h5, h6 {
     line-height: 1.2;
 }
 
-/* Decorative elements for headings */
+/* Decorative elements for headings with text browser fallbacks */
 h1::before, h2::before, h3::before, h4::before {
     content: "#";
     display: inline-block;
@@ -478,6 +558,14 @@ h1::before, h2::before, h3::before, h4::before {
     transition: all var(--transition);
     transform: translateX(-5px);
     opacity: 0;
+}
+
+/* Text browser fallback for heading decorations */
+@supports not (transform: translateX(-5px)) {
+    h1::before, h2::before, h3::before, h4::before {
+        content: "";
+        display: none;
+    }
 }
 
 h1:hover::before, h2:hover::before, h3:hover::before, h4:hover::before {
@@ -508,10 +596,13 @@ p {
     line-height: 1.6;
 }
 
-/* Links */
+/* Links with enhanced focus states */
 a {
     color: var(--primary-color);
     text-decoration: none;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    transition: outline-color var(--transition);
 }
 
 a:visited {
@@ -520,6 +611,10 @@ a:visited {
 
 a:hover {
     text-decoration: underline;
+}
+
+a:focus {
+    outline-color: var(--primary-color);
 }
 
 /* Material Design buttons */
@@ -537,11 +632,19 @@ a:hover {
     cursor: pointer;
     transition: box-shadow 0.2s, background-color 0.2s;
     box-shadow: 0 2px 4px var(--dp2);
+    border: none;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
 }
 
 .material-button:hover {
     box-shadow: 0 4px 8px var(--dp4);
     background-color: var(--primary-variant);
+    text-decoration: none;
+}
+
+.material-button:focus {
+    outline-color: var(--primary-color);
 }
 
 .material-button.secondary {
@@ -553,7 +656,11 @@ a:hover {
     background-color: var(--secondary-variant);
 }
 
-/* Floating action button */
+.material-button.secondary:focus {
+    outline-color: var(--secondary-color);
+}
+
+/* Floating action button with text browser fallback */
 .material-fab {
     position: fixed;
     bottom: 24px;
@@ -571,15 +678,30 @@ a:hover {
     z-index: 10;
     transition: box-shadow 0.2s, transform 0.2s;
     cursor: pointer;
+    border: none;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
 }
 
 .material-fab::before {
     content: "+";
 }
 
+/* Text browser fallback for FAB */
+@supports not (content: "+") {
+    .material-fab::before {
+        content: "Add";
+        font-size: 12px;
+    }
+}
+
 .material-fab:hover {
     box-shadow: 0 8px 12px var(--dp8), 0 3px 16px var(--dp4);
     transform: translateY(-2px);
+}
+
+.material-fab:focus {
+    outline-color: var(--secondary-color);
 }
 
 /* Articles in Material Design style */
@@ -615,6 +737,14 @@ article .meta {
 .reading-time::before {
     content: "⏱️";
     margin-right: 4px;
+}
+
+/* Text browser fallback for reading time icon */
+@supports not (content: "⏱️") {
+    .reading-time::before {
+        content: "Time: ";
+        margin-right: 4px;
+    }
 }
 
 /* Featured Images in Material Design style */
@@ -696,11 +826,17 @@ article .meta {
     border-radius: 16px;
     text-decoration: none;
     transition: background-color 0.2s;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
 }
 
 .tags a:hover {
     background-color: rgba(98, 0, 238, 0.12);
     text-decoration: none;
+}
+
+.tags a:focus {
+    outline-color: var(--primary-color);
 }
 
 code {
@@ -758,10 +894,17 @@ footer {
     text-transform: uppercase;
     letter-spacing: 0.04em;
     font-weight: 500;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    transition: color var(--transition), outline-color var(--transition);
 }
 
 .bottom-nav-item:hover {
     color: var(--primary-color);
+}
+
+.bottom-nav-item:focus {
+    outline-color: var(--primary-color);
 }
 
 /* Pagination in Material Design style */
@@ -780,11 +923,17 @@ footer {
     text-decoration: none;
     border-radius: 4px;
     transition: background-color 0.2s;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
 }
 
 .pagination a:hover {
     background-color: rgba(98, 0, 238, 0.08);
     text-decoration: none;
+}
+
+.pagination a:focus {
+    outline-color: var(--primary-color);
 }
 
 .pagination .page-info {
@@ -803,10 +952,16 @@ footer {
     margin: 4px;
     font-size: 0.875rem;
     transition: background-color 0.2s;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
 }
 
 .tags-list .tag:hover {
     background-color: rgba(98, 0, 238, 0.12);
+}
+
+.tags-list .tag:focus {
+    outline-color: var(--primary-color);
 }
 
 .tag-count {
@@ -817,6 +972,9 @@ footer {
     font-size: 0.75rem;
     border-radius: 50%;
     margin-left: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* For posts lists in archives */

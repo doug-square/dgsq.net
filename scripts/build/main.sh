@@ -196,6 +196,24 @@ build_tags_index || { echo -e "${RED}Error: Failed to build tags index.${NC}"; e
 # echo "--- End $tags_index_file DEBUG ---" >&2
 # --- End Debug ---
 
+# --- Start Change: Snapshot previous authors index ---
+authors_index_file="${CACHE_DIR:-.bssg_cache}/authors_index.txt"
+authors_index_prev_file="${CACHE_DIR:-.bssg_cache}/authors_index_prev.txt"
+if [ -f "$authors_index_file" ]; then
+    echo "Snapshotting previous authors index to $authors_index_prev_file" >&2 # Debug
+    cp "$authors_index_file" "$authors_index_prev_file"
+else
+    # Ensure previous file doesn't exist if current doesn't
+    rm -f "$authors_index_prev_file"
+fi
+# --- End Change ---
+
+build_authors_index || { echo -e "${RED}Error: Failed to build authors index.${NC}"; exit 1; }
+
+# --- Start Change: Identify affected authors ---
+identify_affected_authors || { echo -e "${RED}Error: Failed to identify affected authors.${NC}"; exit 1; }
+# --- End Change ---
+
 if [ "${ENABLE_ARCHIVES:-false}" = true ]; then
     # --- Start Change: Snapshot previous archive index ---
     archive_index_file="${CACHE_DIR:-.bssg_cache}/archive_index.txt"
@@ -307,6 +325,19 @@ generate_tag_pages || { echo -e "${RED}Error: Tag page generation failed.${NC}";
 echo "Generated tag list pages."
 # --- Tag Page Generation --- END ---
 
+# --- Author Page Generation --- START ---
+# Source and run Author Page Generator (if enabled)
+if [ "${ENABLE_AUTHOR_PAGES:-true}" = true ]; then
+    # shellcheck source=generate_authors.sh disable=SC1091
+    source "$SCRIPT_DIR/generate_authors.sh" || { echo -e "${RED}Error: Failed to source generate_authors.sh${NC}"; exit 1; }
+    
+    # Call the main generation function 
+    # It will internally use AFFECTED_AUTHORS and AUTHORS_INDEX_NEEDS_REBUILD
+    generate_author_pages || { echo -e "${RED}Error: Author page generation failed.${NC}"; exit 1; }
+    echo "Generated author pages."
+fi
+# --- Author Page Generation --- END ---
+
 # --- Archive Page Generation --- START ---
 # Source and run Archive Page Generator (if enabled)
 if [ "${ENABLE_ARCHIVES:-false}" = true ]; then
@@ -390,6 +421,7 @@ create_config_hash
 echo "Cleaning up previous index files..."
 rm -f "${CACHE_DIR:-.bssg_cache}/file_index_prev.txt"
 rm -f "${CACHE_DIR:-.bssg_cache}/tags_index_prev.txt"
+rm -f "${CACHE_DIR:-.bssg_cache}/authors_index_prev.txt"
 rm -f "${CACHE_DIR:-.bssg_cache}/archive_index_prev.txt"
 
 # Remove the frontmatter changes marker if it exists

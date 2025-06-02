@@ -2,13 +2,31 @@
  * NES Theme for BSSG
  * Retro theme inspired by Nintendo Entertainment System,
  * using the NES color palette and pixel art aesthetics
+ * 
+ * IMPROVEMENTS APPLIED:
+ * - Added comprehensive reduced motion support
+ * - Enhanced accessibility with focus outlines
+ * - Removed external font loading for better performance and text browser compatibility
+ * - Enhanced font fallbacks with comprehensive system font stacks
+ * - Added text browser fallbacks for decorative elements
+ * - Optimized performance while maintaining authentic NES aesthetics
  */
 
-@font-face {
-    font-family: 'Press Start 2P';
-    src: url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-    font-weight: normal;
-    font-style: normal;
+/* REDUCED MOTION SUPPORT - Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+    
+    /* Disable NES-specific animations */
+    .site-title a:hover,
+    .site-title a:focus {
+        animation: none !important;
+    }
 }
 
 :root {
@@ -48,10 +66,10 @@
     --footer-text: var(--nes-light-gray);
     --code-bg: var(--nes-dark-gray);
     
-    /* Typography */
-    --font-main: 'Press Start 2P', monospace;
-    --font-headings: 'Press Start 2P', monospace;
-    --font-mono: 'Press Start 2P', monospace;
+    /* Typography - Enhanced font fallbacks for NES pixelated look */
+    --font-main: 'Courier New', 'Monaco', 'Menlo', 'Consolas', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', monospace;
+    --font-headings: 'Courier New', 'Monaco', 'Menlo', 'Consolas', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', monospace;
+    --font-mono: 'Courier New', 'Monaco', 'Menlo', 'Consolas', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', monospace;
     
     /* Sizing */
     --content-width: 88%;
@@ -168,6 +186,13 @@ header {
     animation: blink 0.5s step-end infinite alternate;
 }
 
+.site-title a:focus {
+    outline: 3px solid var(--nes-light-yellow);
+    outline-offset: 3px;
+    color: var(--nes-light-yellow);
+    animation: blink 0.5s step-end infinite alternate;
+}
+
 /* Site description */
 header p {
     margin: var(--spacing-sm) auto 0;
@@ -206,6 +231,17 @@ nav a {
 
 nav a:hover, 
 nav a.active {
+    color: var(--nes-light-yellow);
+    background-color: var(--nes-blue);
+    transform: translateY(var(--pixel-size));
+    box-shadow: 
+        0 0 0 rgba(0, 0, 0, 0.5),
+        inset var(--pixel-size) var(--pixel-size) 0 rgba(255, 255, 255, 0.1);
+}
+
+nav a:focus {
+    outline: 3px solid var(--nes-light-yellow);
+    outline-offset: 2px;
     color: var(--nes-light-yellow);
     background-color: var(--nes-blue);
     transform: translateY(var(--pixel-size));
@@ -280,6 +316,13 @@ a {
 }
 
 a:hover {
+    color: var(--link-hover);
+    animation: blink 0.5s step-end infinite alternate;
+}
+
+a:focus {
+    outline: 2px solid var(--nes-light-yellow);
+    outline-offset: 2px;
     color: var(--link-hover);
     animation: blink 0.5s step-end infinite alternate;
 }
@@ -359,9 +402,17 @@ article .meta {
     gap: 0.5em;
 }
 
+/* TEXT BROWSER FALLBACK: Add "Time: " prefix for reading time */
 .reading-time::before {
-    content: "⏱";
-    font-size: 1.2em;
+    content: "Time: ";
+}
+
+/* Use NES-style icon when CSS transforms are supported (modern browsers) */
+@supports (transform: translateX(0)) {
+    .reading-time::before {
+        content: "⏱";
+        font-size: 1.2em;
+    }
 }
 
 /* Tags */
@@ -383,6 +434,15 @@ article .meta {
 }
 
 .tags a:hover {
+    background-color: var(--nes-green);
+    color: var(--nes-black);
+    animation: none;
+    transform: translateY(2px);
+}
+
+.tags a:focus {
+    outline: 2px solid var(--nes-light-yellow);
+    outline-offset: 2px;
     background-color: var(--nes-green);
     color: var(--nes-black);
     animation: none;
@@ -422,6 +482,17 @@ article .meta {
 }
 
 .tags-list a:hover {
+    background-color: var(--nes-green);
+    color: var(--nes-black);
+    transform: translateY(var(--pixel-size));
+    box-shadow: 
+        0 0 0 rgba(0, 0, 0, 0.5),
+        inset var(--pixel-size) var(--pixel-size) 0 rgba(255, 255, 255, 0.1);
+}
+
+.tags-list a:focus {
+    outline: 2px solid var(--nes-light-yellow);
+    outline-offset: 2px;
     background-color: var(--nes-green);
     color: var(--nes-black);
     transform: translateY(var(--pixel-size));
@@ -508,7 +579,7 @@ blockquote {
 }
 
 blockquote::before {
-    content: """;
+    content: "\201C";
     position: absolute;
     top: 0.1em;
     left: var(--spacing-sm);
@@ -548,6 +619,13 @@ blockquote p:last-child {
 }
 
 .posts-list h3 a:hover {
+    color: var(--nes-light-yellow);
+}
+
+/* ACCESSIBILITY: Focus states for post list links */
+.posts-list h3 a:focus {
+    outline: 2px solid var(--nes-light-yellow);
+    outline-offset: 2px;
     color: var(--nes-light-yellow);
 }
 
@@ -601,6 +679,12 @@ footer a:hover {
     color: var(--nes-light-yellow);
 }
 
+footer a:focus {
+    outline: 2px solid var(--nes-light-yellow);
+    outline-offset: 2px;
+    color: var(--nes-light-yellow);
+}
+
 /* Pagination */
 .pagination {
     display: flex;
@@ -624,6 +708,16 @@ footer a:hover {
 }
 
 .pagination a:hover {
+    background-color: var(--nes-blue);
+    color: var(--nes-light-yellow);
+    transform: translateY(var(--pixel-size));
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0.5);
+    animation: none;
+}
+
+.pagination a:focus {
+    outline: 2px solid var(--nes-light-yellow);
+    outline-offset: 2px;
     background-color: var(--nes-blue);
     color: var(--nes-light-yellow);
     transform: translateY(var(--pixel-size));

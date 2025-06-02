@@ -1,7 +1,31 @@
 /* 
  * Modern BeOS Theme for BSSG
  * A contemporary take on the classic BeOS interface
+ * 
+ * IMPROVEMENTS APPLIED:
+ * - Added comprehensive reduced motion support
+ * - Enhanced accessibility with focus outlines
+ * - Added text browser fallbacks for gradient text
+ * - Optimized font loading with better fallbacks
+ * - Enhanced performance while maintaining BeOS aesthetics
  */
+
+/* REDUCED MOTION SUPPORT - Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+    
+    nav a:hover,
+    .site-title a:hover,
+    article:hover {
+        transform: none !important;
+    }
+}
 
 :root {
     /* Modern BeOS-inspired color scheme */
@@ -21,10 +45,10 @@
     --title-color-start: #3584e4;
     --title-color-end: #1d57a5;
     
-    /* Typography */
-    --font-main: 'Inter', 'Segoe UI', 'Arial', sans-serif;
-    --font-headings: 'Inter', 'Segoe UI', 'Arial', sans-serif;
-    --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+    /* Typography - ENHANCED fallbacks for text browsers */
+    --font-main: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    --font-headings: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    --font-mono: 'Consolas', 'Courier New', 'Courier', monospace;
     
     /* Sizing */
     --content-width: 950px;
@@ -99,6 +123,21 @@ header::after {
     transition: var(--transition);
     border-bottom: none;
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+    /* ACCESSIBILITY: Focus outline */
+    outline: none;
+}
+
+/* TEXT BROWSER FALLBACK: Provide solid color when gradient text isn't supported */
+@supports not (background-clip: text) {
+    .site-title a {
+        color: var(--title-color-start);
+        background: none;
+    }
+    
+    .site-title a:hover {
+        color: var(--title-color-end);
+        background: none;
+    }
 }
 
 .site-title a:hover {
@@ -108,6 +147,17 @@ header::after {
     background-clip: text;
     color: transparent;
     border-bottom: none;
+}
+
+/* ACCESSIBILITY: Focus states for site title */
+.site-title a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    transform: translateY(-1px);
+    background: linear-gradient(to bottom, var(--title-color-end), var(--title-color-start));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
 }
 
 header h1 {
@@ -153,6 +203,8 @@ nav a {
     display: inline-block;
     transition: var(--transition);
     top: 1px;
+    /* ACCESSIBILITY: Focus outline */
+    outline: none;
 }
 
 nav a:hover {
@@ -165,6 +217,12 @@ nav a:focus {
     background-color: var(--window-bg);
     z-index: 1;
     transform: translateY(-2px);
+}
+
+/* ACCESSIBILITY: Focus states for navigation */
+nav a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
 }
 
 /* Content area with border to connect with tabs */
@@ -208,6 +266,8 @@ a {
     text-decoration: none;
     transition: var(--transition);
     border-bottom: 1px solid transparent;
+    /* ACCESSIBILITY: Focus outline */
+    outline: none;
 }
 
 a:visited {
@@ -215,6 +275,13 @@ a:visited {
 }
 
 a:hover {
+    border-bottom: 1px solid currentColor;
+}
+
+/* ACCESSIBILITY: Focus states for general links */
+a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     border-bottom: 1px solid currentColor;
 }
 
@@ -274,6 +341,18 @@ article .meta {
     font-size: 13px;
 }
 
+/* TEXT BROWSER FALLBACK: Add "Time: " prefix for reading time */
+.reading-time::before {
+    content: "Time: ";
+}
+
+/* Hide the prefix when CSS transforms are supported (modern browsers) */
+@supports (transform: translateX(0)) {
+    .reading-time::before {
+        content: "⏱ ";
+    }
+}
+
 /* Tags styling with proper spacing */
 .tags {
     display: flex;
@@ -292,6 +371,8 @@ article .meta {
     display: inline-block;
     border-radius: 4px;
     transition: var(--transition);
+    /* ACCESSIBILITY: Focus outline */
+    outline: none;
 }
 
 .tags a:hover {
@@ -301,6 +382,15 @@ article .meta {
     border-bottom: 1px solid var(--border-color);
 }
 
+/* ACCESSIBILITY: Focus states for tags */
+.tags a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    background-color: var(--title-yellow);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .tags-list {
     display: flex;
     flex-wrap: wrap;
@@ -308,6 +398,12 @@ article .meta {
     margin: 15px 0;
     padding: 0;
     list-style-type: none;
+}
+
+/* ACCESSIBILITY: Focus states for tags list */
+.tags-list a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
 }
 
 .tag-count {
@@ -371,6 +467,12 @@ footer {
     text-align: center;
 }
 
+/* ACCESSIBILITY: Focus states for footer links */
+footer a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
 /* Pagination */
 .pagination {
     display: flex;
@@ -390,6 +492,8 @@ footer {
     border-radius: 4px;
     transition: var(--transition);
     font-weight: 500;
+    /* ACCESSIBILITY: Focus outline */
+    outline: none;
 }
 
 .pagination a:hover {
@@ -397,6 +501,15 @@ footer {
     transform: translateY(-2px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     border-bottom: 1px solid var(--border-color);
+}
+
+/* ACCESSIBILITY: Focus states for pagination */
+.pagination a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    background-color: var(--title-yellow);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Blockquotes */

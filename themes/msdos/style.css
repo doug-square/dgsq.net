@@ -1,7 +1,32 @@
 /* 
  * MS-DOS Theme for BSSG
  * Classic blue command line interface reminiscent of MS-DOS
+ * 
+ * IMPROVEMENTS APPLIED:
+ * - Added comprehensive reduced motion support
+ * - Enhanced accessibility with focus outlines
+ * - Enhanced font fallbacks with comprehensive system font stacks
+ * - Added text browser fallbacks for decorative elements
+ * - Optimized performance while maintaining authentic MS-DOS aesthetics
  */
+
+/* REDUCED MOTION SUPPORT - Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+    
+    /* Disable DOS-specific animations */
+    .site-title a,
+    .dos-loading,
+    .dos-loading::after {
+        animation: none !important;
+    }
+}
 
 :root {
     /* MS-DOS classic colors */
@@ -20,10 +45,10 @@
     --title-gradient-start: #ffffff;
     --title-gradient-end: #aaaaaa;
     
-    /* Typography */
-    --font-main: 'Courier New', monospace;
-    --font-headings: 'Courier New', monospace;
-    --font-mono: 'Courier New', monospace;
+    /* Typography - Enhanced font fallbacks for MS-DOS terminal look */
+    --font-main: 'Consolas', 'Monaco', 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace;
+    --font-headings: 'Consolas', 'Monaco', 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace;
+    --font-mono: 'Consolas', 'Monaco', 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace;
     
     /* Sizing */
     --content-width: 820px;
@@ -98,7 +123,27 @@ header {
     animation: none;
 }
 
+/* TEXT BROWSER FALLBACK: Simple prompt for site title */
+@supports not (animation: none) {
+    .site-title a::before {
+        content: "> ";
+    }
+}
+
 .site-title a:hover {
+    animation: none;
+    background: linear-gradient(to right, 
+        var(--title-gradient-start),
+        var(--title-gradient-end));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+/* ACCESSIBILITY: Focus states for site title */
+.site-title a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     animation: none;
     background: linear-gradient(to right, 
         var(--title-gradient-start),
@@ -178,6 +223,14 @@ nav a:hover, nav a:focus {
     color: var(--menu-highlight-text);
 }
 
+/* ACCESSIBILITY: Enhanced focus states for navigation */
+nav a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
+    background-color: var(--menu-highlight-bg);
+    color: var(--menu-highlight-text);
+}
+
 /* Selected menu item */
 nav a.active {
     background-color: var(--menu-highlight-bg);
@@ -242,6 +295,14 @@ p:after {
     color: var(--text-color);
 }
 
+/* TEXT BROWSER FALLBACK: Simple cursor for paragraphs */
+@supports not (animation: blink) {
+    p:after {
+        content: "_";
+        animation: none;
+    }
+}
+
 @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
@@ -262,6 +323,13 @@ a:hover {
     text-decoration: underline;
 }
 
+/* ACCESSIBILITY: Focus states for general links */
+a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
+    text-decoration: underline;
+}
+
 /* Articles with command prompt style */
 article {
     margin-bottom: calc(var(--spacing-unit) * 3);
@@ -274,6 +342,13 @@ article::before {
     content: "DIR>";
     color: var(--text-color);
     margin-right: calc(var(--spacing-unit));
+}
+
+/* TEXT BROWSER FALLBACK: Simple prompt for articles */
+@supports not (position: relative) {
+    article::before {
+        content: "* ";
+    }
 }
 
 article:last-child {
@@ -318,6 +393,15 @@ article .meta {
 }
 
 .tags a:hover {
+    background-color: var(--menu-highlight-bg);
+    color: var(--menu-highlight-text);
+    text-decoration: none;
+}
+
+/* ACCESSIBILITY: Focus states for tags */
+.tags a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     background-color: var(--menu-highlight-bg);
     color: var(--menu-highlight-text);
     text-decoration: none;
@@ -412,6 +496,15 @@ footer::before {
 }
 
 .pagination a:hover {
+    background-color: var(--menu-highlight-bg);
+    color: var(--menu-highlight-text);
+    text-decoration: none;
+}
+
+/* ACCESSIBILITY: Focus states for pagination */
+.pagination a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     background-color: var(--menu-highlight-bg);
     color: var(--menu-highlight-text);
     text-decoration: none;

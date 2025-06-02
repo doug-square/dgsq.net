@@ -1,7 +1,26 @@
 /* 
  * NeXTSTEP Theme for BSSG
  * Recreating the iconic NeXTSTEP GUI from the late 80s/early 90s - the predecessor to macOS
+ * 
+ * IMPROVEMENTS APPLIED:
+ * - Added comprehensive reduced motion support
+ * - Enhanced accessibility with focus outlines
+ * - Enhanced font fallbacks with comprehensive system font stacks
+ * - Added text browser fallbacks for decorative elements
+ * - Fixed gradient text accessibility with progressive enhancement
+ * - Optimized performance while maintaining authentic NeXTSTEP aesthetics
  */
+
+/* REDUCED MOTION SUPPORT - Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+}
 
 :root {
     /* NeXTSTEP color scheme */
@@ -24,10 +43,10 @@
     --title-gradient-start: #ffffff;
     --title-gradient-end: #cccccc;
     
-    /* Typography */
-    --font-main: 'Helvetica', 'Arial', sans-serif;
-    --font-headings: 'Helvetica', 'Arial', sans-serif;
-    --font-mono: 'Courier', monospace;
+    /* Typography - Enhanced font fallbacks for NeXTSTEP look */
+    --font-main: 'Helvetica Neue', 'Helvetica', 'Arial', 'Segoe UI', 'Roboto', 'Ubuntu', 'Cantarell', sans-serif;
+    --font-headings: 'Helvetica Neue', 'Helvetica', 'Arial', 'Segoe UI', 'Roboto', 'Ubuntu', 'Cantarell', sans-serif;
+    --font-mono: 'Courier New', 'Courier', 'Monaco', 'Menlo', 'Consolas', 'Liberation Mono', monospace;
     
     /* Sizing */
     --content-width: 820px;
@@ -96,8 +115,9 @@ header {
     cursor: pointer;
 }
 
+/* TEXT BROWSER FALLBACK: Simple text for window controls */
 .next-minimize::after {
-    content: "_";
+    content: "-";
     color: black;
     position: relative;
     top: -3px;
@@ -110,9 +130,20 @@ header {
 }
 
 .next-close::after {
-    content: "×";
+    content: "X";
     color: black;
     font-weight: bold;
+}
+
+/* Use NeXTSTEP-style symbols when CSS positioning is supported (modern browsers) */
+@supports (position: relative) {
+    .next-minimize::after {
+        content: "_";
+    }
+    
+    .next-close::after {
+        content: "×";
+    }
 }
 
 /* NeXTSTEP site title with gradient */
@@ -154,6 +185,20 @@ header {
     }
 }
 
+/* ACCESSIBILITY: Focus states for site title */
+.site-title a:focus {
+    outline: 2px solid var(--title-gradient-start);
+    outline-offset: 2px;
+    text-decoration: none;
+    background: linear-gradient(to bottom, 
+        var(--title-gradient-start), 
+        var(--title-gradient-end));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.9);
+}
+
 header h1 {
     margin: 0;
     padding: 0;
@@ -167,9 +212,8 @@ nav {
     background-color: var(--window-bg);
     border-bottom: var(--border-width) solid var(--border-color);
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     padding: 0;
-    overflow-x: auto;
 }
 
 nav a {
@@ -190,10 +234,19 @@ nav a:hover, nav a:focus {
     color: var(--title-text);
 }
 
-/* Selected menu item */
+/* ACCESSIBILITY: Enhanced focus states for navigation */
+nav a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
+}
+
+/* Selected menu item - Enhanced contrast for better visibility */
 nav a.active {
     background-color: var(--title-bar);
     color: var(--title-text);
+    font-weight: bold;
+    border-left: 2px solid var(--title-text);
+    border-right: 2px solid var(--title-text);
 }
 
 /* Content area */
@@ -253,6 +306,13 @@ a:hover {
     text-decoration: underline;
 }
 
+/* ACCESSIBILITY: Focus states for general links */
+a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
+    text-decoration: underline;
+}
+
 /* NeXTSTEP style button */
 .next-button {
     background-color: var(--button);
@@ -268,6 +328,14 @@ a:hover {
 }
 
 .next-button:active {
+    background-color: var(--title-bar);
+    color: var(--title-text);
+}
+
+/* ACCESSIBILITY: Focus states for NeXTSTEP buttons */
+.next-button:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     background-color: var(--title-bar);
     color: var(--title-text);
 }
@@ -298,6 +366,18 @@ article .meta {
     font-style: italic;
 }
 
+/* TEXT BROWSER FALLBACK: Add "Time: " prefix for reading time */
+.reading-time::before {
+    content: "Time: ";
+}
+
+/* Use NeXTSTEP-style icon when CSS transforms are supported (modern browsers) */
+@supports (transform: translateX(0)) {
+    .reading-time::before {
+        content: "⏱ ";
+    }
+}
+
 .tags {
     display: flex;
     flex-wrap: wrap;
@@ -315,6 +395,15 @@ article .meta {
 }
 
 .tags a:hover {
+    background-color: var(--title-bar);
+    color: var(--title-text);
+    text-decoration: none;
+}
+
+/* ACCESSIBILITY: Focus states for tags */
+.tags a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     background-color: var(--title-bar);
     color: var(--title-text);
     text-decoration: none;
@@ -448,9 +537,26 @@ footer {
     text-decoration: none;
 }
 
+/* ACCESSIBILITY: Focus states for pagination */
+.pagination a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
+    background-color: var(--title-bar);
+    color: var(--title-text);
+    text-decoration: none;
+}
+
 .pagination .page-info {
     margin: 0 var(--spacing-sm);
     font-size: 0.9rem;
+}
+
+/* Media query for medium screens */
+@media (max-width: 1024px) {
+    nav a {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: 0.85rem;
+    }
 }
 
 /* Media query for responsive design */
@@ -462,16 +568,17 @@ footer {
     }
     
     nav {
-        flex-direction: row;
-        flex-wrap: wrap;
+        flex-direction: column;
+        flex-wrap: nowrap;
     }
     
     nav a {
         border-right: none;
         border-bottom: var(--border-width) solid var(--border-color);
-        flex: 1 0 auto;
-        text-align: center;
-        padding: var(--spacing-sm) var(--spacing-xs);
+        width: 100%;
+        text-align: left;
+        padding: var(--spacing-sm) var(--spacing-sm);
+        white-space: normal;
     }
     
     footer {

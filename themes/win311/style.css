@@ -1,7 +1,26 @@
 /* 
  * Windows 3.11 Theme for BSSG
  * Classic styling from the Windows 3.11 era
+ * 
+ * IMPROVEMENTS APPLIED:
+ * - Added comprehensive reduced motion support
+ * - Enhanced accessibility with focus outlines
+ * - Removed external font loading for better performance and text browser compatibility
+ * - Enhanced font fallbacks with comprehensive system font stacks
+ * - Added text browser fallbacks for decorative elements
+ * - Optimized performance while maintaining authentic Windows 3.11 aesthetics
  */
+
+/* REDUCED MOTION SUPPORT - Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+}
 
 :root {
     /* Windows 3.11 color scheme */
@@ -26,10 +45,10 @@
     --accent-secondary: #0000aa;
     --quote-bg: #e0e0e0;
     
-    /* Typography */
-    --font-main: 'MS Sans Serif', 'Arial', sans-serif;
-    --font-headings: 'MS Serif', 'Times New Roman', serif;
-    --font-mono: 'Courier New', monospace;
+    /* Typography - Enhanced font fallbacks for Windows 3.11 look */
+    --font-main: 'Arial', 'Helvetica', 'Segoe UI', 'Tahoma', 'Verdana', sans-serif;
+    --font-headings: 'Times New Roman', 'Times', 'Georgia', 'serif';
+    --font-mono: 'Courier New', 'Courier', 'Monaco', 'Menlo', 'Consolas', 'Liberation Mono', monospace;
     
     /* Font Sizes - Windows 3.11 used specific pixel sizes - increased for better readability */
     --text-xs: 0.85rem;    /* ~10px → ~13.6px */
@@ -62,13 +81,7 @@
     --border-radius: 0;      /* Windows 3.11 didn't use rounded corners */
 }
 
-/* Add MS Sans Serif font - core Windows 3.11 font */
-@font-face {
-    font-family: 'MS Sans Serif';
-    src: url('data:application/font-woff;charset=utf-8;base64,d09GRgABAAAAABBsAAwAAAAAKJgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAABHU1VCAAABHAAAAhoAAAiKhUv/rk9TLzIAAAE2AAAAPQAAAFZLxVmCY21hcAAAAXUAAABrAAABsoNr0jhnbHlmAAAB5AAADa4AABcQTK0PkmhlYWQAAA+YAAAAMAAAADYEBwAmaGhlYQAAD8gAAAAeAAAAJAQ9A+FobXR4AAAP6AAAACsAAABMA+gAAGxvY2EAABA8AAAAKAAAACgkcie+bWF4cAAAEGQAAAAfAAAAIAE2ALJuYW1lAAAQhAAAAl0AAAQUSCNRznBvc3QAABLkAAAAYwAAAJTLKnD+eJxNkDFOxDAQRX+ya8GSm1QNJSAKRJqIOn1OsCdYlQfYK6RMkQoqzgGiS5NDcAEOQEGBRMGf8Y8NBRnJHs/Mm69xZoPHGWznPZN/lm/u+Tbw+/r7c/v6NQ7cuBuVi6qqzm2n4+xyHKtzzd3pcjhcljw/1MFUBz1AzCTd93zQURq4CTySx0QXfG/Tr5h6d1RjlPfu9EwmYY301LJL3gdGkM5EEJkIPvp8JQw6FqESQo/oC+HQe+FjgjcGbw3O9g5mjsyDa9AP4ueyjU') format('woff');
-    font-weight: normal;
-    font-style: normal;
-}
+
 
 /* Base elements */
 html {
@@ -178,6 +191,28 @@ header h1 {
         transparent 100%);
 }
 
+/* ACCESSIBILITY: Focus states for site title */
+.site-title a:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.8);
+    outline-offset: 2px;
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+.site-title a:focus::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: -3px;
+    right: -3px;
+    height: 1px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        #ffffff 25%, 
+        #ffffff 75%, 
+        transparent 100%);
+}
+
 header p {
     display: none; /* Hide description in header for this theme */
 }
@@ -204,6 +239,15 @@ nav a {
 }
 
 nav a:hover {
+    background-color: var(--menu-hover-bg);
+    color: var(--menu-hover-text);
+    text-decoration: none;
+}
+
+/* ACCESSIBILITY: Focus states for navigation */
+nav a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     background-color: var(--menu-hover-bg);
     color: var(--menu-hover-text);
     text-decoration: none;
@@ -299,6 +343,13 @@ a:hover {
     color: var(--highlight-color);
 }
 
+/* ACCESSIBILITY: Focus states for general links */
+a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
+    color: var(--highlight-color);
+}
+
 /* Article styling - Program Manager file view */
 article {
     margin-bottom: var(--spacing-xl);
@@ -321,6 +372,18 @@ article .meta {
     font-style: italic;
 }
 
+/* TEXT BROWSER FALLBACK: Add "Time: " prefix for reading time */
+.reading-time::before {
+    content: "Time: ";
+}
+
+/* Use Windows 3.11-style icon when CSS transforms are supported (modern browsers) */
+@supports (transform: translateX(0)) {
+    .reading-time::before {
+        content: "⏱ ";
+    }
+}
+
 /* Tags */
 .tags {
     margin-top: var(--spacing-xl);
@@ -338,6 +401,14 @@ article .meta {
 }
 
 .tags a:hover {
+    background-color: var(--window-title);
+    color: var(--window-title-text);
+}
+
+/* ACCESSIBILITY: Focus states for tags */
+.tags a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     background-color: var(--window-title);
     color: var(--window-title-text);
 }
@@ -707,6 +778,13 @@ li {
 }
 
 .pagination a:hover {
+    background-color: var(--window-bg);
+}
+
+/* ACCESSIBILITY: Focus states for pagination */
+.pagination a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     background-color: var(--window-bg);
 }
 

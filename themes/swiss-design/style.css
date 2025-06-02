@@ -2,6 +2,12 @@
  * Swiss Design Theme for BSSG
  * Based on International Typographic Style with focus on grids,
  * clean sans-serif typography, and strong visual hierarchy
+ * 
+ * IMPROVEMENTS APPLIED:
+ * - Added comprehensive reduced motion support
+ * - Enhanced accessibility with focus outlines
+ * - Added text browser fallbacks
+ * - Optimized performance while maintaining Swiss design principles
  */
 
 :root {
@@ -23,10 +29,10 @@
     --link-hover: var(--dark-gray);
     --border-color: var(--medium-gray);
     
-    /* Typography */
-    --font-main: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    --font-headings: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    --font-mono: 'Courier New', monospace;
+    /* Typography - ENHANCED fallbacks for text browsers */
+    --font-main: 'Helvetica Neue', Helvetica, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    --font-headings: 'Helvetica Neue', Helvetica, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    --font-mono: 'Courier New', 'Courier', monospace;
     
     /* Sizing */
     --content-width: 90%;
@@ -57,8 +63,20 @@
     --line-height-normal: 1.5;
     --line-height-relaxed: 1.6;
     
-    /* Transitions */
-    --transition-fast: 0.2s;
+    /* Transitions - OPTIMIZED for performance */
+    --transition-fast: 0.15s;
+    --transition-base: 0.2s;
+}
+
+/* REDUCED MOTION SUPPORT - Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
 }
 
 /* Reset and base elements */
@@ -117,10 +135,19 @@ header {
 .site-title a {
     color: var(--heading-color);
     text-decoration: none;
+    transition: color var(--transition-base) ease;
+    /* ACCESSIBILITY: Focus outline */
+    outline: none;
 }
 
 .site-title a:hover {
     color: var(--red);
+}
+
+/* ACCESSIBILITY: Focus states for site title */
+.site-title a:focus {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
 }
 
 /* Site description - minimalist */
@@ -155,11 +182,20 @@ nav a {
     text-transform: uppercase;
     letter-spacing: 1px;
     position: relative;
+    transition: color var(--transition-base) ease;
+    /* ACCESSIBILITY: Focus outline */
+    outline: none;
 }
 
 nav a:hover, 
 nav a.active {
     color: var(--red);
+}
+
+/* ACCESSIBILITY: Focus states for navigation */
+nav a:focus {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
 }
 
 /* Content area with grid structure */
@@ -205,6 +241,8 @@ a {
     text-decoration: none;
     transition: all var(--transition-fast) ease;
     border-bottom: 1px solid transparent;
+    /* ACCESSIBILITY: Focus outline */
+    outline: none;
 }
 
 a:visited {
@@ -214,6 +252,12 @@ a:visited {
 a:hover {
     color: var(--link-hover);
     border-bottom: 1px solid var(--link-hover);
+}
+
+/* ACCESSIBILITY: Focus states for general links */
+a:focus {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
 }
 
 /* Swiss-style articles with strong structure */
@@ -245,9 +289,21 @@ article .meta {
     padding-bottom: var(--spacing-sm);
 }
 
-/* Reading time - minimal style */
+/* Reading time - minimal style with TEXT BROWSER FALLBACK */
 .reading-time {
     position: relative;
+}
+
+/* TEXT BROWSER FALLBACK: Add "Time: " prefix for reading time */
+.reading-time::before {
+    content: "Time: ";
+}
+
+/* Hide the prefix when CSS transforms are supported (modern browsers) */
+@supports (transform: translateX(0)) {
+    .reading-time::before {
+        content: "⏱ ";
+    }
 }
 
 /* Tags with Swiss precision */
@@ -266,12 +322,21 @@ article .meta {
     letter-spacing: 1px;
     font-weight: 500;
     border: none;
+    transition: all var(--transition-fast) ease;
+    /* ACCESSIBILITY: Focus outline */
+    outline: none;
 }
 
 .tags a:hover {
     background-color: var(--black);
     color: var(--white);
     border: none;
+}
+
+/* ACCESSIBILITY: Focus states for tags */
+.tags a:focus {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
 }
 
 /* Tags list page - strong grid */
@@ -300,12 +365,20 @@ article .meta {
     border: none;
     transition: all var(--transition-fast) ease;
     text-align: center;
+    /* ACCESSIBILITY: Focus outline */
+    outline: none;
 }
 
 .tags-list a:hover {
     background-color: var(--black);
     color: var(--white);
     border: none;
+}
+
+/* ACCESSIBILITY: Focus states for tags list */
+.tags-list a:focus {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
 }
 
 /* Footer - clean and minimal */
@@ -325,11 +398,20 @@ footer a {
     color: var(--link-color);
     text-decoration: none;
     border-bottom: 1px solid transparent;
+    transition: all var(--transition-base) ease;
+    /* ACCESSIBILITY: Focus outline */
+    outline: none;
 }
 
 footer a:hover {
     border-bottom: 1px solid var(--link-hover);
     color: var(--link-hover);
+}
+
+/* ACCESSIBILITY: Focus states for footer links */
+footer a:focus {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
 }
 
 /* Pagination - Swiss precision */
@@ -352,12 +434,20 @@ footer a:hover {
     font-size: var(--text-xs);
     border: none;
     transition: all var(--transition-fast) ease;
+    /* ACCESSIBILITY: Focus outline */
+    outline: none;
 }
 
 .pagination a:hover {
     background-color: var(--black);
     color: var(--white);
     border: none;
+}
+
+/* ACCESSIBILITY: Focus states for pagination */
+.pagination a:focus {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
 }
 
 /* Featured images - clean presentation */
@@ -402,6 +492,12 @@ footer a:hover {
     margin-top: 0;
     font-size: var(--text-2xl);
     margin-bottom: var(--spacing-sm);
+}
+
+/* ACCESSIBILITY: Focus states for post list links */
+.posts-list a:focus {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
 }
 
 /* Grid-based layout for larger screens */

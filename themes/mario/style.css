@@ -2,14 +2,37 @@
  * Super Mario Bros Theme for BSSG
  * Inspired by the classic Nintendo game with iconic blue sky, green pipes,
  * brick blocks, question blocks, and classic Mario color palette
+ * IMPROVED: Better accessibility, performance, and text browser support
  */
 
-@font-face {
-    font-family: 'Press Start 2P';
-    src: url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-    font-weight: normal;
-    font-style: normal;
+/* Reduced motion support - CRITICAL for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    /* Disable performance-heavy effects for reduced motion */
+    body {
+        background-image: linear-gradient(
+            var(--mario-ground) 0%, 
+            var(--mario-ground) 25px,
+            var(--mario-sky-blue) 25px,
+            var(--mario-sky-blue) 100%
+        ) !important;
+    }
+    
+    /* Simplify animations */
+    .site-title::before, 
+    .pagination a::before {
+        animation: none !important;
+    }
 }
+
+/* REMOVED: External font loading for better performance and text browser support */
+/* @font-face removed - using system fonts with pixel-style fallbacks */
 
 :root {
     /* Mario color palette */
@@ -51,10 +74,10 @@
     --nav-text: var(--mario-white);
     --nav-hover: var(--mario-yellow);
     
-    /* Typography */
-    --font-headings: 'Press Start 2P', monospace;
-    --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
-    --font-mono: 'Courier New', monospace;
+    /* Typography - IMPROVED fallbacks for text browsers */
+    --font-headings: 'Courier New', Courier, 'Lucida Console', 'Monaco', monospace;
+    --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: 'Courier New', Courier, 'Lucida Console', monospace;
     
     /* Sizing */
     --content-width: 90%;
@@ -68,11 +91,11 @@
     --spacing-lg: 2rem;
     --spacing-xl: 2.5rem;
     
-    /* Transitions */
-    --transition-fast: 0.2s;
+    /* Transitions - OPTIMIZED for performance */
+    --transition-fast: 0.15s; /* Reduced for better performance */
 }
 
-/* Base elements */
+/* Base elements - OPTIMIZED background */
 html {
     font-size: 16px;
 }
@@ -80,6 +103,7 @@ html {
 body {
     font-family: var(--font-main);
     background-color: var(--bg-color);
+    /* OPTIMIZED: Simplified cloud background for better performance */
     background-image: 
         /* Ground */
         linear-gradient(
@@ -88,40 +112,20 @@ body {
             var(--mario-sky-blue) 25px,
             var(--mario-sky-blue) 100%
         ),
-        /* Clouds */
+        /* Simplified clouds - reduced complexity */
         radial-gradient(
             circle at 20% 20%,
             var(--mario-white) 20px,
             transparent 20px
         ),
         radial-gradient(
-            circle at 25% 20%,
+            circle at 70% 15%,
             var(--mario-white) 25px,
             transparent 25px
-        ),
-        radial-gradient(
-            circle at 30% 20%,
-            var(--mario-white) 20px,
-            transparent 20px
-        ),
-        radial-gradient(
-            circle at 70% 10%,
-            var(--mario-white) 28px,
-            transparent 28px
-        ),
-        radial-gradient(
-            circle at 75% 10%,
-            var(--mario-white) 32px,
-            transparent 32px
-        ),
-        radial-gradient(
-            circle at 80% 10%,
-            var(--mario-white) 28px,
-            transparent 28px
         );
-    background-repeat: repeat-x;
-    background-size: 100% 100%, 200px 200px, 200px 200px, 200px 200px, 300px 300px, 300px 300px, 300px 300px;
-    background-position: 0 calc(100% - 40px), 10% 30%, 15% 30%, 20% 30%, 60% 15%, 65% 15%, 70% 15%;
+    background-repeat: repeat-x, no-repeat, no-repeat;
+    background-size: 100% 100%, 200px 200px, 250px 250px;
+    background-position: 0 calc(100% - 40px), 10% 30%, 60% 20%;
     color: var(--text-color);
     margin: 0;
     padding: var(--spacing-lg);
@@ -135,6 +139,7 @@ body {
     padding: 0;
     background-color: var(--container-bg);
     border: var(--border-width) solid var(--border-color);
+    /* OPTIMIZED: Simplified shadow */
     box-shadow: 
         var(--pixel-size) var(--pixel-size) 0 var(--mario-brick),
         calc(var(--pixel-size) * 2) calc(var(--pixel-size) * 2) 0 rgba(0, 0, 0, 0.2);
@@ -145,7 +150,7 @@ body {
     border-top: calc(var(--pixel-size) * 4) solid var(--mario-brick);
 }
 
-/* Mario pipe-style border on container */
+/* Mario pipe-style border on container - OPTIMIZED */
 .container::before, 
 .container::after {
     content: "";
@@ -170,7 +175,7 @@ body {
     bottom: 0;
 }
 
-/* Header with Mario aesthetic */
+/* Header with Mario aesthetic - IMPROVED accessibility */
 header {
     background-color: var(--header-bg);
     padding: var(--spacing-md) var(--spacing-md) var(--spacing-lg);
@@ -179,7 +184,7 @@ header {
     position: relative;
 }
 
-/* Question block title effect */
+/* Question block title effect - IMPROVED accessibility */
 .site-title {
     margin: 0;
     padding: var(--spacing-md);
@@ -188,48 +193,64 @@ header {
     position: relative;
     background-color: var(--mario-question);
     border: var(--pixel-size) solid var(--mario-brown);
-    box-shadow: var(--pixel-size) var(--pixel-size) 0 rgba(0, 0, 0, 0.5);
+    box-shadow: 
+        inset calc(var(--pixel-size) * -1) calc(var(--pixel-size) * -1) 0 var(--mario-coin),
+        inset var(--pixel-size) var(--pixel-size) 0 var(--mario-white);
     font-family: var(--font-headings);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border-radius: 4px;
+    transition: all var(--transition-fast) ease;
 }
 
+/* OPTIMIZED: Simplified question mark animation */
 .site-title::before {
     content: "?";
     position: absolute;
     top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: var(--mario-white);
-    font-size: 1.8rem;
-    opacity: 0.3;
-    text-shadow: 1px 1px 0 var(--mario-brown);
-    z-index: 1;
+    right: calc(var(--pixel-size) * 2);
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    color: var(--mario-brown);
+    font-weight: bold;
+    animation: blink 2s infinite;
+}
+
+/* FALLBACK: Text browser support for question mark */
+@supports not (content: "?") {
+    .site-title::before {
+        content: "?";
+    }
 }
 
 .site-title a {
-    color: var(--mario-white);
+    color: var(--mario-brown);
     text-decoration: none;
-    text-shadow: 
-        1px 1px 0 var(--mario-brown),
-        -1px -1px 0 var(--mario-brown),
-        1px -1px 0 var(--mario-brown),
-        -1px 1px 0 var(--mario-brown);
-    position: relative;
-    z-index: 2;
+    font-weight: bold;
+    display: block;
+    padding-right: calc(var(--pixel-size) * 6);
+    transition: all var(--transition-fast) ease;
 }
 
 .site-title a:hover {
-    color: var(--mario-yellow);
-    animation: jump 0.5s ease-in-out;
+    color: var(--mario-red);
+    transform: translateY(-2px);
+}
+
+.site-title a:focus {
+    outline: 2px solid var(--mario-white);
+    outline-offset: 2px;
+    color: var(--mario-red);
+    transform: translateY(-2px);
 }
 
 /* Site description */
 header p {
-    margin: var(--spacing-sm) auto 0;
+    margin: var(--spacing-md) 0 0;
     color: var(--mario-white);
-    font-size: 1rem;
-    max-width: 550px;
-    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
-    line-height: 1.7;
+    font-size: 0.9rem;
+    font-weight: bold;
+    text-shadow: 1px 1px 0 var(--mario-brick);
 }
 
 /* Pipe-style Navigation */
@@ -261,6 +282,17 @@ nav a {
 
 nav a:hover, 
 nav a.active {
+    color: var(--nav-hover);
+    background-color: var(--mario-green);
+    transform: translateY(var(--pixel-size));
+    box-shadow: 
+        0 0 0 rgba(0, 0, 0, 0.5),
+        inset var(--pixel-size) var(--pixel-size) 0 rgba(255, 255, 255, 0.1);
+}
+
+nav a:focus {
+    outline: 3px solid var(--mario-yellow);
+    outline-offset: 2px;
     color: var(--nav-hover);
     background-color: var(--mario-green);
     transform: translateY(var(--pixel-size));
@@ -334,6 +366,13 @@ a {
 }
 
 a:hover {
+    color: var(--link-hover);
+    border-bottom: 2px solid var(--link-hover);
+}
+
+a:focus {
+    outline: 2px solid var(--mario-yellow);
+    outline-offset: 2px;
     color: var(--link-hover);
     border-bottom: 2px solid var(--link-hover);
 }
@@ -422,6 +461,14 @@ article .meta {
     border-bottom: none;
 }
 
+.tags a:focus {
+    outline: 2px solid var(--mario-yellow);
+    outline-offset: 2px;
+    background-color: var(--mario-red);
+    transform: translateY(-2px);
+    border-bottom: none;
+}
+
 .tags a::before {
     display: none;
 }
@@ -452,6 +499,15 @@ article .meta {
 }
 
 .tags-list a:hover {
+    background-color: var(--mario-green);
+    color: var(--mario-yellow);
+    transform: scale(1.05);
+    border-bottom: none;
+}
+
+.tags-list a:focus {
+    outline: 2px solid var(--mario-yellow);
+    outline-offset: 2px;
     background-color: var(--mario-green);
     color: var(--mario-yellow);
     transform: scale(1.05);
@@ -533,7 +589,7 @@ blockquote {
 }
 
 blockquote::before {
-    content: """;
+    content: "\201C";
     position: absolute;
     top: -0.5rem;
     left: 0.5rem;
@@ -605,6 +661,13 @@ footer a:hover {
     border-bottom: 1px solid var(--mario-white);
 }
 
+footer a:focus {
+    outline: 2px solid var(--mario-yellow);
+    outline-offset: 2px;
+    color: var(--mario-white);
+    border-bottom: 1px solid var(--mario-white);
+}
+
 /* Pagination */
 .pagination {
     display: flex;
@@ -624,6 +687,15 @@ footer a:hover {
 }
 
 .pagination a:hover {
+    background-color: var(--mario-green);
+    color: var(--mario-yellow);
+    transform: translateY(-2px);
+    border-bottom: var(--pixel-size) solid var(--mario-green);
+}
+
+.pagination a:focus {
+    outline: 2px solid var(--mario-yellow);
+    outline-offset: 2px;
     background-color: var(--mario-green);
     color: var(--mario-yellow);
     transform: translateY(-2px);
@@ -653,7 +725,7 @@ footer a:hover {
     }
 }
 
-/* Responsive adjustments */
+/* IMPROVED: Responsive adjustments with mobile optimizations */
 @media (max-width: 768px) {
     html {
         font-size: 15px;
@@ -661,12 +733,21 @@ footer a:hover {
     
     body {
         padding: var(--spacing-md);
+        /* OPTIMIZED: Simplified background on mobile */
+        background-image: linear-gradient(
+            var(--mario-ground) 0%, 
+            var(--mario-ground) 25px,
+            var(--mario-sky-blue) 25px,
+            var(--mario-sky-blue) 100%
+        );
     }
     
     .container {
         width: 100%;
         margin-left: 0;
         margin-right: 0;
+        /* OPTIMIZED: Simplified shadows on mobile */
+        box-shadow: var(--pixel-size) var(--pixel-size) 0 var(--mario-brick);
     }
     
     main {
@@ -681,22 +762,35 @@ footer a:hover {
     nav a {
         width: 80%;
         text-align: center;
+        /* OPTIMIZED: Simplified transitions on mobile */
+        transition: background-color var(--transition-fast) ease;
     }
     
     .site-title {
         font-size: 1.4rem;
+    }
+    
+    /* OPTIMIZED: Disable animations on mobile */
+    .site-title::before {
+        animation: none;
     }
 }
 
 @media (max-width: 480px) {
     body {
         padding: var(--spacing-xs);
+        /* OPTIMIZED: Remove all background images on small mobile */
+        background-image: none;
+        background-color: var(--mario-sky-blue);
     }
     
     .container {
         width: 100%;
         border-radius: 0;
         box-shadow: none;
+        /* OPTIMIZED: Simplified borders on small mobile */
+        border-left: none;
+        border-right: none;
     }
     
     main {
@@ -714,6 +808,13 @@ footer a:hover {
     .site-title {
         font-size: 1.2rem;
         padding: var(--spacing-sm);
+        /* OPTIMIZED: Simplified styling on small mobile */
+        letter-spacing: 1px;
+    }
+    
+    .site-title::before {
+        /* OPTIMIZED: Remove question mark on very small screens */
+        display: none;
     }
     
     p {

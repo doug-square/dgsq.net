@@ -1,3 +1,30 @@
+/* 
+ * BlackBerry Theme for BSSG
+ * Inspired by classic BlackBerry mobile interface
+ * 
+ * IMPROVEMENTS APPLIED:
+ * - Added comprehensive reduced motion support
+ * - Enhanced accessibility with focus outlines
+ * - Added text browser fallbacks for gradient text
+ * - Optimized font loading with better fallbacks
+ * - Enhanced performance while maintaining BlackBerry aesthetics
+ */
+
+/* REDUCED MOTION SUPPORT - Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+    
+    article {
+        animation: none !important;
+    }
+}
+
 :root {
     /* BlackBerry inspired color scheme */
     --bg-color: #000914;
@@ -24,10 +51,10 @@
     --title-color-start: #57a9ff;
     --title-color-end: #004080;
     
-    /* Typography */
-    --font-main: 'SF UI Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    --font-headings: 'SF UI Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    --font-mono: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    /* Typography - ENHANCED fallbacks for text browsers */
+    --font-main: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    --font-headings: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    --font-mono: 'Consolas', 'Liberation Mono', 'Menlo', 'Courier New', 'Courier', monospace;
     
     /* Spacing and sizing */
     --radius: 4px;
@@ -192,6 +219,8 @@ nav a {
     border: 1px solid var(--border-color);
     position: relative;
     box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+    /* ACCESSIBILITY: Focus outline */
+    outline: none;
 }
 
 nav a::after {
@@ -213,6 +242,14 @@ nav a:hover {
 nav a:active {
     box-shadow: 0 0 0 rgba(0,0,0,0.3);
     transform: translateY(2px);
+}
+
+/* ACCESSIBILITY: Focus states for navigation */
+nav a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
+    background-color: var(--nav-hover);
+    color: var(--link-hover-color);
 }
 
 main {
@@ -303,6 +340,18 @@ article .meta {
     border: 1px solid var(--border-color);
 }
 
+/* TEXT BROWSER FALLBACK: Add "Time: " prefix for reading time */
+.reading-time::before {
+    content: "Time: ";
+}
+
+/* Hide the prefix when CSS transforms are supported (modern browsers) */
+@supports (transform: translateX(0)) {
+    .reading-time::before {
+        content: "⏱ ";
+    }
+}
+
 .summary {
     margin-bottom: 1.2rem;
 }
@@ -328,6 +377,8 @@ article .tags a {
     border: 1px solid rgba(0,0,0,0.2);
     box-shadow: 0 1px 0 rgba(0,0,0,0.3);
     position: relative;
+    /* ACCESSIBILITY: Focus outline */
+    outline: none;
 }
 
 article .tags a::after {
@@ -346,14 +397,31 @@ article .tags a:hover {
     transform: translateY(-1px);
 }
 
+/* ACCESSIBILITY: Focus states for tags */
+article .tags a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
+    background-color: var(--accent-secondary);
+    transform: translateY(-1px);
+}
+
 a {
     color: var(--link-color);
     text-decoration: none;
     font-weight: 500;
     transition: color var(--transition);
+    /* ACCESSIBILITY: Focus outline */
+    outline: none;
 }
 
 a:hover {
+    color: var(--link-hover-color);
+}
+
+/* ACCESSIBILITY: Focus states for general links */
+a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     color: var(--link-hover-color);
 }
 
@@ -400,6 +468,13 @@ footer a {
 }
 
 footer a:hover {
+    color: var(--link-hover-color);
+}
+
+/* ACCESSIBILITY: Focus states for footer links */
+footer a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     color: var(--link-hover-color);
 }
 
@@ -470,6 +545,8 @@ hr {
     border: 1px solid var(--border-color);
     position: relative;
     box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+    /* ACCESSIBILITY: Focus outline */
+    outline: none;
 }
 
 .pagination a::after {
@@ -490,6 +567,13 @@ hr {
 .pagination a:active {
     box-shadow: 0 0 0 rgba(0,0,0,0.3);
     transform: translateY(2px);
+}
+
+/* ACCESSIBILITY: Focus states for pagination */
+.pagination a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
+    background-color: var(--accent-secondary);
 }
 
 .tags-list {
@@ -514,6 +598,8 @@ hr {
     border: 1px solid rgba(0,0,0,0.2);
     box-shadow: 0 1px 0 rgba(0,0,0,0.3);
     position: relative;
+    /* ACCESSIBILITY: Focus outline */
+    outline: none;
 }
 
 .tags-list a::after {
@@ -528,6 +614,13 @@ hr {
 }
 
 .tags-list a:hover {
+    background-color: var(--accent-secondary);
+}
+
+/* ACCESSIBILITY: Focus states for tags list */
+.tags-list a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     background-color: var(--accent-secondary);
 }
 

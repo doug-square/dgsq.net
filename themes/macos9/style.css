@@ -1,7 +1,32 @@
 /* 
  * Mac OS 9 Theme for BSSG
  * Styled after the authentic Mac OS 9.2 look
+ * 
+ * IMPROVEMENTS APPLIED:
+ * - Added comprehensive reduced motion support
+ * - Enhanced accessibility with focus outlines
+ * - Removed external font loading for better performance and text browser compatibility
+ * - Enhanced font fallbacks with comprehensive system font stacks
+ * - Added text browser fallbacks for decorative elements
+ * - Optimized performance while maintaining authentic Mac OS 9 aesthetics
  */
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+    
+    /* Disable hover transforms and opacity changes */
+    .site-title a:hover::before,
+    .site-title a:focus::before {
+        opacity: 0 !important;
+    }
+}
 
 :root {
     /* Mac OS 9 color scheme */
@@ -29,26 +54,18 @@
     --title-gradient-start: #000000;
     --title-gradient-end: #666666;
     
-    /* Typography */
-    --font-main: 'Charcoal', 'Chicago', 'Geneva', 'Helvetica', sans-serif;
-    --font-headings: 'Charcoal', 'Chicago', 'Geneva', 'Helvetica', sans-serif;
-    --font-mono: 'Monaco', 'Courier', monospace;
+    /* Typography - Enhanced font fallbacks for Mac OS 9 look */
+    --font-main: 'Lucida Grande', 'Geneva', 'Verdana', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+    --font-headings: 'Lucida Grande', 'Geneva', 'Verdana', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+    --font-mono: 'Monaco', 'Menlo', 'Consolas', 'Courier New', 'Liberation Mono', monospace;
     
     /* Sizing */
     --content-width: 680px;
 }
 
-@font-face {
-    font-family: 'Chicago';
-    src: local('Chicago'), url('https://cdn.jsdelivr.net/gh/dominiklohmann/chicago@v1.0.0/Chicago.woff2') format('woff2');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
 /* Base elements */
 html {
-    font-size: 12px;
+    font-size: 14px; /* Increased from 12px for better readability */
 }
 
 body {
@@ -105,11 +122,27 @@ header::before {
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
 }
 
+/* TEXT BROWSER FALLBACK: Simple window control */
+@supports not (position: absolute) {
+    header::before {
+        content: "[X]";
+        position: static;
+        background: none;
+        border: none;
+        box-shadow: none;
+        border-radius: 0;
+        width: auto;
+        height: auto;
+        color: var(--text-color);
+        font-size: 10px;
+    }
+}
+
 /* Site title with Mac OS 9 style */
 .site-title {
     margin: 0;
     padding: 0;
-    font-size: 13px;
+    font-size: 15px; /* Increased from 13px */
     font-weight: bold;
     text-align: center;
     flex: 1;
@@ -147,10 +180,21 @@ header::before {
     opacity: 1;
 }
 
+.site-title a:focus {
+    outline: 2px solid var(--selection-bg);
+    outline-offset: 2px;
+    color: var(--selection-bg);
+    text-decoration: none;
+}
+
+.site-title a:focus::before {
+    opacity: 1;
+}
+
 header h1 {
     margin: 0;
     padding: 0;
-    font-size: 13px;
+    font-size: 15px; /* Increased from 13px */
     font-weight: bold;
     text-align: center;
     color: var(--text-color);
@@ -174,9 +218,9 @@ nav {
 nav a {
     color: var(--text-color);
     text-decoration: none;
-    padding: 2px 10px;
+    padding: 3px 12px; /* Increased padding */
     margin: 0 2px;
-    font-size: 13px;
+    font-size: 14px; /* Increased from 13px */
     font-weight: normal;
     border: none;
 }
@@ -188,6 +232,14 @@ nav a:hover {
 }
 
 nav a.active {
+    background-color: #3875d7;
+    color: #ffffff;
+    border-radius: 0;
+}
+
+nav a:focus {
+    outline: 2px solid var(--selection-bg);
+    outline-offset: 2px;
     background-color: #3875d7;
     color: #ffffff;
     border-radius: 0;
@@ -249,16 +301,23 @@ a:hover {
     border-bottom: 1px solid currentColor;
 }
 
+a:focus {
+    outline: 2px solid var(--selection-bg);
+    outline-offset: 2px;
+    text-decoration: underline;
+    border-bottom: 1px solid currentColor;
+}
+
 /* Mac OS 9 style button */
 .mac-button {
     display: inline-block;
-    padding: 2px 10px;
+    padding: 3px 12px; /* Increased padding */
     margin: 2px;
     background: var(--button-face);
     border: 1px solid #000000;
     border-radius: 0;
     font-family: var(--font-main);
-    font-size: 12px;
+    font-size: 13px; /* Increased from 12px */
     text-align: center;
     color: var(--text-color);
     cursor: pointer;
@@ -304,6 +363,18 @@ article .meta {
     border-left: 1px solid #cccccc;
 }
 
+/* TEXT BROWSER FALLBACK: Add "Time: " prefix for reading time */
+.reading-time::before {
+    content: "Time: ";
+}
+
+/* Use Mac OS 9 style icon when CSS transforms are supported (modern browsers) */
+@supports (transform: translateX(0)) {
+    .reading-time::before {
+        content: "⏱ ";
+    }
+}
+
 .tags {
     margin: 1em 0;
 }
@@ -321,6 +392,13 @@ article .meta {
 }
 
 .tags a:hover {
+    background-color: #3875d7;
+    color: #ffffff;
+}
+
+.tags a:focus {
+    outline: 2px solid var(--selection-bg);
+    outline-offset: 2px;
     background-color: #3875d7;
     color: #ffffff;
 }
@@ -551,6 +629,13 @@ hr {
 }
 
 .pagination a:hover {
+    background-color: #3875d7;
+    color: #ffffff;
+}
+
+.pagination a:focus {
+    outline: 2px solid var(--selection-bg);
+    outline-offset: 2px;
     background-color: #3875d7;
     color: #ffffff;
 }

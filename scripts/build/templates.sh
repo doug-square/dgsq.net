@@ -211,6 +211,20 @@ preload_templates() {
         menu_items+=" <a href=\"${SITE_URL}/tags/\">${MSG_TAGS:-"Tags"}</a>"
     fi
 
+    # Add Authors link if enabled and multiple authors exist
+    local authors_flag_file="${CACHE_DIR:-.bssg_cache}/has_authors.flag"
+    if [ "${ENABLE_AUTHOR_PAGES:-true}" = true ] && [ -f "$authors_flag_file" ]; then
+        # Check if we have multiple authors (more than the threshold)
+        local authors_index_file="${CACHE_DIR:-.bssg_cache}/authors_index.txt"
+        if [ -f "$authors_index_file" ]; then
+            local unique_author_count=$(awk -F'|' '{print $1}' "$authors_index_file" | sort -u | wc -l)
+            local threshold="${SHOW_AUTHORS_MENU_THRESHOLD:-2}"
+            if [ "$unique_author_count" -ge "$threshold" ]; then
+                menu_items+=" <a href=\"${SITE_URL}/authors/\">${MSG_AUTHORS:-"Authors"}</a>"
+            fi
+        fi
+    fi
+
     # Only add Archives link if enabled
     if [ "${ENABLE_ARCHIVES:-true}" = true ]; then
       menu_items+=" <a href=\"${SITE_URL}/archives/\">${MSG_ARCHIVES:-"Archives"}</a>"
@@ -222,6 +236,18 @@ preload_templates() {
     if [ -f "$tags_flag_file" ]; then
         footer_items+=" <a href=\"${SITE_URL}/tags/\">${MSG_TAGS:-"Tags"}</a> &middot;"
     fi
+
+    # Add Authors link to footer if enabled and multiple authors exist
+    if [ "${ENABLE_AUTHOR_PAGES:-true}" = true ] && [ -f "$authors_flag_file" ]; then
+        if [ -f "$authors_index_file" ]; then
+            local unique_author_count_footer=$(awk -F'|' '{print $1}' "$authors_index_file" | sort -u | wc -l)
+            local threshold_footer="${SHOW_AUTHORS_MENU_THRESHOLD:-2}"
+            if [ "$unique_author_count_footer" -ge "$threshold_footer" ]; then
+                footer_items+=" <a href=\"${SITE_URL}/authors/\">${MSG_AUTHORS:-"Authors"}</a> &middot;"
+            fi
+        fi
+    fi
+
     footer_items+=" <a href=\"${SITE_URL}/${RSS_FILENAME:-rss.xml}\">${MSG_SUBSCRIBE_RSS:-"Subscribe via RSS"}</a>"
 
     # Replace menu placeholders in templates

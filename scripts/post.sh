@@ -49,11 +49,34 @@ if [ -z "$EDITOR" ]; then
     fi
 fi
 
-# Function to generate a slug from a title
+# Generate a URL-friendly slug from a title
+# This implementation matches the one in scripts/build/utils.sh
 generate_slug() {
     local title="$1"
-    # POSIX compliant slug generation
-    echo "$title" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]/-/g' -e 's/-\{1,\}/-/g' -e 's/^-//' -e 's/-$//'
+
+    # Convert to lowercase
+    local slug=$(echo "$title" | tr '[:upper:]' '[:lower:]')
+
+    # First use iconv to transliterate if available
+    if command -v iconv >/dev/null 2>&1; then
+        slug=$(echo "$slug" | iconv -f utf-8 -t ascii//TRANSLIT 2>/dev/null || echo "$slug")
+    fi
+
+    # Replace all non-alphanumeric characters with hyphens
+    slug=$(echo "$slug" | sed -e 's/[^a-z0-9]/-/g')
+
+    # Replace multiple consecutive hyphens with a single one
+    slug=$(echo "$slug" | sed -e 's/--*/-/g')
+
+    # Remove leading and trailing hyphens
+    slug=$(echo "$slug" | sed -e 's/^-//' -e 's/-$//')
+
+    # If slug is empty, use 'untitled' as fallback
+    if [ -z "$slug" ]; then
+        slug="untitled"
+    fi
+
+    echo "$slug"
 }
 
 # Function to display usage information
@@ -199,6 +222,8 @@ EOM
     <meta name="date" content="$display_date">
     <meta name="lastmod" content="$display_date">
     <meta name="slug" content="$slug">
+    <meta name="author_name" content="">
+    <meta name="author_email" content="">
 </head>
 <body>
     <h1>$title</h1>
@@ -222,6 +247,8 @@ slug: $slug
 image:
 image_caption:
 description:
+author_name:
+author_email:
 ---
 
 $initial_content
@@ -446,6 +473,8 @@ else
     <meta name="date" content="$display_date">
     <meta name="lastmod" content="$display_date">
     <meta name="slug" content="$POST_SLUG">
+    <meta name="author_name" content="">
+    <meta name="author_email" content="">
 </head>
 <body>
     <h1>$POST_TITLE</h1>
@@ -465,6 +494,8 @@ slug: $POST_SLUG
 image:
 image_caption:
 description:
+author_name:
+author_email:
 ---
 
 $POST_CONTENT

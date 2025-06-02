@@ -32,6 +32,7 @@ _build_raw_file_index() {
         vars["title"] = ""; vars["date"] = ""; vars["lastmod"] = "";
         vars["tags"] = ""; vars["slug"] = ""; vars["image"] = "";
         vars["image_caption"] = ""; vars["description"] = "";
+        vars["author_name"] = ""; vars["author_email"] = "";
         in_fm = 0; found_fm = 0;
         is_html = (FILENAME ~ /\.html$/);
         is_md = (FILENAME ~ /\.md$/);
@@ -40,7 +41,8 @@ _build_raw_file_index() {
         if (NR > 1) {
              # Print previous file raw data
              print current_filename, current_basename, vars["title"], vars["date"], vars["lastmod"], \
-                   vars["tags"], vars["slug"], vars["image"], vars["image_caption"], vars["description"];
+                   vars["tags"], vars["slug"], vars["image"], vars["image_caption"], vars["description"], \
+                   vars["author_name"], vars["author_email"];
         }
         reset_vars();
         current_filename = FILENAME;
@@ -101,7 +103,8 @@ _build_raw_file_index() {
         if (NR > 0) {
              # Print last file raw data
              print current_filename, current_basename, vars["title"], vars["date"], vars["lastmod"], \
-                   vars["tags"], vars["slug"], vars["image"], vars["image_caption"], vars["description"];
+                   vars["tags"], vars["slug"], vars["image"], vars["image_caption"], vars["description"], \
+                   vars["author_name"], vars["author_email"];
         }
     }
 EOF
@@ -119,9 +122,9 @@ _process_raw_file_index() {
 
     > "$output_processed_index" # Ensure output file is empty
 
-    local file filename title date lastmod tags slug image image_caption description
+    local file filename title date lastmod tags slug image image_caption description author_name author_email
     local file_mtime
-    while IFS='|' read -r file filename title date lastmod tags slug image image_caption description || [[ -n "$file" ]]; do
+    while IFS='|' read -r file filename title date lastmod tags slug image image_caption description author_name author_email || [[ -n "$file" ]]; do
         # Fallback for Title (use filename without extension)
         if [ -z "$title" ]; then
             title="${filename%.*}"
@@ -155,8 +158,18 @@ _process_raw_file_index() {
             description=$(generate_excerpt "$file")
         fi
         
+        # Apply fallback logic for author fields
+        if [ -z "$author_name" ]; then
+            author_name="${AUTHOR_NAME:-Anonymous}"
+        fi
+        if [ -z "$author_email" ] && [ -n "$author_name" ] && [ "$author_name" = "${AUTHOR_NAME:-Anonymous}" ]; then
+            # Only use default email if using default name
+            author_email="${AUTHOR_EMAIL:-}"
+        fi
+        # If author_name is specified but author_email is empty, leave email empty
+        
         # Output the fully processed line to the final index file
-        echo "$file|$filename|$title|$date|$lastmod|$tags|$slug|$image|$image_caption|$description" >> "$output_processed_index"
+        echo "$file|$filename|$title|$date|$lastmod|$tags|$slug|$image|$image_caption|$description|$author_name|$author_email" >> "$output_processed_index"
     done < "$input_raw_index"
     wait # Ensure background processes from potential subshells (like generate_excerpt) finish
 }
@@ -323,7 +336,7 @@ build_tags_index() {
     # Use awk for efficient processing and slug generation
     awk -F'|' -v OFS='|' '{
         # $1=file, $2=filename, $3=title, $4=date, $5=lastmod, 
-        # $6=tags, $7=slug, $8=image, $9=image_caption, $10=description
+        # $6=tags, $7=slug, $8=image, $9=image_caption, $10=description, $11=author_name, $12=author_email
         if (length($6) > 0) { # Check if tags field is not empty
             split($6, tags_array, ","); # Split tags by comma
             for (i in tags_array) {
@@ -337,8 +350,8 @@ build_tags_index() {
                 gsub(/^-+|-+$/, "", tag_slug); # Trim leading/trailing hyphens
                 if (length(tag_slug) == 0) tag_slug = "-"; # Handle empty slugs
                 
-                # Print: TagName|TagSlug|PostTitle|PostDate|PostLastMod|PostFilename|PostSlug|PostImage|PostImageCaption|PostDescription
-                print tag, tag_slug, $3, $4, $5, $2, $7, $8, $9, $10;
+                # Print: TagName|TagSlug|PostTitle|PostDate|PostLastMod|PostFilename|PostSlug|PostImage|PostImageCaption|PostDescription|AuthorName|AuthorEmail
+                print tag, tag_slug, $3, $4, $5, $2, $7, $8, $9, $10, $11, $12;
             }
         }
     }' "$file_index" > "$tags_index_file" 
@@ -354,6 +367,149 @@ build_tags_index() {
     fi
 
     echo -e "${GREEN}Tags index built!${NC}"
+}
+
+# Build authors index from the file index
+build_authors_index() {
+    echo -e "${YELLOW}Building authors index...${NC}"
+    
+    local file_index="${CACHE_DIR:-.bssg_cache}/file_index.txt"
+    local authors_index_file="${CACHE_DIR:-.bssg_cache}/authors_index.txt"
+
+    # Check if rebuild is needed: missing cache or input/dependencies changed
+    local rebuild_needed=false
+    if [ ! -f "$authors_index_file" ]; then
+        rebuild_needed=true
+    elif file_needs_rebuild "$file_index" "$authors_index_file"; then
+        echo -e "${YELLOW}Authors index is outdated or dependencies changed, rebuilding authors...${NC}"
+        rebuild_needed=true
+    fi
+
+    if [ "$rebuild_needed" = false ]; then
+         echo -e "${GREEN}Authors index is up to date, skipping...${NC}"
+         return 0
+    fi
+
+    if [ ! -f "$file_index" ]; then
+        echo -e "${RED}Error: File index '$file_index' not found. Cannot build authors index.${NC}"
+        return 1
+    fi
+    
+    lock_file "$authors_index_file"
+    
+    > "$authors_index_file"  # Clear the file
+
+    # Read from file index and extract author info
+    # Use awk for efficient processing and slug generation
+    awk -F'|' -v OFS='|' '{
+        # $1=file, $2=filename, $3=title, $4=date, $5=lastmod, 
+        # $6=tags, $7=slug, $8=image, $9=image_caption, $10=description, $11=author_name, $12=author_email
+        author_name = $11;
+        author_email = $12;
+        
+        # Skip if author_name is empty
+        if (length(author_name) == 0) next;
+        
+        # Generate slug within awk (replicating generate_slug logic)
+        author_slug = tolower(author_name);
+        gsub(/[^a-z0-9]+/, "-", author_slug); # Replace non-alphanumeric with hyphens
+        gsub(/^-+|-+$/, "", author_slug); # Trim leading/trailing hyphens
+        if (length(author_slug) == 0) author_slug = "anonymous"; # Handle empty slugs
+        
+        # Print: AuthorName|AuthorSlug|AuthorEmail|PostTitle|PostDate|PostLastMod|PostFilename|PostSlug|PostImage|PostImageCaption|PostDescription
+        print author_name, author_slug, author_email, $3, $4, $5, $2, $7, $8, $9, $10;
+    }' "$file_index" > "$authors_index_file" 
+    
+    unlock_file "$authors_index_file"
+
+    # Check if the generated index is not empty and create/remove flag file
+    local authors_flag_file="${CACHE_DIR:-.bssg_cache}/has_authors.flag"
+    if [ -s "$authors_index_file" ]; then
+        touch "$authors_flag_file"
+    else
+        rm -f "$authors_flag_file"
+    fi
+
+    echo -e "${GREEN}Authors index built!${NC}"
+}
+
+# Compare current and previous authors index to find affected authors and check if index needs rebuild
+# Exports: AFFECTED_AUTHORS (space-separated list of author names)
+#          AUTHORS_INDEX_NEEDS_REBUILD ("true" or "false")
+identify_affected_authors() {
+    local authors_index_file="${CACHE_DIR:-.bssg_cache}/authors_index.txt"
+    local authors_index_prev_file="${CACHE_DIR:-.bssg_cache}/authors_index_prev.txt"
+
+    export AFFECTED_AUTHORS=""
+    export AUTHORS_INDEX_NEEDS_REBUILD="false"
+
+    # If previous index doesn't exist, all authors in the current index are affected,
+    # and the main index needs rebuilding.
+    if [ ! -f "$authors_index_prev_file" ]; then
+        if [ -s "$authors_index_file" ]; then # Check if current index has content
+            echo "Previous authors index not found. Marking all authors as affected." >&2 # Debug
+            AFFECTED_AUTHORS=$(cut -d'|' -f1 "$authors_index_file" | sort -u | tr '\n' ' ')
+            AUTHORS_INDEX_NEEDS_REBUILD="true"
+        else
+             echo "Both previous and current authors indexes are missing or empty. No authors affected." >&2 # Debug
+        fi
+        export AFFECTED_AUTHORS
+        export AUTHORS_INDEX_NEEDS_REBUILD
+        return 0
+    fi
+    
+    # If current index doesn't exist (but previous did), means all posts were deleted?
+    # Mark authors from previous index as affected, index needs rebuild.
+    if [ ! -f "$authors_index_file" ] || [ ! -s "$authors_index_file" ]; then
+        echo "Current authors index not found or empty. Marking all previous authors as affected." >&2 # Debug
+        AFFECTED_AUTHORS=$(cut -d'|' -f1 "$authors_index_prev_file" | sort -u | tr '\n' ' ')
+        AUTHORS_INDEX_NEEDS_REBUILD="true"
+        export AFFECTED_AUTHORS
+        export AUTHORS_INDEX_NEEDS_REBUILD
+        return 0
+    fi
+
+    # Extract AuthorName|Filename from both files for precise comparison
+    local current_entries="${CACHE_DIR:-.bssg_cache}/authors_curr_af.$$"
+    local prev_entries="${CACHE_DIR:-.bssg_cache}/authors_prev_af.$$"
+    trap 'rm -f "$current_entries" "$prev_entries"' RETURN
+    
+    cut -d'|' -f1,7 "$authors_index_file" | sort > "$current_entries"
+    cut -d'|' -f1,7 "$authors_index_prev_file" | sort > "$prev_entries"
+
+    # Find differences (lines unique to current or previous)
+    local diff_output
+    diff_output=$(comm -3 "$current_entries" "$prev_entries")
+    
+    # Extract unique author names from the differences
+    if [ -n "$diff_output" ]; then
+        AFFECTED_AUTHORS=$(echo "$diff_output" | sed 's/^[[:space:]]*//' | cut -d'|' -f1 | sort -u | tr '\n' ' ')
+        echo "Affected authors identified: $AFFECTED_AUTHORS" >&2 # Debug
+    else
+        echo "No difference in posts per author found." >&2 # Debug
+        AFFECTED_AUTHORS=""
+    fi
+
+    # Compare author counts (AuthorName|Count) to see if the main index needs rebuilding
+    local current_counts="${CACHE_DIR:-.bssg_cache}/authors_curr_counts.$$"
+    local prev_counts="${CACHE_DIR:-.bssg_cache}/authors_prev_counts.$$"
+    trap 'rm -f "$current_entries" "$prev_entries" "$current_counts" "$prev_counts"' RETURN
+
+    cut -d'|' -f1 "$authors_index_file" | sort | uniq -c | awk '{print $2"|"$1}' | sort > "$current_counts"
+    cut -d'|' -f1 "$authors_index_prev_file" | sort | uniq -c | awk '{print $2"|"$1}' | sort > "$prev_counts"
+    
+    if ! cmp -s "$current_counts" "$prev_counts"; then
+        echo "Author counts differ. Main authors index needs rebuild." >&2 # Debug
+        AUTHORS_INDEX_NEEDS_REBUILD="true"
+    else
+        echo "Author counts are the same." >&2 # Debug
+        AUTHORS_INDEX_NEEDS_REBUILD="false"
+    fi
+
+    export AFFECTED_AUTHORS
+    export AUTHORS_INDEX_NEEDS_REBUILD
+    rm -f "$current_entries" "$prev_entries" "$current_counts" "$prev_counts"
+    trap - RETURN # Remove trap upon successful completion
 }
 
 # Build archive index by year and month from the file index
@@ -387,9 +543,9 @@ build_archive_index() {
     > "$archive_index_file"  # Clear the file
 
     # Read from file index and extract date info
-    local line file filename title date lastmod tags slug image image_caption description
+    local line file filename title date lastmod tags slug image image_caption description author_name author_email
     while IFS= read -r line || [[ -n "$line" ]]; do
-        IFS='|' read -r file filename title date lastmod tags slug image image_caption description <<< "$line"
+        IFS='|' read -r file filename title date lastmod tags slug image image_caption description author_name author_email <<< "$line"
 
         if [ -n "$date" ]; then
             local year month month_name
@@ -428,8 +584,8 @@ build_archive_index() {
                 [[ -z "$month_name" ]] && month_name="Unknown"
             fi
 
-            # Output: Year|MonthNum|MonthName|PostTitle|PostDate|PostLastMod|PostFilename|PostSlug|PostImage|PostImageCaption|PostDescription
-            echo "$year|$month|$month_name|$title|$date|$lastmod|$filename.html|$slug|$image|$image_caption|$description" >> "$archive_index_file"
+            # Output: Year|MonthNum|MonthName|PostTitle|PostDate|PostLastMod|PostFilename|PostSlug|PostImage|PostImageCaption|PostDescription|AuthorName|AuthorEmail
+            echo "$year|$month|$month_name|$title|$date|$lastmod|$filename.html|$slug|$image|$image_caption|$description|$author_name|$author_email" >> "$archive_index_file"
         fi
     done < "$file_index"
     

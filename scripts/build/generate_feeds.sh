@@ -83,7 +83,7 @@ _generate_rss_feed() {
     # Create the RSS feed header
     cat > "$output_file" << EOF
 <?xml version="1.0" encoding="UTF-8" ?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">
 <channel>
     <title>$(html_escape "$feed_title")</title>
     <link>$(fix_url "$feed_link_rel")</link>
@@ -94,7 +94,7 @@ _generate_rss_feed() {
 EOF
 
     # Process the provided post data
-    echo "$post_data_input" | while IFS='|' read -r file filename title date lastmod tags slug image image_caption description; do
+    echo "$post_data_input" | while IFS='|' read -r file filename title date lastmod tags slug image image_caption description author_name author_email; do
         # Skip if essential fields are missing (robustness)
         if [ -z "$file" ] || [ -z "$title" ] || [ -z "$date" ] || [ -z "$lastmod" ] || [ -z "$slug" ]; then
             echo "Warning: Skipping RSS item due to missing fields in input line: file=$file, title=$title, date=$date, lastmod=$lastmod, slug=$slug" >&2
@@ -175,10 +175,24 @@ EOF
         fi
 
         # Combine parts safely
-        item_description_content="${figure_part}${caption_part}${content_part}"
+        item_description_content="${figure_part}${content_part}"
 
         # Wrap final description in CDATA
         local final_description="<![CDATA[$item_description_content]]>"
+
+        # Determine author for RSS item (with fallback)
+        local rss_author_name="${author_name:-${AUTHOR_NAME:-Anonymous}}"
+        local rss_author_email="${author_email}"
+        
+        # Build author element if we have author info
+        local author_element=""
+        if [ -n "$rss_author_name" ]; then
+            if [ -n "$rss_author_email" ]; then
+                author_element="        <dc:creator>$(html_escape "$rss_author_name") ($(html_escape "$rss_author_email"))</dc:creator>"
+            else
+                author_element="        <dc:creator>$(html_escape "$rss_author_name")</dc:creator>"
+            fi
+        fi
 
         cat >> "$output_file" << EOF
     <item>
@@ -188,6 +202,7 @@ EOF
         <pubDate>${pub_date}</pubDate>
         <atom:updated>${updated_date_iso}</atom:updated>
         <description>${final_description}</description>
+${author_element}
     </item>
 EOF
     done
@@ -284,6 +299,7 @@ generate_sitemap() {
     local sitemap="$OUTPUT_DIR/sitemap.xml"
     local file_index="$CACHE_DIR/file_index.txt"
     local tags_index="$CACHE_DIR/tags_index.txt"
+    local authors_index="$CACHE_DIR/authors_index.txt"
     local primary_pages_cache="$CACHE_DIR/primary_pages.tmp"
     local secondary_pages_cache="$CACHE_DIR/secondary_pages.tmp"
     local config_hash_file="$CONFIG_HASH_FILE" # Use the global var
@@ -309,6 +325,7 @@ generate_sitemap() {
         # Check main content index files
         if [ -f "$file_index" ] && [ "$(get_file_mtime "$file_index")" -gt "$sitemap_mtime" ]; then rebuild_needed=true; fi
         if ! $rebuild_needed && [ -f "$tags_index" ] && [ "$(get_file_mtime "$tags_index")" -gt "$sitemap_mtime" ]; then rebuild_needed=true; fi
+        if ! $rebuild_needed && [ -f "$authors_index" ] && [ "$(get_file_mtime "$authors_index")" -gt "$sitemap_mtime" ]; then rebuild_needed=true; fi
         if ! $rebuild_needed && [ -f "$primary_pages_cache" ] && [ "$(get_file_mtime "$primary_pages_cache")" -gt "$sitemap_mtime" ]; then rebuild_needed=true; fi
         if ! $rebuild_needed && [ -f "$secondary_pages_cache" ] && [ "$(get_file_mtime "$secondary_pages_cache")" -gt "$sitemap_mtime" ]; then rebuild_needed=true; fi
         # Removed checks for script, config, locale mtime for simplicity to avoid sourcing errors
@@ -320,9 +337,10 @@ generate_sitemap() {
             return 0
     fi
 
-    # --- Pre-calculate latest dates (Still needed for Homepage/Tags) ---
+    # --- Pre-calculate latest dates (Still needed for Homepage/Tags/Authors) ---
     local latest_post_mod_date=$(get_latest_mod_date "$file_index" 5 "" "$sitemap_date_fmt")
     local latest_tag_page_mod_date=$(get_latest_mod_date "$tags_index" 5 "" "$sitemap_date_fmt") # Assumes lastmod is relevant field in tags_index
+    local latest_author_page_mod_date=$(get_latest_mod_date "$authors_index" 6 "" "$sitemap_date_fmt") # Field 6 is lastmod in authors_index
 
     # --- Generate Sitemap using AWK --- START ---
     echo "Generating sitemap content using awk..."
@@ -339,10 +357,12 @@ generate_sitemap() {
         -v url_slug_format="$URL_SLUG_FORMAT" \
         -v latest_post_mod_date="$latest_post_mod_date" \
         -v latest_tag_page_mod_date="$latest_tag_page_mod_date" \
+        -v latest_author_page_mod_date="$latest_author_page_mod_date" \
+        -v enable_author_pages="${ENABLE_AUTHOR_PAGES:-true}" \
         -v sitemap_date_fmt="$sitemap_date_fmt" \
         -F'|' \
         -f - \
-        "$file_index" "$primary_pages_cache" "$secondary_pages_cache" "$tags_index" <<'AWK_EOF' > "$sitemap"
+        "$file_index" "$primary_pages_cache" "$secondary_pages_cache" "$tags_index" "$authors_index" <<'AWK_EOF' > "$sitemap"
 # AWK script for sitemap generation (fed via here-doc)
 BEGIN {
     OFS=""; # No output field separator needed for XML
@@ -457,6 +477,37 @@ FILENAME == ARGV[4] {
          item_url = "/tags/" tag_slug "/";
          # Use the overall latest tag mod date for all tag pages?
          mod_time = latest_tag_page_mod_date;
+         print "    <url>";
+         print "        <loc>" fix_url_awk(item_url, site_url) "</loc>";
+         print "        <lastmod>" mod_time "</lastmod>";
+         print "        <changefreq>weekly</changefreq>";
+         print "        <priority>0.5</priority>";
+         print "    </url>";
+    }
+}
+
+# Process authors_index.txt (Author Pages) - only if author pages are enabled
+FILENAME == ARGV[5] && enable_author_pages == "true" {
+    author_name=$1; author_slug=$2; # $6 = lastmod for posts with this author
+    if (length(author_slug) == 0) next;
+    # Check if author slug already processed
+    if ( !(author_slug in processed_authors) ) {
+         processed_authors[author_slug] = 1; # Mark as processed
+         
+         # Add main authors index page (only once)
+         if (!authors_index_added) {
+             authors_index_added = 1;
+             print "    <url>";
+             print "        <loc>" fix_url_awk("/authors/", site_url) "</loc>";
+             print "        <lastmod>" latest_author_page_mod_date "</lastmod>";
+             print "        <changefreq>weekly</changefreq>";
+             print "        <priority>0.6</priority>";
+             print "    </url>";
+         }
+         
+         # Add individual author page
+         item_url = "/authors/" author_slug "/";
+         mod_time = latest_author_page_mod_date;
          print "    <url>";
          print "        <loc>" fix_url_awk(item_url, site_url) "</loc>";
          print "        <lastmod>" mod_time "</lastmod>";

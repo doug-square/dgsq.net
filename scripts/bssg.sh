@@ -109,7 +109,7 @@ chmod +x scripts/*.sh 2>/dev/null || true
 
 # Function to display help information
 show_help() {
-    echo "BSSG - Bash Static Site Generator (v0.16)"
+    echo "BSSG - Bash Static Site Generator (v0.30)"
     echo "========================================="
     echo ""
     echo "Usage: $0 [--config <path>] command [options]"
@@ -294,7 +294,7 @@ main() {
                             shift 1
                         fi
                         ;;
-                    -f)
+                    -f|--force-rebuild)
                         export FORCE_REBUILD=true
                         shift 1
                         ;;

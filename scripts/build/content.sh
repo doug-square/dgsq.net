@@ -91,7 +91,7 @@ extract_metadata() {
     fi
 
     # If we're here, we need to parse the file
-    local title="" date="" lastmod="" tags="" slug="" image="" image_caption="" description=""
+    local title="" date="" lastmod="" tags="" slug="" image="" image_caption="" description="" author_name="" author_email=""
 
     # Check file type and parse accordingly
     if [[ "$file" == *.html ]]; then
@@ -106,6 +106,8 @@ extract_metadata() {
         image=$(grep -m 1 -o 'name="image" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
         image_caption=$(grep -m 1 -o 'name="image_caption" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
         description=$(grep -m 1 -o 'name="description" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+        author_name=$(grep -m 1 -o 'name="author_name" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+        author_email=$(grep -m 1 -o 'name="author_email" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
         # Note: Excerpt generation (fallback for description) might not work well for HTML
 
     elif [[ "$file" == *.md ]]; then
@@ -122,6 +124,7 @@ extract_metadata() {
             vars["title"] = ""; vars["date"] = ""; vars["lastmod"] = "";
             vars["tags"] = ""; vars["slug"] = ""; vars["image"] = "";
             vars["image_caption"] = ""; vars["description"] = "";
+            vars["author_name"] = ""; vars["author_email"] = "";
         }
         /^---$/ {
             if (!in_fm && !found_fm) { in_fm = 1; found_fm = 1; next; }
@@ -154,12 +157,13 @@ extract_metadata() {
             # Print values in specific order
             print vars["title"] "|" vars["date"] "|" vars["lastmod"] "|" \
                   vars["tags"] "|" vars["slug"] "|" vars["image"] "|" \
-                  vars["image_caption"] "|" vars["description"];
+                  vars["image_caption"] "|" vars["description"] "|" \
+                  vars["author_name"] "|" vars["author_email"];
         }
 EOF
         )
         
-        IFS='|' read -r title date lastmod tags slug image image_caption description <<< "$parsed_data"
+        IFS='|' read -r title date lastmod tags slug image image_caption description author_name author_email <<< "$parsed_data"
 
     else
         echo "Warning: Unknown file type '$file' for metadata extraction." >&2
@@ -188,9 +192,19 @@ EOF
         echo "[DEBUG] Generating excerpt for $file" >&2
         description=$(generate_excerpt "$file")
     fi
+    
+    # Apply fallback logic for author fields
+    if [ -z "$author_name" ]; then
+        author_name="${AUTHOR_NAME:-Anonymous}"
+    fi
+    if [ -z "$author_email" ] && [ -n "$author_name" ] && [ "$author_name" = "${AUTHOR_NAME:-Anonymous}" ]; then
+        # Only use default email if using default name
+        author_email="${AUTHOR_EMAIL:-anonymous@example.com}"
+    fi
+    # If author_name is specified but author_email is empty, leave email empty
 
     # Construct the metadata string for comparison and caching
-    local new_metadata="$title|$date|$lastmod|$tags|$slug|$image|$image_caption|$description"
+    local new_metadata="$title|$date|$lastmod|$tags|$slug|$image|$image_caption|$description|$author_name|$author_email"
 
     # Check if there was a previous metadata file and compare
     if [ -f "$metadata_cache_file" ]; then

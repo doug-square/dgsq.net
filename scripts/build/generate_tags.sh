@@ -307,8 +307,8 @@ EOF
                         if [ -z "$post_line" ]; then continue; fi
                         # echo "DEBUG (process_tag for '$tag'): Processing post_line: $post_line" >&2 # Removed
 
-                        local _ _ title date lastmod filename slug image image_caption description
-                        IFS='|' read -r _ _ title date lastmod filename slug image image_caption description <<< "$post_line"
+                        local _ _ title date lastmod filename slug image image_caption description author_name author_email
+                        IFS='|' read -r _ _ title date lastmod filename slug image image_caption description author_name author_email <<< "$post_line"
 
                         # Create slug-based URL path
                         local post_year post_month post_day
@@ -333,6 +333,9 @@ EOF
                         fi
                         local formatted_date=$(format_date "$date" "$display_date_format")
 
+                        # Determine author for display (with fallback)
+                        local display_author_name="${author_name:-${AUTHOR_NAME:-Anonymous}}"
+
                         # --- Start Debug: Check variables before appending article ---
                         #echo "DEBUGAPPEND (tag='$tag', title='$title'): Appending article HTML with link='$post_link', date='$formatted_date'" >&2
                         # --- End Debug ---
@@ -340,7 +343,7 @@ EOF
                         cat >> "$tag_page_html_file" << EOF
     <article>
         <h3><a href="${SITE_URL}${post_link}">$title</a></h3>
-        <div class="meta">${MSG_PUBLISHED_ON:-"Published on"} $formatted_date</div>
+        <div class="meta">${MSG_PUBLISHED_ON:-"Published on"} $formatted_date ${MSG_BY:-"by"} <strong>$display_author_name</strong></div>
 EOF
 
                         if [ -n "$image" ]; then
@@ -393,9 +396,9 @@ EOF
 
                 # Get post data for this tag from the tags index
                 # Sort by post date (field 4), then lastmod (field 5) reverse, limit
-                # IMPORTANT: tags_index.txt has format: Tag|TagSlug|PostTitle|PostDate|PostLastMod|PostFilename|PostSlug|Image|ImageCaption|PostDescription|OriginalFilePath
+                # IMPORTANT: tags_index.txt has format: Tag|TagSlug|PostTitle|PostDate|PostLastMod|PostFilename|PostSlug|Image|ImageCaption|PostDescription|AuthorName|AuthorEmail
                 # We need to map this to the format expected by _generate_rss_feed:
-                # file|filename|title|date|lastmod|tags|slug|image|image_caption|description
+                # file|filename|title|date|lastmod|tags|slug|image|image_caption|description|author_name|author_email
                 # We lack the original 'file' path and 'tags' string here. We can approximate.
 
                 local tag_post_data_tmp=$(mktemp)
@@ -404,8 +407,8 @@ EOF
                 head -n "$rss_item_limit" | \
                 awk -F'|' -v tag_val="$tag" 'BEGIN {OFS="|"} {
                     # Reconstruct needed fields. Use filename ($6) as placeholder for first field.
-                    # file (placeholder) | filename | title | date | lastmod | tags | slug | image | image_caption | description
-                    print $6 "|" $6 "|" $3 "|" $4 "|" $5 "|" tag_val "|" $7 "|" $8 "|" $9 "|" $10
+                    # file (placeholder) | filename | title | date | lastmod | tags | slug | image | image_caption | description | author_name | author_email
+                    print $6 "|" $6 "|" $3 "|" $4 "|" $5 "|" tag_val "|" $7 "|" $8 "|" $9 "|" $10 "|" $11 "|" $12
                 }' > "$tag_post_data_tmp"
 
                 local tag_post_data=$(cat "$tag_post_data_tmp")

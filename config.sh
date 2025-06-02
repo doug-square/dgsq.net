@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # BSSG - Configuration File
-# Version 0.16
+# Version 0.30
 # Contains all configurable parameters for the static site generator
 # Developed by Stefano Marinelli (stefano@dragas.it)
 #
@@ -47,6 +47,9 @@ RSS_ITEM_LIMIT=15 # Number of items to include in the RSS feed.
 RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". Include full post content in RSS feed.
 RSS_FILENAME="rss.xml" # The filename for the main RSS feed (e.g., feed.xml, rss.xml)
 ENABLE_ARCHIVES=true  # Enable or disable archive pages
+ENABLE_AUTHOR_PAGES=false # Enable or disable author pages (default: false)
+ENABLE_AUTHOR_RSS=false # Enable or disable author-specific RSS feeds (default: false)
+SHOW_AUTHORS_MENU_THRESHOLD=2 # Minimum authors to show menu (default: 2)
 URL_SLUG_FORMAT="Year/Month/Day/slug" # Format for post URLs. Available: Year, Month, Day, slug
 ENABLE_TAG_RSS=true # Enable or disable tag-specific RSS feed generation (default: true)
 

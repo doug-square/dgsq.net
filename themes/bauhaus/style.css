@@ -2,7 +2,23 @@
  * Bauhaus Theme for BSSG
  * Inspired by the Bauhaus design school, emphasizing functionality,
  * primary colors, geometric shapes, and clean sans-serif typography
+ * 
+ * IMPROVEMENTS APPLIED:
+ * - Added comprehensive reduced motion support
+ * - Enhanced accessibility with focus outlines
+ * - Added text browser fallbacks for geometric reading time indicator
+ * - Optimized performance while maintaining Bauhaus design principles
  */
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
 
 :root {
     /* Bauhaus color scheme */
@@ -102,6 +118,12 @@ header {
     text-decoration: none;
 }
 
+.site-title a:focus {
+    outline: 2px solid var(--tertiary-accent);
+    outline-offset: 2px;
+    text-decoration: none;
+}
+
 /* Site description */
 header p {
     margin: 0.5rem 0 0 0;
@@ -133,6 +155,13 @@ nav a {
 
 nav a:hover, 
 nav a.active {
+    background-color: var(--nav-hover-bg);
+    color: var(--nav-hover-text);
+}
+
+nav a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     background-color: var(--nav-hover-bg);
     color: var(--nav-hover-text);
 }
@@ -210,6 +239,12 @@ a:hover {
     border-bottom: 2px solid currentColor;
 }
 
+a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    border-bottom: 2px solid currentColor;
+}
+
 /* Articles */
 article {
     margin-bottom: 4rem;
@@ -240,16 +275,27 @@ article .meta {
     padding-left: 1.5rem;
 }
 
+/* TEXT BROWSER FALLBACK: Add "Time: " prefix for reading time */
 .reading-time::before {
-    content: "";
+    content: "Time: ";
     position: absolute;
     left: 0;
     top: 50%;
     transform: translateY(-50%);
+    font-style: normal;
+    font-weight: bold;
+}
+
+/* Modern browsers: Use geometric shape when CSS transforms are supported */
+@supports (transform: translateY(-50%)) and (border-radius: 50%) {
+    .reading-time::before {
+        content: "";
     width: 1rem;
     height: 1rem;
     background-color: var(--tertiary-accent);
     border-radius: 50%;
+        font-weight: normal;
+    }
 }
 
 /* Tags */
@@ -271,6 +317,14 @@ article .meta {
 }
 
 .tags a:hover {
+    background-color: var(--secondary-accent);
+    color: var(--white);
+    border: none;
+}
+
+.tags a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     background-color: var(--secondary-accent);
     color: var(--white);
     border: none;
@@ -303,6 +357,13 @@ article .meta {
 }
 
 .tags-list a:hover {
+    background-color: var(--secondary-accent);
+    color: var(--white);
+}
+
+.tags-list a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     background-color: var(--secondary-accent);
     color: var(--white);
 }
@@ -340,6 +401,12 @@ footer a:hover {
     text-decoration: underline;
 }
 
+footer a:focus {
+    outline: 2px solid var(--tertiary-accent);
+    outline-offset: 2px;
+    text-decoration: underline;
+}
+
 /* Pagination */
 .pagination {
     display: flex;
@@ -362,6 +429,14 @@ footer a:hover {
 }
 
 .pagination a:hover {
+    background-color: var(--secondary-accent);
+    color: var(--white);
+    border: none;
+}
+
+.pagination a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     background-color: var(--secondary-accent);
     color: var(--white);
     border: none;

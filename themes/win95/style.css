@@ -1,7 +1,19 @@
 /* 
  * Windows 95 Theme for BSSG
  * Authentic styling from the Windows 95 era
+ * Enhanced with accessibility, performance, and compatibility improvements
  */
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+}
 
 :root {
     /* Windows 95 color scheme */
@@ -21,10 +33,10 @@
     --inactive-title-bar: #808080;
     --inactive-title-text: #c0c0c0;
     
-    /* Typography */
-    --font-main: 'MS Sans Serif', 'Tahoma', 'Arial', sans-serif;
-    --font-headings: 'Times New Roman', 'MS Serif', serif;
-    --font-mono: 'Courier New', monospace;
+    /* Typography - system fonts for authentic Windows 95 look */
+    --font-main: 'MS Sans Serif', 'Tahoma', 'Segoe UI', 'Arial', 'Helvetica', sans-serif;
+    --font-headings: 'Times New Roman', 'Times', 'Georgia', serif;
+    --font-mono: 'Courier New', 'Courier', 'Consolas', 'Liberation Mono', monospace;
     
     /* Font Sizes */
     --text-xs: 0.85rem;     /* 13.6px */
@@ -56,12 +68,7 @@
     --content-width: 950px;  /* Increased for better screen utilization */
 }
 
-@font-face {
-    font-family: 'MS Sans Serif';
-    src: url('data:application/font-woff;charset=utf-8;base64,d09GRgABAAAAABBAAAwAAAAAKAgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAABHU1VCAAABHAAAAhoAAAiKhJf9rk9TLzIAAAE2AAAAPQAAAFZLxVmCY21hcAAAAXUAAABrAAABsoNr0jhnbHlmAAAB5AAADbsAABecUO0kjmhlYWQAAA+gAAAAMAAAADYOZwAmaGhlYQAAD9AAAAAeAAAAJAdAA+FobXR4AAAP8AAAACsAAABMA+gAAGxvY2EAABA8AAAAKAAAACgkSie+bWF4cAAAEGQAAAAfAAAAIAE2ALJuYW1lAAAQhAAAAl0AAAQUSCNRznBvc3QAABLkAAAAYwAAAJTh+n7geJxNkDFOxDAQRX+ya8GSm1QNJSAKRJqIOn1OsCdYlQfYK6RMkQoqzgGiS5NDcAEOQEGBRMGf8Y8NBRnJHs/Mm69xZoPHGWznPZN/lm/u+Tbw+/r7c/v6NQ7cuBuVi6qqzm2n4+xyHKtzzd3pcjhcljw/1MFUBz1AzCTd93zQURq4CTySx0QXfG/Tr5h6d1RjlPfu9EwmYY301LJL3gdGkM5EEJkIPvp8JQw6FqESQo/oC+HQe+FjgjcGbw3O9g5mjsyDa9AP4ueyjU') format('woff');
-    font-weight: normal;
-    font-style: normal;
-}
+/* Removed embedded font for better performance and text browser compatibility */
 
 /* Base elements */
 html {
@@ -154,10 +161,18 @@ header {
     cursor: pointer;
 }
 
+/* Text browser fallback for window controls */
 .win95-close::after {
-    content: "×";
+    content: "X";
     font-size: 12px;
     font-weight: bold;
+}
+
+/* Progressive enhancement for decorative symbol */
+@supports (content: "×") {
+    .win95-close::after {
+        content: "×";
+    }
 }
 
 header h1 {
@@ -198,6 +213,17 @@ nav a:hover {
     border-top-color: var(--button-highlight);
     border-left-color: var(--button-highlight);
     padding: calc(var(--spacing-xs) - 1px) calc(var(--spacing-md) - 1px);
+}
+
+/* Accessibility: Focus outlines for all interactive elements */
+nav a:focus,
+.site-title a:focus,
+a:focus,
+.tags a:focus,
+.pagination a:focus,
+.win95-control:focus {
+    outline: 2px solid var(--title-bar);
+    outline-offset: 2px;
 }
 
 nav a.active {
@@ -300,9 +326,9 @@ a:hover {
     content: "Archive Viewer";
 }
 
-/* Close button for featured images */
+/* Text browser fallback for image viewer close buttons */
 .featured-image::after, .index-image::after, .tag-image::after, .archive-image::after {
-    content: "×";
+    content: "X";
     position: absolute;
     top: -19px;
     right: 2px;
@@ -319,6 +345,13 @@ a:hover {
     font-weight: bold;
     z-index: 11;
     box-sizing: border-box;
+}
+
+/* Progressive enhancement for decorative symbol */
+@supports (content: "×") {
+    .featured-image::after, .index-image::after, .tag-image::after, .archive-image::after {
+        content: "×";
+    }
 }
 
 .featured-image img, .index-image img, .tag-image img, .archive-image img {

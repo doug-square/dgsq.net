@@ -3,6 +3,34 @@
  * Styled after macOS Sonoma aesthetics
  */
 
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+    
+    /* Disable all hover transforms */
+    .site-title a:hover,
+    .site-title a:focus,
+    .hover-float:hover,
+    .posts-list article:hover,
+    .tags a:hover,
+    .tags a:focus,
+    .pagination a:hover,
+    .pagination a:focus,
+    .mac-button:hover,
+    .featured-image:hover,
+    .index-image:hover,
+    .tag-image:hover,
+    .archive-image:hover {
+        transform: none !important;
+    }
+}
+
 :root {
     /* macOS Sonoma color scheme */
     --bg-color: #f5f5f7;
@@ -65,12 +93,27 @@ body {
     margin: var(--spacing-xl) auto;
     padding: var(--spacing-xl) var(--spacing-lg);
     background-color: var(--window-bg);
-    backdrop-filter: blur(var(--frosted-blur));
-    -webkit-backdrop-filter: blur(var(--frosted-blur));
     box-shadow: var(--card-shadow);
     border-radius: var(--radius);
     border: 1px solid var(--border-color);
     animation: fadeIn 0.3s ease-out;
+}
+
+/* Progressive enhancement for backdrop-filter */
+@supports (backdrop-filter: blur(10px)) {
+    .container {
+        backdrop-filter: blur(10px); /* Reduced from 20px for better performance */
+        -webkit-backdrop-filter: blur(10px);
+    }
+}
+
+/* Disable backdrop-filter on mobile for better performance */
+@media (max-width: 768px) {
+    .container {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background-color: var(--window-bg-solid); /* Use solid background on mobile */
+    }
 }
 
 /* Header styling */
@@ -105,6 +148,19 @@ header {
 }
 
 .site-title a:hover {
+    text-decoration: none;
+    transform: translateY(-1px);
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(110deg, 
+        var(--title-gradient-end), 
+        var(--title-gradient-start));
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+.site-title a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 3px;
     text-decoration: none;
     transform: translateY(-1px);
     text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -180,7 +236,14 @@ nav a:hover {
     color: var(--accent-color);
 }
 
+nav a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    color: var(--accent-color);
+}
+
 nav a:hover::after,
+nav a:focus::after,
 nav a.active::after {
     width: 100%;
 }
@@ -243,6 +306,13 @@ a {
 }
 
 a:hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+}
+
+a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     color: var(--link-hover);
     text-decoration: underline;
 }
@@ -334,6 +404,15 @@ article .meta {
 }
 
 .tags a:hover {
+    background-color: var(--border-color);
+    transform: translateY(-2px);
+    text-decoration: none;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.tags a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     background-color: var(--border-color);
     transform: translateY(-2px);
     text-decoration: none;
@@ -578,6 +657,14 @@ hr {
 }
 
 .pagination a:hover {
+    background-color: var(--code-bg);
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+}
+
+.pagination a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     background-color: var(--code-bg);
     border-color: var(--accent-color);
     transform: translateY(-2px);

@@ -1,6 +1,7 @@
 /* 
  * iOS Theme for BSSG
  * Styled after the modern iOS 17 interface with Dynamic Island elements
+ * Enhanced with accessibility, performance, and compatibility improvements
  */
 
 :root {
@@ -36,7 +37,7 @@
     --font-mono: 'SF Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     
     /* Sizing and spacing */
-    --content-width: 700px;
+    --content-width: 900px;
     --radius: 14px;
     --radius-sm: 10px;
     --radius-lg: 20px;
@@ -48,6 +49,38 @@
     --spacing-md: 1rem;
     --spacing-lg: 1.5rem;
     --spacing-xl: 2rem;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --transition: 0.01s;
+    }
+    
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .ios-card:hover,
+    header:hover,
+    .featured-image:hover,
+    .featured-image:hover img,
+    img:hover,
+    .posts-list article:hover,
+    .site-title a:hover,
+    .ios-button:hover,
+    .tags a:hover,
+    .pagination a:hover {
+        transform: none !important;
+    }
+    
+    .dynamic-island {
+        opacity: 0 !important;
+        transform: none !important;
+    }
 }
 
 /* Base elements */
@@ -74,6 +107,14 @@ body {
     margin: var(--spacing-lg) auto;
     padding: 0 var(--spacing-md);
     background-color: transparent;
+}
+
+/* Desktop-specific improvements */
+@media (min-width: 1024px) {
+    .container {
+        max-width: 1000px;
+        padding: 0 var(--spacing-lg);
+    }
 }
 
 /* Card styling for content */
@@ -109,7 +150,7 @@ header:hover {
     box-shadow: var(--floating-shadow);
 }
 
-/* iOS style site title with gradient */
+/* iOS style site title with enhanced accessibility */
 .site-title {
     font-family: var(--font-headings);
     font-weight: 700;
@@ -123,32 +164,39 @@ header:hover {
 
 .site-title a {
     text-decoration: none;
-    background: linear-gradient(135deg, var(--title-gradient-start), var(--title-gradient-end));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--accent-color);
     display: inline-block;
     transition: all var(--transition);
     position: relative;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
 }
 
-.site-title a:hover {
-    transform: translateY(-1px) scale(1.01);
-    background: linear-gradient(135deg, var(--title-gradient-end), var(--title-gradient-start));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-}
-
-/* Fallback for browsers that don't support background-clip */
-@supports not (background-clip: text) {
+/* Progressive enhancement for gradient text */
+@supports (background-clip: text) or (-webkit-background-clip: text) {
     .site-title a {
-        color: var(--accent-color);
+        background: linear-gradient(135deg, var(--title-gradient-start), var(--title-gradient-end));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
     }
     
     .site-title a:hover {
-        color: var(--teal);
+        background: linear-gradient(135deg, var(--title-gradient-end), var(--title-gradient-start));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        transform: translateY(-1px) scale(1.01);
     }
+}
+
+/* Fallback for browsers without gradient text support */
+.site-title a:hover {
+    color: var(--teal);
+}
+
+.site-title a:focus {
+    outline-color: var(--accent-color);
 }
 
 header h1 {
@@ -199,10 +247,17 @@ header:hover .dynamic-island {
     padding: var(--spacing-xs);
     margin: 0 auto var(--spacing-sm);
     transition: color var(--transition);
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    border-radius: var(--button-radius);
 }
 
 .menu-toggle:hover, .menu-toggle:focus {
     color: var(--link-active);
+}
+
+.menu-toggle:focus {
+    outline-color: var(--accent-color);
 }
 
 /* Navigation - iOS style tab bar */
@@ -213,12 +268,16 @@ nav {
     border-radius: var(--radius);
     margin-bottom: var(--spacing-lg);
     box-shadow: var(--card-shadow);
-    justify-content: space-around;
+    justify-content: center;
     align-items: center;
     border: 1px solid var(--border-color);
     position: relative;
     z-index: 2;
     transition: all var(--transition);
+    width: 100%;
+    box-sizing: border-box;
+    flex-wrap: wrap;
+    gap: 4px;
 }
 
 nav:hover {
@@ -232,10 +291,14 @@ nav a {
     font-size: 0.9rem;
     transition: all var(--transition);
     text-align: center;
-    flex-grow: 1;
-    padding: var(--spacing-sm) 0;
+    flex: 0 1 auto;
+    padding: var(--spacing-sm) var(--spacing-md);
     border-radius: var(--button-radius);
     position: relative;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    white-space: nowrap;
+    margin: 0 2px;
 }
 
 nav a::after {
@@ -253,6 +316,10 @@ nav a::after {
 nav a:hover, nav a.active {
     color: var(--accent-color);
     background-color: rgba(0, 122, 255, 0.1);
+}
+
+nav a:focus {
+    outline-color: var(--accent-color);
 }
 
 nav a:hover::after, nav a.active::after {
@@ -295,16 +362,22 @@ p {
     line-height: 1.6;
 }
 
-/* Links */
+/* Links with enhanced focus states */
 a {
     color: var(--link-color);
     text-decoration: none;
     transition: all var(--transition);
     position: relative;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
 }
 
 a:hover, a:active {
     color: var(--link-active);
+}
+
+a:focus {
+    outline-color: var(--link-color);
 }
 
 /* iOS-style buttons */
@@ -322,6 +395,8 @@ a:hover, a:active {
     cursor: pointer;
     text-align: center;
     -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
+    outline: 2px solid transparent;
+    outline-offset: 2px;
 }
 
 .ios-button:hover, .ios-button:active {
@@ -330,6 +405,10 @@ a:hover, a:active {
     text-decoration: none;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.ios-button:focus {
+    outline-color: var(--accent-color);
 }
 
 .ios-button.secondary {
@@ -342,6 +421,10 @@ a:hover, a:active {
     box-shadow: 0 4px 12px rgba(0, 122, 255, 0.15);
 }
 
+.ios-button.secondary:focus {
+    outline-color: var(--accent-color);
+}
+
 .ios-button.destructive {
     background-color: var(--red);
 }
@@ -349,6 +432,10 @@ a:hover, a:active {
 .ios-button.destructive:hover, .ios-button.destructive:active {
     background-color: #e63028;
     box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+}
+
+.ios-button.destructive:focus {
+    outline-color: var(--red);
 }
 
 /* Article styling */
@@ -385,6 +472,14 @@ article .meta {
     margin-right: var(--spacing-xs);
 }
 
+/* Text browser fallback for reading time icon */
+@supports not (content: "⏱") {
+    .reading-time::before {
+        content: "Time: ";
+        margin-right: var(--spacing-xs);
+    }
+}
+
 .tags {
     display: flex;
     flex-wrap: wrap;
@@ -402,12 +497,19 @@ article .meta {
     text-decoration: none;
     transition: all var(--transition);
     border: 1px solid rgba(0, 122, 255, 0.2);
+    outline: 2px solid transparent;
+    outline-offset: 2px;
 }
 
 .tags a:hover, .tags a:active {
     background-color: rgba(0, 122, 255, 0.2);
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2);
+    text-decoration: none;
+}
+
+.tags a:focus {
+    outline-color: var(--accent-color);
 }
 
 .tags-list {
@@ -499,6 +601,13 @@ footer p {
 
 footer a {
     color: var(--accent-color);
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    transition: outline-color var(--transition);
+}
+
+footer a:focus {
+    outline-color: var(--accent-color);
 }
 
 /* Date header for post lists */
@@ -690,12 +799,19 @@ hr {
     align-items: center;
     justify-content: center;
     min-width: 100px;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
 }
 
 .pagination a:hover, .pagination a:active {
     background-color: rgba(0, 122, 255, 0.1);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+    text-decoration: none;
+}
+
+.pagination a:focus {
+    outline-color: var(--accent-color);
 }
 
 .pagination .page-info {
@@ -741,12 +857,18 @@ hr {
     padding: var(--spacing-sm) var(--spacing-md);
     color: var(--text-color);
     font-size: 0.9rem;
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
+}
+
+/* Optimized backdrop-filter with fallbacks */
+@supports (backdrop-filter: blur(5px)) {
+    .featured-image .image-caption {
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+    }
 }
 
 /* Lists with iOS styling */
@@ -787,38 +909,25 @@ ul li, ol li {
         font-size: 1.1rem;
     }
     
-    /* Mobile navigation */
+    /* Mobile navigation - always visible */
     .menu-toggle {
-        display: block;
-        width: 100%;
-        background-color: var(--card-bg);
-        border-radius: var(--radius);
-        box-shadow: var(--card-shadow);
-        padding: var(--spacing-sm);
-        color: var(--accent-color);
-        font-weight: 600;
-        margin-bottom: var(--spacing-sm);
-        border: 1px solid var(--border-color);
+        display: none;
     }
     
     nav {
-        max-height: 0;
-        overflow: hidden;
-        padding: 0 var(--spacing-sm);
         flex-direction: column;
-        transition: max-height var(--transition), padding var(--transition);
-        margin-bottom: var(--spacing-sm);
-    }
-    
-    nav.open {
-        max-height: 300px;
         padding: var(--spacing-sm);
+        margin-bottom: var(--spacing-lg);
+        gap: 0;
     }
     
     nav a {
-        padding: var(--spacing-sm);
+        padding: var(--spacing-sm) var(--spacing-md);
         width: 100%;
-        margin: var(--spacing-xs) 0;
+        margin: 2px 0;
+        flex: none;
+        border-radius: var(--button-radius);
+        text-align: center;
     }
     
     .dynamic-island {

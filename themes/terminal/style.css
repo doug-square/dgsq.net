@@ -23,10 +23,10 @@
     --title-gradient-start: #33ff33;  /* Bright terminal green */
     --title-gradient-end: #00cc00;  /* Darker terminal green */
     
-    /* Typography */
-    --font-main: 'VT323', 'Courier New', monospace;
-    --font-headings: 'VT323', 'Courier New', monospace;
-    --font-mono: 'VT323', 'Courier New', monospace;
+    /* Typography - System monospace fonts for terminal aesthetic */
+    --font-main: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, Monaco, 'Courier New', monospace;
+    --font-headings: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, Monaco, 'Courier New', monospace;
+    --font-mono: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, Monaco, 'Courier New', monospace;
     
     /* Sizing */
     --content-width: 800px;
@@ -56,8 +56,39 @@
     --transition-normal: 0.3s ease;
 }
 
-/* Import VT323 font - classic terminal style */
-@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+/* Removed external font loading for better performance and text browser compatibility */
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    /* Disable all transforms and animations */
+    .site-title a:hover,
+    .featured-image:hover img,
+    .index-image:hover img,
+    .tag-image:hover img,
+    .archive-image:hover img,
+    .pagination a:hover {
+        transform: none !important;
+    }
+    
+    @keyframes flicker {
+        from, to { opacity: 1; }
+    }
+    
+    @keyframes blink {
+        from, to { opacity: 1; }
+    }
+    
+    main::after {
+        animation: none !important;
+    }
+}
 
 /* Base elements */
 html {
@@ -140,40 +171,46 @@ header {
 }
 
 .site-title a {
-    background: linear-gradient(to right, 
-        var(--title-gradient-start) 0%, 
-        var(--highlight-color) 50%, 
-        var(--title-gradient-end) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--header-color);
     text-decoration: none;
     border: none;
     padding: 0;
-    text-shadow: 0 0 8px rgba(51, 255, 51, 0.6);
     position: relative;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
 }
 
 .site-title a:hover {
-    background: linear-gradient(to right, 
-        var(--highlight-color) 0%, 
-        var(--title-gradient-start) 50%, 
-        var(--highlight-color) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: flicker 0.5s infinite alternate;
+    color: var(--highlight-color);
     border: none;
 }
 
-/* Fallback for browsers that don't support background-clip */
-@supports not (background-clip: text) {
+.site-title a:focus {
+    outline-color: var(--link-color);
+}
+
+/* Progressive enhancement for gradient text */
+@supports (background-clip: text) or (-webkit-background-clip: text) {
     .site-title a {
-        color: var(--header-color);
+        background: linear-gradient(to right, 
+            var(--title-gradient-start) 0%, 
+            var(--highlight-color) 50%, 
+            var(--title-gradient-end) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 0 8px rgba(51, 255, 51, 0.6);
     }
     
     .site-title a:hover {
-        color: var(--highlight-color);
+        background: linear-gradient(to right, 
+            var(--highlight-color) 0%, 
+            var(--title-gradient-start) 50%, 
+            var(--highlight-color) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: flicker 0.5s infinite alternate;
     }
 }
 
@@ -230,6 +267,13 @@ nav a::before {
 }
 
 nav a:hover {
+    background-color: var(--dim-color);
+    color: var(--bg-color);
+}
+
+nav a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     background-color: var(--dim-color);
     color: var(--bg-color);
 }
@@ -318,6 +362,11 @@ a:hover, a:focus {
     background-color: rgba(51, 255, 51, 0.1);
 }
 
+a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
+}
+
 /* Article styling */
 article {
     margin-bottom: var(--spacing-xxl);
@@ -358,6 +407,16 @@ article .meta {
     content: "]";
 }
 
+/* Text browser fallbacks for reading time brackets */
+@supports not (content: "[") {
+    .reading-time::before {
+        content: "";
+    }
+    .reading-time::after {
+        content: "";
+    }
+}
+
 /* Tags */
 .tags {
     margin-top: var(--spacing-lg);
@@ -383,6 +442,13 @@ article .meta {
     color: var(--bg-color);
 }
 
+.tags a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
+    background-color: var(--dim-color);
+    color: var(--bg-color);
+}
+
 .tags-list {
     margin: var(--spacing-md) 0;
 }
@@ -398,6 +464,16 @@ article .meta {
 
 .tag-count::after {
     content: ")";
+}
+
+/* Text browser fallbacks for tag count parentheses */
+@supports not (content: "(") {
+    .tag-count::before {
+        content: "";
+    }
+    .tag-count::after {
+        content: "";
+    }
 }
 
 /* Code blocks */
@@ -743,6 +819,13 @@ hr::before {
     color: var(--dim-color);
 }
 
+/* Text browser fallback for hr decoration */
+@supports not (content: "----------------------------") {
+    hr::before {
+        content: "";
+    }
+}
+
 /* Selection style */
 ::selection {
     background-color: var(--text-color);
@@ -876,6 +959,13 @@ body {
 }
 
 .pagination a:hover {
+    background-color: var(--dim-color);
+    color: var(--bg-color);
+}
+
+.pagination a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     background-color: var(--dim-color);
     color: var(--bg-color);
 }

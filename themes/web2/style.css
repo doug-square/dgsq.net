@@ -2,7 +2,24 @@
  * Web 2.0 Theme for BSSG
  * Featuring glossy buttons, gradients, rounded corners, and reflections
  * Inspired by the design trends of 2005-2010
+ * Enhanced with accessibility, performance, and compatibility improvements
  */
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+    
+    /* Disable background-attachment: fixed for reduced motion */
+    body {
+        background-attachment: scroll !important;
+    }
+}
 
 :root {
     /* Web 2.0 color scheme */
@@ -32,10 +49,10 @@
     --accent-secondary: #1e5799;
     --quote-bg: #f9f9f9;
     
-    /* Typography */
-    --font-main: 'Lucida Grande', 'Segoe UI', Arial, sans-serif;
-    --font-headings: 'Trebuchet MS', Arial, sans-serif;
-    --font-mono: 'Consolas', 'Courier New', monospace;
+    /* Typography - enhanced system fonts for better compatibility */
+    --font-main: 'Lucida Grande', 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, 'Helvetica Neue', sans-serif;
+    --font-headings: 'Trebuchet MS', 'Lucida Grande', 'Segoe UI', Arial, 'Helvetica Neue', sans-serif;
+    --font-mono: 'Consolas', 'Courier New', 'Liberation Mono', 'Courier', monospace;
     
     /* Font Sizes */
     --text-xs: 0.75rem;
@@ -68,7 +85,7 @@
     --small-radius: 4px;
 }
 
-/* Base elements */
+/* Base elements - optimized for performance */
 body {
     font-family: var(--font-main);
     background-color: var(--bg-color);
@@ -78,7 +95,7 @@ body {
     line-height: 1.6;
     font-size: var(--text-md);
     background-image: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%);
-    background-attachment: fixed;
+    /* Removed background-attachment: fixed for better mobile performance */
 }
 
 /* Container with Web 2.0 styling */
@@ -139,9 +156,6 @@ header h1 {
 .site-title a {
     text-decoration: none;
     color: white;
-    background: linear-gradient(to bottom, #ffffff 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0) 51%, rgba(255,255,255,0) 100%);
-    background-clip: text;
-    -webkit-background-clip: text;
     transition: all var(--transition-medium);
 }
 
@@ -149,6 +163,20 @@ header h1 {
     color: rgba(255,255,255,0.8);
     text-shadow: 0 0 10px rgba(255,255,255,0.5);
     transform: translateY(-1px);
+}
+
+/* Progressive enhancement for gradient text */
+@supports (background-clip: text) {
+    .site-title a {
+        background: linear-gradient(to bottom, #ffffff 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0) 51%, rgba(255,255,255,0) 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
+    }
+    
+    .site-title a:hover {
+        color: transparent;
+    }
 }
 
 /* Navigation with glossy Web 2.0 tabs - directly integrated with header */
@@ -212,6 +240,19 @@ nav a.special-nav:hover, nav a:last-child:hover {
 nav a.special-nav:active, nav a:last-child:active {
     background: linear-gradient(to bottom, #1e5799 0%, #7db9e8 100%);
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Accessibility: Focus outlines for all interactive elements */
+nav a:focus,
+.site-title a:focus,
+a:focus,
+.tags a:focus,
+.pagination a:focus,
+.web2-button:focus,
+.web2-search input:focus,
+.web2-search button:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
 }
 
 /* Content area */

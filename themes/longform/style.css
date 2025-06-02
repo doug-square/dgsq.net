@@ -2,7 +2,31 @@
  * Longform Theme for BSSG
  * Optimized for reading long articles with highly readable typography,
  * contained text width, minimal distractions, and reading progress bar
+ * 
+ * IMPROVEMENTS APPLIED:
+ * - Added comprehensive reduced motion support
+ * - Enhanced accessibility with focus outlines
+ * - Removed external font loading for better performance and text browser compatibility
+ * - Enhanced font fallbacks with comprehensive system font stacks
+ * - Added text browser fallbacks for decorative elements
+ * - Optimized performance while maintaining longform reading aesthetics
  */
+
+/* REDUCED MOTION SUPPORT - Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+    
+    /* Disable progress bar animation */
+    .progress-bar {
+        transition: none !important;
+    }
+}
 
 :root {
     /* Color scheme */
@@ -20,10 +44,10 @@
     --blockquote-bg: #f7fafc;
     --blockquote-border: #cbd5e1;
     
-    /* Typography */
-    --font-serif: 'Merriweather', Georgia, 'Times New Roman', serif;
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-    --font-mono: 'JetBrains Mono', 'Fira Code', 'Menlo', monospace;
+    /* Typography - ENHANCED fallbacks for text browsers */
+    --font-serif: Georgia, 'Times New Roman', Times, serif;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, Arial, sans-serif;
+    --font-mono: 'Menlo', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
     
     /* Sizing */
     --content-width: 90%;
@@ -125,6 +149,13 @@ header {
     color: var(--link-color);
 }
 
+/* ACCESSIBILITY: Focus states for site title */
+.site-title a:focus {
+    outline: 3px solid var(--link-color);
+    outline-offset: 2px;
+    color: var(--link-color);
+}
+
 /* Site description */
 header p {
     margin: var(--spacing-xs) 0 0;
@@ -174,6 +205,17 @@ nav a.active {
 
 nav a:hover::after,
 nav a.active::after {
+    width: 100%;
+}
+
+/* ACCESSIBILITY: Focus states for navigation */
+nav a:focus {
+    outline: 3px solid var(--link-color);
+    outline-offset: 2px;
+    color: var(--link-color);
+}
+
+nav a:focus::after {
     width: 100%;
 }
 
@@ -254,6 +296,12 @@ a:hover {
 
 a:visited {
     color: var(--link-visited);
+}
+
+/* ACCESSIBILITY: Focus states for general links */
+a:focus {
+    outline: 3px solid var(--link-color);
+    outline-offset: 2px;
 }
 
 /* Lists */
@@ -370,9 +418,17 @@ article .article-content {
     gap: 0.3em;
 }
 
+/* TEXT BROWSER FALLBACK: Add "Time: " prefix for reading time */
 .reading-time::before {
-    content: "⏱";
+    content: "Time: ";
     font-size: 1.1em;
+}
+
+/* Use icon when CSS transforms are supported (modern browsers) */
+@supports (transform: translateX(0)) {
+    .reading-time::before {
+        content: "⏱";
+    }
 }
 
 /* Tags */
@@ -394,6 +450,14 @@ article .article-content {
 }
 
 .tags a:hover {
+    color: var(--link-color);
+    background-color: var(--blockquote-bg);
+}
+
+/* ACCESSIBILITY: Focus states for tags */
+.tags a:focus {
+    outline: 3px solid var(--link-color);
+    outline-offset: 2px;
     color: var(--link-color);
     background-color: var(--blockquote-bg);
 }
@@ -558,6 +622,15 @@ footer a:hover {
 }
 
 .pagination a:hover {
+    background-color: var(--link-color);
+    color: var(--background-color);
+    border-color: var(--link-color);
+}
+
+/* ACCESSIBILITY: Focus states for pagination */
+.pagination a:focus {
+    outline: 3px solid var(--link-color);
+    outline-offset: 2px;
     background-color: var(--link-color);
     color: var(--background-color);
     border-color: var(--link-color);

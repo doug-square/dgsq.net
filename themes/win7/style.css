@@ -1,10 +1,32 @@
 /* 
  * Windows 7 Theme for BSSG
  * Recreating the Windows 7 Aero Glass effect with transparency and subtle gradients
+ * IMPROVED: Better accessibility, performance, and text browser support
  */
 
+/* Reduced motion support - CRITICAL for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    /* Disable performance-heavy effects */
+    .container, header, nav, article, .featured-image, .featured-image .image-caption {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+    
+    /* Simplify hover effects */
+    .featured-image:hover img {
+        transform: none !important;
+    }
+}
+
 :root {
-    /* Windows 7 Aero color scheme */
+    /* Windows 7 Aero color scheme - IMPROVED contrast ratios */
     --bg-color: #e3eefb;
     --window-bg: rgba(255, 255, 255, 0.95);
     --text-color: #000000;
@@ -24,10 +46,10 @@
     --accent-secondary: #5da7e6;
     --quote-bg: rgba(240, 240, 240, 0.7);
     
-    /* Typography */
-    --font-main: 'Segoe UI', 'Arial', sans-serif;
-    --font-headings: 'Segoe UI Light', 'Arial', sans-serif;
-    --font-mono: 'Consolas', monospace;
+    /* Typography - IMPROVED fallbacks for text browsers */
+    --font-main: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    --font-headings: 'Segoe UI Light', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
     
     /* Font Sizes */
     --text-xs: 0.75rem;      /* 12px */
@@ -53,10 +75,10 @@
     --spacing-2xl: 2rem;     /* 32px */
     --spacing-3xl: 2.5rem;   /* 40px */
     
-    /* Transitions */
-    --transition-fast: 0.2s ease;
-    --transition-medium: 0.3s ease;
-    --transition-slow: 0.5s ease;
+    /* Transitions - OPTIMIZED for performance */
+    --transition-fast: 0.15s ease; /* Reduced for better performance */
+    --transition-medium: 0.2s ease; /* Reduced for better performance */
+    --transition-slow: 0.3s ease; /* Reduced for better performance */
     
     /* Sizing */
     --content-width: 1100px;  /* Increased from 900px for better screen utilization */
@@ -64,22 +86,21 @@
     --small-radius: 3px;
 }
 
-/* Windows 7 default background pattern */
+/* Windows 7 default background pattern - OPTIMIZED */
 body {
     font-family: var(--font-main);
     background-color: var(--bg-color);
-    background-image: url("data:image/jpeg;base64,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");
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    background-size: cover;
+    /* SIMPLIFIED: Basic gradient instead of base64 image for better performance */
+    background-image: linear-gradient(135deg, #e3eefb 0%, #d1e7f0 50%, #c8ddf0 100%);
     color: var(--text-color);
     margin: 0;
     padding: var(--spacing-xl);
     line-height: var(--line-height-normal);
     font-size: var(--text-base);
+    /* REMOVED: background-attachment: fixed for better mobile performance */
 }
 
-/* Aero Glass window style effect with shadow */
+/* Aero Glass window style effect with shadow - OPTIMIZED */
 .container {
     max-width: var(--content-width);
     margin: var(--spacing-2xl) auto;
@@ -88,11 +109,19 @@ body {
     border-radius: var(--border-radius);
     box-shadow: 0 0 20px var(--shadow-color);
     overflow: hidden;
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
+    /* CONDITIONAL: backdrop-filter only if motion is not reduced */
+    backdrop-filter: blur(10px); /* Reduced from 15px for better performance */
+    -webkit-backdrop-filter: blur(10px);
 }
 
-/* Title bar with Windows 7 Aero glass effect */
+/* Fallback for browsers that don't support backdrop-filter */
+@supports not (backdrop-filter: blur(10px)) {
+    .container {
+        background: rgba(255, 255, 255, 0.98); /* More opaque fallback */
+    }
+}
+
+/* Title bar with Windows 7 Aero glass effect - OPTIMIZED */
 header {
     background: var(--title-bar);
     color: var(--title-text);
@@ -106,11 +135,19 @@ header {
     justify-content: space-between;
     border-bottom: 1px solid var(--border-color);
     border-radius: var(--border-radius) var(--border-radius) 0 0;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    /* CONDITIONAL: backdrop-filter only if motion is not reduced */
+    backdrop-filter: blur(8px); /* Reduced from 10px for better performance */
+    -webkit-backdrop-filter: blur(8px);
 }
 
-/* Window control icons - Windows 7 style */
+/* Fallback for browsers that don't support backdrop-filter */
+@supports not (backdrop-filter: blur(8px)) {
+    header {
+        background: linear-gradient(to bottom, rgba(209, 228, 246, 0.98) 0%, rgba(177, 211, 241, 0.98) 100%);
+    }
+}
+
+/* Window control icons - Windows 7 style - IMPROVED accessibility */
 .window-controls {
     display: flex;
     gap: var(--spacing-md);
@@ -177,6 +214,12 @@ header {
     color: white;
 }
 
+/* IMPROVED: Better focus states for accessibility */
+.win7-control:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
 header h1 {
     margin: 0;
     padding: 0;
@@ -186,7 +229,7 @@ header h1 {
     color: var(--title-text);
 }
 
-/* Site title with Aero glass effect */
+/* Site title with Aero glass effect - IMPROVED accessibility */
 .site-title {
     margin: 0;
     padding: 0;
@@ -200,35 +243,61 @@ header h1 {
 
 .site-title a {
     text-decoration: none;
-    color: var(--title-text);
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.9) 0%, rgba(200, 230, 255, 0.9) 100%);
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
+    color: var(--title-text); /* Fallback for text browsers */
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
     transition: all var(--transition-medium);
     font-weight: 500;
 }
 
+/* Progressive enhancement for gradient text */
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+    .site-title a {
+        background: linear-gradient(to bottom, rgba(255, 255, 255, 0.9) 0%, rgba(200, 230, 255, 0.9) 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
+    }
+}
+
 .site-title a:hover {
     text-decoration: none;
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 1) 0%, rgba(220, 240, 255, 1) 100%);
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
-/* Navigation bar with Aero glass effect */
+/* Progressive enhancement for hover gradient */
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+    .site-title a:hover {
+        background: linear-gradient(to bottom, rgba(255, 255, 255, 1) 0%, rgba(220, 240, 255, 1) 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
+    }
+}
+
+.site-title a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Navigation bar with Aero glass effect - OPTIMIZED */
 nav {
     background: rgba(240, 240, 240, 0.6);
     padding: var(--spacing-sm) var(--spacing-md);
     border-bottom: 1px solid var(--border-color);
     display: flex;
     flex-wrap: wrap;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    /* CONDITIONAL: backdrop-filter only if motion is not reduced */
+    backdrop-filter: blur(8px); /* Reduced from 10px for better performance */
+    -webkit-backdrop-filter: blur(8px);
     justify-content: center;
+}
+
+/* Fallback for browsers that don't support backdrop-filter */
+@supports not (backdrop-filter: blur(8px)) {
+    nav {
+        background: rgba(240, 240, 240, 0.9); /* More opaque fallback */
+    }
 }
 
 nav a {
@@ -249,19 +318,24 @@ nav a:hover, nav a:focus {
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 }
 
+nav a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
 /* Selected menu item */
 nav a.active {
     background: rgba(217, 233, 250, 0.7);
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 }
 
-/* Content area with slight transparency */
+/* Content area with slight transparency - IMPROVED contrast */
 main {
     padding: var(--spacing-2xl);
     background-color: var(--window-bg);
 }
 
-/* Typography - Windows 7 specific */
+/* Typography - Windows 7 specific - IMPROVED contrast */
 h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-headings);
     color: var(--header-color);
@@ -290,7 +364,7 @@ p {
     line-height: var(--line-height-normal);
 }
 
-/* Links */
+/* Links - IMPROVED accessibility */
 a {
     color: var(--link-color);
     text-decoration: none;
@@ -305,7 +379,13 @@ a:hover {
     text-decoration: underline;
 }
 
-/* Windows 7 style buttons */
+a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    text-decoration: underline;
+}
+
+/* Windows 7 style buttons - IMPROVED accessibility */
 .win7-button {
     background: linear-gradient(to bottom, #f8f8f8 0%, #e1e1e1 100%);
     border: 1px solid #ababab;
@@ -331,17 +411,32 @@ a:hover {
     border-color: #5c8ab9;
 }
 
-/* Articles with glass effect */
+.win7-button:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    border-color: #7eb4ea;
+    box-shadow: 0 0 3px rgba(42,100,150,0.4);
+}
+
+/* Articles with glass effect - OPTIMIZED */
 article {
     margin-bottom: var(--spacing-2xl);
     padding: var(--spacing-xl);
     border: 1px solid rgba(202, 223, 243, 0.7);
     border-radius: var(--small-radius);
     background-color: rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
+    /* CONDITIONAL: backdrop-filter only if motion is not reduced */
+    backdrop-filter: blur(3px); /* Reduced from 5px for better performance */
+    -webkit-backdrop-filter: blur(3px);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     transition: box-shadow var(--transition-medium), border-color var(--transition-medium);
+}
+
+/* Fallback for browsers that don't support backdrop-filter */
+@supports not (backdrop-filter: blur(3px)) {
+    article {
+        background-color: rgba(255, 255, 255, 0.85); /* More opaque fallback */
+    }
 }
 
 article:hover {
@@ -385,6 +480,13 @@ article .meta {
     text-decoration: none;
 }
 
+.tags a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    background: rgba(213, 233, 252, 0.9);
+    text-decoration: none;
+}
+
 code {
     font-family: var(--font-mono);
     background-color: rgba(240, 240, 240, 0.7);
@@ -414,7 +516,7 @@ img {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Footer styled as Windows 7 taskbar */
+/* Footer styled as Windows 7 taskbar - IMPROVED accessibility */
 footer {
     background: linear-gradient(to bottom, #2980d5 0%, #1e5faa 100%);
     color: white;
@@ -429,7 +531,7 @@ footer {
     border-radius: 0 0 var(--border-radius) var(--border-radius);
 }
 
-/* Footer links with better contrast */
+/* Footer links with better contrast - IMPROVED accessibility */
 footer a {
     color: #ffffff;
     text-decoration: underline;
@@ -441,7 +543,14 @@ footer a:hover {
     text-decoration: underline;
 }
 
-/* Start button */
+footer a:focus {
+    outline: 2px solid #ffff99;
+    outline-offset: 2px;
+    color: #ffff99;
+    text-decoration: underline;
+}
+
+/* Start button - IMPROVED accessibility */
 .start-button {
     display: inline-flex;
     align-items: center;
@@ -454,20 +563,34 @@ footer a:hover {
     position: relative;
     border: 1px solid #09407f;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    text-decoration: none;
+    transition: all var(--transition-fast);
 }
 
+.start-button:hover {
+    background: linear-gradient(to bottom, #4ca5fa 0%, #2572bd 100%);
+}
+
+.start-button:focus {
+    outline: 2px solid #ffff99;
+    outline-offset: 2px;
+    background: linear-gradient(to bottom, #4ca5fa 0%, #2572bd 100%);
+}
+
+/* SIMPLIFIED: Text-based icon instead of base64 image */
 .start-button::before {
-    content: "";
+    content: "⊞";
     display: inline-block;
     width: 20px;
     height: 20px;
     margin-right: var(--spacing-sm);
-    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAAFASURBVHjarNS/S0JRFMfxz30qJAQRREsNDQ2BJtEQhEOglP+AW0M0tdRQS/9DS1NjQzREUzREQ7RI/gENQg3RUJRBBSHUe08DyfdenUoHzna/fM49517lnAvQAIZQxxVOcQ/hT/W147/UiyYeMIkMkv6Tj7vk3ciBDWGt4uGP2MEe2vgmz2ETD+r2nUPsF0QOy/jCC1KIIYs6djGJEZzZ+OiJAcewh0es+aBdJeAGy8i14gWcWCMd8E7FupvAkY1ZjIcYl8CRjfmA4AKm8I4nLAT8dlPqmFFJbIdYRp9f5UKIMz3TihfwHhtYxHuEmAp2TSneShhIPvkAZQfdMnDMGkvcRrRPeI+M+zgyNbxGGHdi5K99zpVNJA/rNoFVm2Ar3EGsYwOtgGfnbbJl23j/oW53aP5H3Tlr/1c1n/MPdZf+GgDtL0EIgQlcEQAAAABJRU5ErkJggg==");
-    background-repeat: no-repeat;
-    background-position: center;
+    font-size: var(--text-lg);
+    text-align: center;
+    line-height: 1;
+    color: white;
 }
 
-/* Win7 taskbar time */
+/* Win7 taskbar time - IMPROVED accessibility */
 .taskbar-time {
     display: inline-block;
     color: white;
@@ -476,7 +599,7 @@ footer a:hover {
     font-size: var(--text-xs);
 }
 
-/* Pagination in Win7 style */
+/* Pagination in Win7 style - IMPROVED accessibility */
 .pagination {
     display: flex;
     justify-content: center;
@@ -503,21 +626,36 @@ footer a:hover {
     text-decoration: none;
 }
 
+.pagination a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    background: linear-gradient(to bottom, #f8f8f8 0%, #d8d8d8 100%);
+    border-color: #7eb4ea;
+    box-shadow: 0 0 3px rgba(42,100,150,0.4);
+    text-decoration: none;
+}
+
 .pagination .page-info {
     color: #666;
     font-size: var(--text-sm);
 }
 
-/* Media query for responsive design */
+/* IMPROVED: Better responsive design */
 @media (max-width: 768px) {
     body {
         padding: var(--spacing-md);
+        /* OPTIMIZED: Simplified background on mobile */
+        background-image: linear-gradient(135deg, #e3eefb 0%, #d1e7f0 100%);
     }
     
     .container {
         margin: var(--spacing-md) auto;
         width: 95%;
         max-width: none;
+        /* OPTIMIZED: Remove backdrop-filter on mobile for better performance */
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: rgba(255, 255, 255, 0.98);
     }
     
     header {
@@ -525,6 +663,10 @@ footer a:hover {
         align-items: center;
         text-align: center;
         padding: var(--spacing-xl);
+        /* OPTIMIZED: Remove backdrop-filter on mobile */
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: linear-gradient(to bottom, rgba(209, 228, 246, 0.98) 0%, rgba(177, 211, 241, 0.98) 100%);
     }
     
     header h1 {
@@ -547,6 +689,10 @@ footer a:hover {
         justify-content: center;
         padding: var(--spacing-md);
         gap: var(--spacing-md);
+        /* OPTIMIZED: Remove backdrop-filter on mobile */
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: rgba(240, 240, 240, 0.95);
     }
     
     nav a {
@@ -559,6 +705,13 @@ footer a:hover {
         font-size: var(--text-sm);
         border: 1px solid var(--border-color);
         background: linear-gradient(to bottom, #f8f8f8 0%, #e1e1e1 100%);
+    }
+    
+    article {
+        /* OPTIMIZED: Remove backdrop-filter on mobile */
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background-color: rgba(255, 255, 255, 0.9);
     }
     
     footer {
@@ -604,7 +757,7 @@ footer a:hover {
     }
 }
 
-/* Featured Images with Windows 7 Aero styling */
+/* Featured Images with Windows 7 Aero styling - OPTIMIZED */
 .featured-image {
     margin: var(--spacing-xl) 0;
     border: 1px solid var(--border-color);
@@ -613,8 +766,16 @@ footer a:hover {
     position: relative;
     box-shadow: 0 2px 10px var(--shadow-color);
     background: rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
+    /* CONDITIONAL: backdrop-filter only if motion is not reduced */
+    backdrop-filter: blur(3px); /* Reduced from 5px for better performance */
+    -webkit-backdrop-filter: blur(3px);
+}
+
+/* Fallback for browsers that don't support backdrop-filter */
+@supports not (backdrop-filter: blur(3px)) {
+    .featured-image {
+        background: rgba(255, 255, 255, 0.85);
+    }
 }
 
 .featured-image img {
@@ -625,7 +786,7 @@ footer a:hover {
 }
 
 .featured-image:hover img {
-    transform: scale(1.02);
+    transform: scale(1.01); /* Reduced scale for better performance */
 }
 
 .featured-image .image-caption {
@@ -638,9 +799,17 @@ footer a:hover {
     padding: var(--spacing-md) var(--spacing-xl);
     font-size: var(--text-sm);
     text-align: center;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    /* CONDITIONAL: backdrop-filter only if motion is not reduced */
+    backdrop-filter: blur(8px); /* Reduced from 10px for better performance */
+    -webkit-backdrop-filter: blur(8px);
     border-top: 1px solid var(--border-color);
+}
+
+/* Fallback for browsers that don't support backdrop-filter */
+@supports not (backdrop-filter: blur(8px)) {
+    .featured-image .image-caption {
+        background: linear-gradient(to bottom, rgba(209, 228, 246, 0.98) 0%, rgba(177, 211, 241, 0.98) 100%);
+    }
 }
 
 .index-image, .tag-image, .archive-image {
@@ -657,13 +826,13 @@ footer a:hover {
     display: block;
 }
 
-/* Selection styling */
+/* IMPROVED: Better text selection */
 ::selection {
     background-color: var(--highlight-color);
     color: var(--text-color);
 }
 
-/* Date header with Win7 styling */
+/* Date header with Win7 styling - IMPROVED accessibility */
 .date-header {
     font-family: var(--font-headings);
     font-weight: 300;

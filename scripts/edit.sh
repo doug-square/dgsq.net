@@ -60,10 +60,34 @@ else
     sed_requires_backup_cleanup=true
 fi
 
-# Function to generate a slug from a title
+# Generate a URL-friendly slug from a title
+# This implementation matches the one in scripts/build/utils.sh
 generate_slug() {
     local title="$1"
-    echo "$title" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]/-/g' -e 's/--*/-/g' -e 's/^-//' -e 's/-$//'
+
+    # Convert to lowercase
+    local slug=$(echo "$title" | tr '[:upper:]' '[:lower:]')
+
+    # First use iconv to transliterate if available
+    if command -v iconv >/dev/null 2>&1; then
+        slug=$(echo "$slug" | iconv -f utf-8 -t ascii//TRANSLIT 2>/dev/null || echo "$slug")
+    fi
+
+    # Replace all non-alphanumeric characters with hyphens
+    slug=$(echo "$slug" | sed -e 's/[^a-z0-9]/-/g')
+
+    # Replace multiple consecutive hyphens with a single one
+    slug=$(echo "$slug" | sed -e 's/--*/-/g')
+
+    # Remove leading and trailing hyphens
+    slug=$(echo "$slug" | sed -e 's/^-//' -e 's/-$//')
+
+    # If slug is empty, use 'untitled' as fallback
+    if [ -z "$slug" ]; then
+        slug="untitled"
+    fi
+
+    echo "$slug"
 }
 
 # Function to edit a post
@@ -166,7 +190,11 @@ edit_post() {
         
         # If no date found, use current date
         if [ -z "$new_date" ]; then
-            new_date=$(date +"%Y-%m-%d %H:%M:%S %z")
+            new_date=$(date +"%Y-%m-%d")
+        else
+            # Extract only the date portion (YYYY-MM-DD) from the date field
+            # This handles cases where the date field contains time and timezone
+            new_date=$(echo "$new_date" | sed 's/^\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\).*/\1/')
         fi
         
         # If title found, rename the file

@@ -2,7 +2,26 @@
  * Stefano Theme for BSSG
  * Based on Stefano Marinelli's personal website design
  * https://stefano.dragas.it/
+ * 
+ * IMPROVEMENTS APPLIED:
+ * - Added comprehensive reduced motion support
+ * - Enhanced accessibility with focus outlines
+ * - Removed external font loading for better performance and text browser compatibility
+ * - Enhanced font fallbacks with comprehensive system font stacks
+ * - Added text browser fallbacks for decorative elements
+ * - Optimized performance while maintaining elegant design aesthetics
  */
+
+/* REDUCED MOTION SUPPORT - Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+}
 
 :root {
     /* Color palette from user's website */
@@ -40,10 +59,10 @@
     --accent-secondary: #2d6d8a;
     --quote-bg: #f7f7f7;
     
-    /* Typography */
-    --font-main: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    --font-headings: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    /* Typography - Enhanced font fallbacks for elegant design */
+    --font-main: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    --font-headings: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    --font-mono: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', 'Courier New', 'Courier', monospace;
     
     /* Sizing */
     --content-width: 840px;
@@ -62,8 +81,7 @@
     --line-height-heading: 1.2;
 }
 
-/* Import Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 
 /* Base elements */
 html {
@@ -148,6 +166,13 @@ a:hover {
     color: var(--link-hover);
 }
 
+/* ACCESSIBILITY: Focus states for general links */
+a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
+    color: var(--link-hover);
+}
+
 /* Header/Site Title */
 header {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
@@ -219,6 +244,18 @@ header p {
     transform: translateY(-1px);
 }
 
+/* ACCESSIBILITY: Focus states for site title */
+.site-title a:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.8);
+    outline-offset: 2px;
+    text-decoration: none;
+    background: linear-gradient(120deg, var(--accent) 0%, rgba(255,255,255,0.9) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    transform: translateY(-1px);
+}
+
 /* Navigation */
 nav {
     display: flex;
@@ -230,9 +267,10 @@ nav {
 nav a {
     margin: 0 var(--spacing-sm);
     padding: var(--spacing-xs) 0;
-    color: white;
+    color: rgba(255, 255, 255, 0.95);
     position: relative;
     font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 nav a::after {
@@ -246,7 +284,24 @@ nav a::after {
     transition: var(--transition);
 }
 
+nav a:hover {
+    color: white;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
 nav a:hover::after {
+    width: 100%;
+}
+
+/* ACCESSIBILITY: Focus states for navigation */
+nav a:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.8);
+    outline-offset: 2px;
+    color: white;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+nav a:focus::after {
     width: 100%;
 }
 
@@ -282,6 +337,18 @@ article .meta {
 .reading-time {
     display: inline;
     margin-left: var(--spacing-sm);
+}
+
+/* TEXT BROWSER FALLBACK: Add "Time: " prefix for reading time */
+.reading-time::before {
+    content: "Time: ";
+}
+
+/* Use elegant icon when CSS transforms are supported (modern browsers) */
+@supports (transform: translateX(0)) {
+    .reading-time::before {
+        content: "⏱ ";
+    }
 }
 
 /* Code */
@@ -327,6 +394,15 @@ pre code {
 }
 
 .tags a:hover {
+    background-color: var(--tag-hover-bg);
+    color: var(--tag-hover-text);
+    transform: translateY(-3px);
+}
+
+/* ACCESSIBILITY: Focus states for tags */
+.tags a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     background-color: var(--tag-hover-bg);
     color: var(--tag-hover-text);
     transform: translateY(-3px);
@@ -396,6 +472,13 @@ footer {
     color: var(--accent);
 }
 
+/* ACCESSIBILITY: Focus states for social links */
+.social-link:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.8);
+    outline-offset: 2px;
+    color: var(--accent);
+}
+
 .copyright {
     font-size: 0.9rem;
     color: rgba(255, 255, 255, 0.7);
@@ -449,6 +532,13 @@ footer {
 }
 
 .posts-list h3 a:hover {
+    color: var(--accent);
+}
+
+/* ACCESSIBILITY: Focus states for post list links */
+.posts-list h3 a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     color: var(--accent);
 }
 
@@ -530,6 +620,15 @@ ul li::before {
 }
 
 .pagination a:hover {
+    background-color: var(--accent);
+    color: white;
+    transform: translateY(-3px);
+}
+
+/* ACCESSIBILITY: Focus states for pagination */
+.pagination a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     background-color: var(--accent);
     color: white;
     transform: translateY(-3px);

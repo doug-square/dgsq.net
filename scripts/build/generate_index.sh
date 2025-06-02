@@ -190,7 +190,7 @@ EOF
                 local end_index=$(( current_page * POSTS_PER_PAGE ))
                 
                 # Add posts to the index page
-                awk -v start="$start_index" -v end="$end_index" 'NR >= start && NR <= end { print }' "$file_index" | while IFS='|' read -r file filename title date lastmod tags slug image image_caption description; do
+                awk -v start="$start_index" -v end="$end_index" 'NR >= start && NR <= end { print }' "$file_index" | while IFS='|' read -r file filename title date lastmod tags slug image image_caption description author_name author_email; do
                     # ... (rest of the post item generation logic remains the same) ...
                     if [ -z "$file" ] || [ -z "$title" ] || [ -z "$date" ]; then
                         continue
@@ -216,7 +216,7 @@ EOF
                     cat >> "$output_file" << EOF
             <article>
                 <h3><a href="$(fix_url "$post_link")">$title</a></h3>
-                <div class="meta">${MSG_PUBLISHED_ON:-"Published on"} $formatted_date${AUTHOR_NAME:+" ${MSG_BY:-"by"} $AUTHOR_NAME"}</div>
+                <div class="meta">${MSG_PUBLISHED_ON:-"Published on"} $formatted_date${author_name:+" ${MSG_BY:-"by"} ${author_name:-$AUTHOR_NAME}"}</div>
 EOF
                     if [ -n "$image" ]; then
                         local image_url="$image"

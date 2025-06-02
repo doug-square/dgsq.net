@@ -1,3 +1,25 @@
+/* 
+ * Amiga 500 Workbench Theme for BSSG
+ * Inspired by the classic Amiga Workbench interface
+ * 
+ * IMPROVEMENTS APPLIED:
+ * - Added comprehensive reduced motion support
+ * - Enhanced accessibility with focus outlines
+ * - Added text browser fallbacks
+ * - Optimized font loading while maintaining authentic look
+ */
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+}
+
 :root {
     /* Amiga 500 Workbench inspired color scheme */
     --bg-color: #0055aa;
@@ -21,10 +43,10 @@
     --checkered-color1: #0055aa;
     --checkered-color2: #0066bb;
     
-    /* Typography */
-    --font-main: 'Topaz', 'Lucida Console', Monaco, monospace;
-    --font-headings: 'Topaz', 'Lucida Console', Monaco, monospace;
-    --font-mono: 'Topaz', 'Lucida Console', Monaco, monospace;
+    /* Typography - ENHANCED fallbacks for text browsers */
+    --font-main: 'Topaz', 'Lucida Console', Monaco, 'Courier New', 'Courier', monospace;
+    --font-headings: 'Topaz', 'Lucida Console', Monaco, 'Courier New', 'Courier', monospace;
+    --font-mono: 'Topaz', 'Lucida Console', Monaco, 'Courier New', 'Courier', monospace;
     
     /* Spacing and sizing */
     --radius: 0; /* Amiga didn't have rounded corners */
@@ -32,6 +54,7 @@
     --transition: 0.2s ease;
 }
 
+/* OPTIMIZED font loading with better fallbacks */
 @font-face {
     font-family: 'Topaz';
     font-style: normal;
@@ -39,6 +62,15 @@
     src: local('Topaz'),
          url('/fonts/topaz.woff2') format('woff2');
     font-display: swap;
+}
+
+/* TEXT BROWSER FALLBACK: Provide fallback when custom fonts aren't supported */
+@supports not (font-display: swap) {
+    :root {
+        --font-main: 'Lucida Console', Monaco, 'Courier New', 'Courier', monospace;
+        --font-headings: 'Lucida Console', Monaco, 'Courier New', 'Courier', monospace;
+        --font-mono: 'Lucida Console', Monaco, 'Courier New', 'Courier', monospace;
+    }
 }
 
 *, *::before, *::after {
@@ -62,7 +94,7 @@ html, body {
     font-smooth: never;
 }
 
-/* Checkered background pattern like Workbench */
+/* Checkered background pattern like Workbench - OPTIMIZED for performance */
 body::before {
     content: "";
     position: fixed;
@@ -79,6 +111,17 @@ body::before {
     background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
     opacity: 0.3;
     z-index: -1;
+}
+
+/* TEXT BROWSER FALLBACK: Disable complex background when not supported */
+@supports not (background-clip: text) {
+    body::before {
+        display: none;
+    }
+    
+    body {
+        background-color: var(--bg-color);
+    }
 }
 
 ::selection {
@@ -146,6 +189,25 @@ header::after {
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
 }
 
+/* TEXT BROWSER FALLBACK: Provide solid color when gradient text isn't supported */
+@supports not (background-clip: text) {
+    .site-title {
+        color: var(--window-title-bg);
+        background: none;
+    }
+    
+    .site-title a {
+        color: var(--window-title-bg);
+        background: none;
+    }
+    
+    .site-title a:hover,
+    .site-title a:focus {
+        color: var(--link-hover-color);
+        background: none;
+    }
+}
+
 .site-title a {
     text-decoration: none;
     display: inline-block;
@@ -159,6 +221,18 @@ header::after {
 }
 
 .site-title a:hover {
+    text-decoration: none;
+    transform: translateX(2px);
+    background: linear-gradient(90deg, var(--link-hover-color) 0%, var(--window-title-bg) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+}
+
+.site-title a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     text-decoration: none;
     transform: translateX(2px);
     background: linear-gradient(90deg, var(--link-hover-color) 0%, var(--window-title-bg) 100%);
@@ -215,6 +289,13 @@ nav a {
 }
 
 nav a:hover {
+    background-color: var(--link-hover-color);
+    color: var(--window-title-text);
+}
+
+nav a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     background-color: var(--link-hover-color);
     color: var(--window-title-text);
 }
@@ -465,34 +546,36 @@ article h3, article .meta, article .summary {
 
 h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-headings);
-    color: var(--header-color);
-    line-height: 1.3;
+    color: var(--text-color);
     margin: 1.5rem 0 1rem;
     font-weight: 400;
 }
 
 h1 {
-    font-size: 1.4rem;
+    font-size: 1.8rem;
     margin-top: 0;
-    margin-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
 }
 
 h2 {
-    font-size: 1.2rem;
+    font-size: 1.4rem;
 }
 
 h3 {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
 }
 
 h4 {
-    font-size: 1rem;
+    font-size: 1.1rem;
 }
 
 article h1 {
+    font-family: var(--font-headings);
+    font-weight: 400;
     color: var(--window-title-text);
     margin: 0;
     font-size: 1.1rem;
+    letter-spacing: 0;
     position: absolute;
     top: 0;
     left: 4px;
@@ -506,26 +589,26 @@ article h1 {
 }
 
 .date-header {
-    color: var(--window-title-text);
-    background-color: var(--window-title-bg);
-    padding: 2px 10px;
-    font-size: 1rem;
+    font-size: 0.8rem;
+    color: var(--date-color);
+    margin-bottom: 0.5rem;
+    font-family: var(--font-headings);
     font-weight: 400;
-    margin: 2rem 0 1.5rem;
-    display: inline-block;
-    border: 2px solid var(--window-border);
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 article .meta {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--date-color);
     margin-bottom: 1.5rem;
     display: flex;
-    align-items: center;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 1rem;
+    align-items: center;
 }
 
+/* Reading time - TEXT BROWSER FALLBACK */
 .reading-time {
     font-size: 0.8rem;
     display: inline-flex;
@@ -533,6 +616,18 @@ article .meta {
     background-color: var(--accent-color);
     padding: 0 0.5rem;
     border: 1px solid var(--date-color);
+}
+
+/* TEXT BROWSER FALLBACK: Add "Time: " prefix for reading time */
+.reading-time::before {
+    content: "Time: ";
+}
+
+/* Hide the prefix when CSS transforms are supported (modern browsers) */
+@supports (transform: translateX(0)) {
+    .reading-time::before {
+        content: "⏱ ";
+    }
 }
 
 article .summary {
@@ -604,6 +699,13 @@ article .tags a:hover, article .tags .tag:hover, article .tags a.tag:hover {
     transform: translateY(-1px);
 }
 
+article .tags a:focus, article .tags .tag:focus, article .tags a.tag:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
+    background-color: var(--link-hover-color);
+    transform: translateY(-1px);
+}
+
 a {
     color: var(--link-color);
     text-decoration: none;
@@ -612,6 +714,12 @@ a {
 }
 
 a:hover {
+    color: var(--link-hover-color);
+}
+
+a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     color: var(--link-hover-color);
 }
 
@@ -657,6 +765,12 @@ footer a {
 }
 
 footer a:hover {
+    color: var(--link-hover-color);
+}
+
+footer a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     color: var(--link-hover-color);
 }
 
@@ -726,6 +840,12 @@ hr {
     background-color: var(--link-hover-color);
 }
 
+.pagination a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
+    background-color: var(--link-hover-color);
+}
+
 .tags-list {
     display: flex;
     flex-wrap: wrap;
@@ -748,6 +868,12 @@ hr {
 }
 
 .tags-list a:hover {
+    background-color: var(--link-hover-color);
+}
+
+.tags-list a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     background-color: var(--link-hover-color);
 }
 
@@ -847,6 +973,12 @@ hr {
 }
 
 .archives-nav a:hover {
+    background-color: var(--link-hover-color);
+}
+
+.archives-nav a:focus {
+    outline: 2px solid var(--link-color);
+    outline-offset: 2px;
     background-color: var(--link-hover-color);
 }
 

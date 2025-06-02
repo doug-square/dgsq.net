@@ -34,6 +34,7 @@
 - Admin interface for managing posts and scheduling publications (planned for future release)
 - Standalone post editor with modern Ghost-like interface for visual content creation
 - Creates tag index pages
+- Author index pages with conditional navigation menu
 - Archives by year and month for chronological browsing
 - Dynamic menu generation based on available pages
 - Support for primary and secondary pages with automatic menu organization
@@ -538,6 +539,8 @@ slug: custom-slug
 image: /path/to/image.jpg
 image_caption: Optional caption for the image
 description: A brief summary of your post that will appear in listings, social media shares, and RSS feeds.
+author_name: John Doe # Optional: Override default site author
+author_email: john@example.com # Optional: Override default site author email
 ---
 
 Content goes here...
@@ -572,6 +575,99 @@ When you specify an image, it will appear:
 - As a thumbnail in index pages, tag pages, and archive pages
 - In the RSS feed
 - In OpenGraph and Twitter metadata for better social media sharing
+
+### Multi-Author Support
+
+BSSG supports multiple authors through optional frontmatter fields that can override the default site author configuration on a per-post basis.
+
+#### Author Fields
+
+- `author_name`: The name of the post author (optional)
+- `author_email`: The email address of the post author (optional)
+
+#### Fallback Behavior
+
+BSSG uses intelligent fallback logic for author information:
+
+1. **Custom Author**: If both `author_name` and `author_email` are specified, they will be used for that post
+2. **Name Only**: If only `author_name` is specified, the name will be used but no email will be included in metadata
+3. **Default Fallback**: If author fields are empty or missing, the default `AUTHOR_NAME` and `AUTHOR_EMAIL` from your site configuration will be used
+
+#### Author Index Pages
+
+When multiple authors are detected in your posts, BSSG automatically generates:
+
+- **Main Authors Index**: A page at `/authors/` listing all authors with their post counts
+- **Individual Author Pages**: Pages at `/authors/author-slug/` showing all posts by a specific author
+- **Conditional Navigation**: An "Authors" menu item that only appears when you have multiple authors (configurable threshold)
+
+The author pages reuse the same styling as tag pages for visual consistency and include:
+- Post listings sorted by date (newest first)
+- Post counts and metadata
+- Schema.org structured data for SEO
+- Responsive design that works on all devices
+
+#### Configuration Options
+
+You can control author page behavior in your `config.sh.local`:
+
+```bash
+# Enable/disable author pages (default: false)
+ENABLE_AUTHOR_PAGES=false
+
+# Minimum number of authors to show the Authors menu (default: 2)
+SHOW_AUTHORS_MENU_THRESHOLD=2
+
+# Enable author-specific RSS feeds (default: false)
+ENABLE_AUTHOR_RSS=false
+```
+
+#### Where Author Information Appears
+
+Author information is displayed and used in:
+
+- **Post Pages**: Copyright notices in the footer
+- **Index Pages**: "by Author Name" in post listings
+- **Author Pages**: Dedicated pages listing posts by each author
+- **Navigation Menu**: "Authors" link (when multiple authors exist)
+- **RSS Feeds**: Dublin Core `dc:creator` elements with proper author attribution
+- **Schema.org Metadata**: JSON-LD structured data for search engines
+- **Archive Pages**: Author information in post listings
+
+#### Examples
+
+**Post with custom author:**
+```markdown
+---
+title: Guest Post Example
+author_name: Jane Smith
+author_email: jane@example.com
+---
+```
+
+**Post with name only (no email):**
+```markdown
+---
+title: Anonymous Contributor Post
+author_name: Anonymous Contributor
+author_email: # Leave empty - no email will be included
+---
+```
+
+**Post using default site author:**
+```markdown
+---
+title: Regular Post
+# No author fields - will use AUTHOR_NAME and AUTHOR_EMAIL from config
+---
+```
+
+This feature is particularly useful for:
+- Guest posts from different authors
+- Multi-author blogs or publications
+- Posts where you want to credit a specific contributor
+- Maintaining author attribution when migrating content from other platforms
+- Creating author-focused content organization alongside tags and archives
 
 ## Customization
 
@@ -884,7 +980,7 @@ BSSG includes a standalone post editor (`bssg-editor.html`) that provides a mode
 - **Theme Support**: Dark/light mode toggle
 - **Focus Mode**: Distraction-free writing environment
 - **Export Options**: Export to .md files, copy to clipboard, or import existing files
-- **Responsive Design**: Works on desktop, tablet, and mobile devices (not perfect on mobile, yet)
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
 - **Offline Capable**: No server required - runs entirely in your browser
 
 ### Getting Started
@@ -1036,6 +1132,11 @@ URL_SLUG_FORMAT="Year/Month/Day/slug"  # Format for post URLs
 RSS_ITEM_LIMIT=15 # Number of items to include in the RSS feed.
 RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". If set to "true", the full post content will be included in the RSS feed description instead of the excerpt. Useful for readers that consume entire posts via RSS.
 ENABLE_TAG_RSS=true # Options: "true", "false". If set to "true" (default), an additional RSS feed will be generated for each tag at `output/tags/<tag-slug>/rss.xml`.
+
+# Multi-author configuration
+ENABLE_AUTHOR_PAGES=false # Options: "true", "false". If set to "true", author index pages will be generated.
+ENABLE_AUTHOR_RSS=false # Options: "true", "false". If set to "true", RSS feeds will be generated for each author.
+SHOW_AUTHORS_MENU_THRESHOLD=2 # Minimum number of authors required to show the "Authors" menu item.
 ```
 
 The `URL_SLUG_FORMAT` setting determines how your post URLs are structured. By default, it uses `Year/Month/Day/slug` which creates URLs like `http://yoursite.com/2023/01/15/my-post-title/`. 

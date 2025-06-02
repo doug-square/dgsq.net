@@ -4,6 +4,16 @@
  * Minimalism, functionality, elegance, and precision
  */
 
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
 :root {
     /* Braun-inspired color scheme */
     --white: #FFFFFF;
@@ -104,6 +114,12 @@ header {
     color: var(--header-text);
 }
 
+.site-title a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    color: var(--header-text);
+}
+
 /* Site description - minimal and precise */
 header p {
     margin: calc(var(--grid-size)) 0 0;
@@ -137,6 +153,12 @@ nav a.active {
     color: var(--nav-active-text);
     background-color: var(--nav-active-bg);
     font-weight: 500;
+}
+
+nav a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    color: var(--nav-hover-text);
 }
 
 /* Content area with grid precision */
@@ -191,6 +213,13 @@ a:hover {
     border-bottom: 1px solid var(--link-hover);
 }
 
+a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    color: var(--link-hover);
+    border-bottom: 1px solid var(--link-hover);
+}
+
 /* Articles with precise spacing and clean borders */
 article {
     margin-bottom: calc(var(--grid-size) * 8);
@@ -219,6 +248,18 @@ article .meta {
     position: relative;
 }
 
+/* TEXT BROWSER FALLBACK: Add "Time: " prefix for reading time */
+.reading-time::before {
+    content: "Time: ";
+}
+
+/* Hide the prefix when CSS transforms are supported (modern browsers) */
+@supports (transform: translateX(0)) {
+    .reading-time::before {
+        content: "⏱ ";
+    }
+}
+
 /* Tags with Braun-inspired geometric precision */
 .tags {
     display: flex;
@@ -236,6 +277,14 @@ article .meta {
 }
 
 .tags a:hover {
+    background-color: var(--accent-color);
+    color: var(--black);
+    border: none;
+}
+
+.tags a:focus {
+    outline: 2px solid var(--secondary-accent);
+    outline-offset: 2px;
     background-color: var(--accent-color);
     color: var(--black);
     border: none;
@@ -273,6 +322,14 @@ article .meta {
     border: none;
 }
 
+.tags-list a:focus {
+    outline: 2px solid var(--secondary-accent);
+    outline-offset: 2px;
+    background-color: var(--accent-color);
+    color: var(--black);
+    border: none;
+}
+
 /* Footer - clean and precise */
 footer {
     margin-top: calc(var(--grid-size) * 6);
@@ -293,6 +350,13 @@ footer a {
 }
 
 footer a:hover {
+    color: var(--link-hover);
+    border-bottom: 1px solid var(--link-hover);
+}
+
+footer a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     color: var(--link-hover);
     border-bottom: 1px solid var(--link-hover);
 }
@@ -318,6 +382,14 @@ footer a:hover {
 }
 
 .pagination a:hover {
+    background-color: var(--accent-color);
+    color: var(--black);
+    border: none;
+}
+
+.pagination a:focus {
+    outline: 2px solid var(--secondary-accent);
+    outline-offset: 2px;
     background-color: var(--accent-color);
     color: var(--black);
     border: none;

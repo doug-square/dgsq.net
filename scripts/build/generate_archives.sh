@@ -161,7 +161,7 @@ _generate_main_archive_index() {
                     local post_year post_month post_day url_path post_url
 
                     # Grep posts for this specific year and numeric month, sort REVERSE chronologically
-                    grep "^$year|$month|" "$archive_index_file" 2>/dev/null | sort -t'|' -k5,5r | while IFS='|' read -r _ _ _ title date _ filename slug _; do
+                    grep "^$year|$month|" "$archive_index_file" 2>/dev/null | sort -t'|' -k5,5r | while IFS='|' read -r _ _ _ title date _ filename slug _ _ _ author_name author_email; do
                         # Construct post URL (logic adapted from process_single_month)
                         if [[ "$date" =~ ^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2}) ]]; then
                             post_year="${BASH_REMATCH[1]}"
@@ -335,7 +335,7 @@ process_single_month() {
         echo "<div class=\"posts-list\">"
 
         # Grep for posts from this specific month and year
-        grep "^$year|$month_num|" "$archive_index_file" 2>/dev/null | while IFS='|' read -r _ _ _ title date lastmod filename slug image image_caption description; do
+        grep "^$year|$month_num|" "$archive_index_file" 2>/dev/null | while IFS='|' read -r _ _ _ title date lastmod filename slug image image_caption description author_name author_email; do
             # --- Start: Card Generation Logic (copied from generate_tags.sh) ---
             local post_url post_year post_month post_day url_path
 
@@ -367,11 +367,14 @@ process_single_month() {
             fi
             local formatted_date=$(format_date "$date" "$display_date_format")
 
+            # Determine author for display (with fallback)
+            local display_author_name="${author_name:-${AUTHOR_NAME:-Anonymous}}"
+
             # Use cat heredoc for multi-line article structure
             cat << EOF
     <article>
         <h3><a href="${post_url}">$title</a></h3>
-        <div class="meta">${MSG_PUBLISHED_ON:-\"Published on\"} $formatted_date</div>
+        <div class="meta">${MSG_PUBLISHED_ON:-\"Published on\"} $formatted_date ${MSG_BY:-\"by\"} <strong>$display_author_name</strong></div>
 EOF
 
             if [ -n "$image" ]; then

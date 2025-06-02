@@ -2,6 +2,7 @@
  * Flat Design Theme for BSSG
  * Inspired by Microsoft Metro/Modern UI design language
  * Features typography-focused design, solid colors, and minimal decoration
+ * Enhanced with accessibility, performance, and compatibility improvements
  */
 
 :root {
@@ -31,6 +32,34 @@
     --content-width: 1100px;
     --tile-size: 150px;
     --gap-size: 10px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    /* Disable all transforms and animations */
+    .site-title a:hover,
+    .metro-tile:hover,
+    .metro-button:hover,
+    .tags a:hover,
+    .pagination a:hover,
+    footer a:hover::after,
+    .featured-image:hover img,
+    .index-image:hover img,
+    .tag-image:hover img,
+    .archive-image:hover img {
+        transform: none !important;
+    }
+    
+    .progress-indicator {
+        transition: none !important;
+    }
 }
 
 /* Base elements */
@@ -74,28 +103,34 @@ header {
 .site-title a {
     color: var(--text-on-accent);
     text-decoration: none;
-    background: linear-gradient(90deg, var(--title-gradient-start), var(--title-gradient-end));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
     display: inline-block;
     position: relative;
     transition: all 0.2s ease;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
     font-weight: 500;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
 }
 
 .site-title a:hover {
     transform: translateY(-1px);
-    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
 }
 
-/* Fallback for browsers that don't support background-clip */
-@supports not (background-clip: text) {
+.site-title a:focus {
+    outline-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Progressive enhancement for gradient text */
+@supports (background-clip: text) or (-webkit-background-clip: text) {
     .site-title a {
-        color: white;
-        background: none;
+        background: linear-gradient(90deg, var(--title-gradient-start), var(--title-gradient-end));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+    
+    .site-title a:hover {
+        text-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
     }
 }
 
@@ -141,6 +176,11 @@ nav a:hover, nav a:focus {
     color: white;
     background-color: rgba(255, 255, 255, 0.1);
     border-bottom: 3px solid rgba(255, 255, 255, 0.5);
+}
+
+nav a:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.8);
+    outline-offset: 2px;
 }
 
 /* Active navigation item */
@@ -213,6 +253,12 @@ a:hover {
     color: var(--accent-hover);
 }
 
+a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    color: var(--accent-hover);
+}
+
 /* Metro style button */
 .metro-button {
     display: inline-block;
@@ -229,6 +275,12 @@ a:hover {
 }
 
 .metro-button:hover {
+    background-color: var(--accent-hover);
+}
+
+.metro-button:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     background-color: var(--accent-hover);
 }
 
@@ -274,11 +326,19 @@ article:nth-child(5n+5) .article-header {
     background-color: var(--tile-color-5);
 }
 
-article h1 {
+article .article-header h1 {
     font-size: 24px;
     margin: 0;
     padding: 0;
     color: white;
+}
+
+/* Fix for article content h1 - should use normal text color */
+article .article-content h1 {
+    color: var(--text-color);
+    font-size: 24px;
+    margin: 0 0 1rem 0;
+    padding: 0;
 }
 
 /* Article content with clean padding */
@@ -320,6 +380,13 @@ article .meta {
 }
 
 .tags a:hover {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.tags a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     background-color: var(--accent-color);
     color: white;
 }
@@ -405,6 +472,15 @@ footer a:hover::after {
     transform: scaleX(1);
 }
 
+footer a:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.8);
+    outline-offset: 2px;
+}
+
+footer a:focus::after {
+    transform: scaleX(1);
+}
+
 /* Metro-style grid layout */
 .metro-grid {
     display: grid;
@@ -427,6 +503,12 @@ footer a:hover::after {
 }
 
 .metro-tile:hover {
+    background-color: var(--accent-hover);
+}
+
+.metro-tile:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     background-color: var(--accent-hover);
 }
 
@@ -478,6 +560,12 @@ footer a:hover::after {
 }
 
 .pagination a:hover {
+    background-color: var(--accent-hover);
+}
+
+.pagination a:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
     background-color: var(--accent-hover);
 }
 
