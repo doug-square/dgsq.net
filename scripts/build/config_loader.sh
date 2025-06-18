@@ -46,6 +46,10 @@ ENABLE_AUTHOR_PAGES="${ENABLE_AUTHOR_PAGES:-true}" # Generate author index pages
 ENABLE_AUTHOR_RSS="${ENABLE_AUTHOR_RSS:-false}" # Generate RSS feed for each author
 SHOW_AUTHORS_MENU_THRESHOLD="${SHOW_AUTHORS_MENU_THRESHOLD:-2}" # Minimum authors to show menu
 
+# Related Posts Configuration Defaults
+ENABLE_RELATED_POSTS="${ENABLE_RELATED_POSTS:-true}" # Enable or disable related posts feature
+RELATED_POSTS_COUNT="${RELATED_POSTS_COUNT:-3}" # Number of related posts to show
+
 # --- Backup Directory --- Added ---
 BACKUP_DIR="${BACKUP_DIR:-backup}" # Default backup location
 
@@ -214,6 +218,7 @@ BSSG_CONFIG_VARS_ARRAY=(
     BACKUP_DIR CACHE_DIR 
     DEPLOY_AFTER_BUILD DEPLOY_SCRIPT 
     ARCHIVES_LIST_ALL_POSTS
+    ENABLE_RELATED_POSTS RELATED_POSTS_COUNT
     # Add any other custom config variables here if needed
     BSSG_SERVER_PORT_DEFAULT BSSG_SERVER_HOST_DEFAULT # Server defaults
 )
@@ -266,6 +271,8 @@ export CACHE_DIR
 export DEPLOY_AFTER_BUILD
 export DEPLOY_SCRIPT 
 export ARCHIVES_LIST_ALL_POSTS
+export ENABLE_RELATED_POSTS
+export RELATED_POSTS_COUNT
 
 # Server defaults export
 export BSSG_SERVER_PORT_DEFAULT

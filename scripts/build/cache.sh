@@ -184,6 +184,12 @@ clean_stale_cache() {
         # Also remove tag and archive pages to force their regeneration
         find "${OUTPUT_DIR:-output}/tags" -name "*.html" -type f -delete 2>/dev/null || true
         find "${OUTPUT_DIR:-output}/archives" -name "*.html" -type f -delete 2>/dev/null || true
+        
+        # Clean related posts cache when posts are removed
+        if [ -d "${CACHE_DIR}/related_posts" ]; then
+            echo -e "${YELLOW}Cleaning related posts cache due to post removal...${NC}"
+            rm -rf "${CACHE_DIR}/related_posts"
+        fi
     fi
 
     echo -e "${GREEN}Cache cleaned!${NC}"

@@ -34,6 +34,7 @@
 - Admin interface for managing posts and scheduling publications (planned for future release)
 - Standalone post editor with modern Ghost-like interface for visual content creation
 - Creates tag index pages
+- Related Posts: Automatically suggests related posts based on shared tags at the end of each post
 - Author index pages with conditional navigation menu
 - Archives by year and month for chronological browsing
 - Dynamic menu generation based on available pages
@@ -721,6 +722,10 @@ RSS_ITEM_LIMIT=15 # Number of items to include in the RSS feed.
 RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". If set to "true", the full post content will be included in the RSS feed description instead of the excerpt. Useful for readers that consume entire posts via RSS.
 ENABLE_TAG_RSS=true # Options: "true", "false". If set to "true" (default), an additional RSS feed will be generated for each tag at `output/tags/<tag-slug>/rss.xml`.
 
+# Related Posts configuration
+ENABLE_RELATED_POSTS=true # Options: "true", "false". If set to "true" (default), related posts based on shared tags will be shown at the end of each post.
+RELATED_POSTS_COUNT=3 # Number of related posts to display (default: 3, recommended maximum: 5).
+
 # Deployment configuration
 DEPLOY_AFTER_BUILD="false" # Options: "true", "false". Automatically deploy after a successful build.
 DEPLOY_SCRIPT=""           # Path to the deployment script to execute if DEPLOY_AFTER_BUILD is true.
@@ -1132,6 +1137,10 @@ URL_SLUG_FORMAT="Year/Month/Day/slug"  # Format for post URLs
 RSS_ITEM_LIMIT=15 # Number of items to include in the RSS feed.
 RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". If set to "true", the full post content will be included in the RSS feed description instead of the excerpt. Useful for readers that consume entire posts via RSS.
 ENABLE_TAG_RSS=true # Options: "true", "false". If set to "true" (default), an additional RSS feed will be generated for each tag at `output/tags/<tag-slug>/rss.xml`.
+
+# Related Posts configuration
+ENABLE_RELATED_POSTS=true # Options: "true", "false". If set to "true" (default), related posts based on shared tags will be shown at the end of each post.
+RELATED_POSTS_COUNT=3 # Number of related posts to display (default: 3, recommended maximum: 5).
 
 # Multi-author configuration
 ENABLE_AUTHOR_PAGES=false # Options: "true", "false". If set to "true", author index pages will be generated.

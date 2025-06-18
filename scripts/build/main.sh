@@ -299,6 +299,15 @@ if [ "${HAS_PARALLEL:-false}" = true ]; then
     echo "Core parallel exports complete."
 fi
 
+# --- Related Posts Cache Invalidation --- START ---
+# This will be handled during post processing for better timing
+RELATED_POSTS_INVALIDATED_LIST=""
+if [ "${ENABLE_RELATED_POSTS:-true}" = true ]; then
+    # Export the variable for use by generate_posts.sh
+    export RELATED_POSTS_INVALIDATED_LIST
+fi
+# --- Related Posts Cache Invalidation --- END ---
+
 # --- Generate Content HTML ---
 # Source and run Post Generator
 # shellcheck source=generate_posts.sh
@@ -426,6 +435,11 @@ rm -f "${CACHE_DIR:-.bssg_cache}/archive_index_prev.txt"
 
 # Remove the frontmatter changes marker if it exists
 rm -f "${CACHE_DIR:-.bssg_cache}/frontmatter_changes_marker"
+
+# Clean up related posts temporary files to prevent unnecessary cache invalidation on next build
+rm -f "${CACHE_DIR:-.bssg_cache}/modified_tags.list"
+rm -f "${CACHE_DIR:-.bssg_cache}/modified_authors.list"
+rm -f "${CACHE_DIR:-.bssg_cache}/related_posts_invalidated.list"
 
 # --- Final Cleanup --- END ---
 

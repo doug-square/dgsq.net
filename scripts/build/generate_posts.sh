@@ -11,6 +11,8 @@ source "$(dirname "$0")/utils.sh" || { echo >&2 "Error: Failed to source utils.s
 source "$(dirname "$0")/content.sh" || { echo >&2 "Error: Failed to source content.sh from generate_posts.sh"; exit 1; }
 # shellcheck source=cache.sh disable=SC1091
 source "$(dirname "$0")/cache.sh" || { echo >&2 "Error: Failed to source cache.sh from generate_posts.sh"; exit 1; } # For file_needs_rebuild checks etc.
+# shellcheck source=related_posts.sh disable=SC1091
+source "$(dirname "$0")/related_posts.sh" || { echo >&2 "Error: Failed to source related_posts.sh from generate_posts.sh"; exit 1; } # For related posts functionality
 
 # --- Post Generation Functions --- START ---
 
@@ -295,15 +297,15 @@ convert_markdown() {
     post_meta_reading_time=$(printf "${MSG_READING_TIME_TEMPLATE:-%d min read}" "$reading_time")
     local display_author_name="${author_name:-${AUTHOR_NAME:-Anonymous}}"
     local post_meta="<div class=\"page-meta\">"
-    post_meta+="<p style=\"margin: 0 0 0.5em 0; font-size: 0.9em; color: #666;\">"
-    post_meta+="${MSG_PUBLISHED_ON:-Published on}: <time datetime=\"$date\" style=\"font-weight: 500;\">$formatted_date</time> ${MSG_BY:-by} <strong style=\"color: #333;\">$display_author_name</strong>"
+    post_meta+="<p class=\"meta\">"
+    post_meta+="${MSG_PUBLISHED_ON:-Published on}: <time datetime=\"$date\">$formatted_date</time> ${MSG_BY:-by} <strong>$display_author_name</strong>"
     post_meta+="</p>"
     if [ "$formatted_date" != "$formatted_lastmod" ]; then
-        post_meta+="<p style=\"margin: 0; font-size: 0.85em; color: #888; font-style: italic;\">"
+        post_meta+="<p class=\"meta reading-time\">"
         post_meta+="${MSG_UPDATED_ON:-Updated on}: <time datetime=\"$lastmod\">$formatted_lastmod</time> &bull; $post_meta_reading_time"
         post_meta+="</p>"
     else
-        post_meta+="<p style=\"margin: 0; font-size: 0.85em; color: #888; font-style: italic;\">$post_meta_reading_time</p>"
+        post_meta+="<p class=\"meta reading-time\">$post_meta_reading_time</p>"
     fi
     post_meta+="</div>"
     
@@ -314,9 +316,27 @@ convert_markdown() {
         image_html="<div class=\"featured-image\"><img src=\"$(fix_url "$image")\" alt=\"$alt_text\"><div class=\"image-caption\">${image_caption:-$title}</div></div>"
     fi
     
+    # Generate related posts if enabled and tags exist
+    local related_posts_html=""
+    if [ "${ENABLE_RELATED_POSTS:-true}" = true ] && [ -n "$tags" ]; then
+        echo -e "${BLUE}DEBUG: Generating related posts for $slug with tags: $tags${NC}"
+        related_posts_html=$(generate_related_posts "$slug" "$tags" "$date" "${RELATED_POSTS_COUNT:-3}")
+    else
+        echo -e "${BLUE}DEBUG: Skipping related posts for $slug - ENABLE_RELATED_POSTS=${ENABLE_RELATED_POSTS:-true}, tags=$tags${NC}"
+    fi
+    
     # Construct article body
     local final_html="${header_content}"
-    final_html+=$(printf '<article class="post">\n  <h1>%s</h1>\n%s\n%s\n%s\n%s\n</article>\n' "$title" "$post_meta" "$image_html" "$html_content" "$tags_html")
+    final_html+='<article class="post">'$'\n'
+    final_html+="  <h1>$title</h1>"$'\n'
+    final_html+="$post_meta"$'\n'
+    final_html+="$image_html"$'\n'
+    final_html+="$html_content"$'\n'
+    final_html+="$tags_html"$'\n'
+    if [ -n "$related_posts_html" ]; then
+        final_html+="$related_posts_html"$'\n'
+    fi
+    final_html+='</article>'$'\n'
 
     # Replace placeholders in footer content
     local current_year=$(date +'%Y')
@@ -361,37 +381,190 @@ process_all_markdown_files() {
     fi
     echo -e "Checking ${GREEN}$total_file_count${NC} potential posts listed in index."
 
-    # --- Start Change: Clear previous modified tags and authors lists ---
-    echo "Clearing previous modified tags list: $modified_tags_list" >&2 # Debug message
-    echo "Clearing previous modified authors list: $modified_authors_list" >&2 # Debug message
-    rm -f "$modified_tags_list"
-    rm -f "$modified_authors_list"
-    touch "$modified_tags_list" # Ensure file exists even if empty
-    touch "$modified_authors_list" # Ensure file exists even if empty
-    # --- End Change ---
+    # --- OPTIMIZATION: Quick check if any posts need rebuilding ---
+    local needs_pass1=false
+    local posts_needing_rebuild=0
+
+    # Only do expensive Pass 1 if related posts are enabled AND posts might need rebuilding
+    if [ "${ENABLE_RELATED_POSTS:-true}" = true ]; then
+        echo -e "${BLUE}DEBUG: Related posts enabled, starting quick scan...${NC}"
+        # Quick scan to see if ANY posts need rebuilding before doing expensive Pass 1
+        echo -e "${YELLOW}Quick scan: Checking if any posts need rebuilding...${NC}"
+        
+        while IFS= read -r line; do
+            local file filename title date lastmod tags slug image image_caption description author_name author_email
+            IFS='|' read -r file filename title date lastmod tags slug image image_caption description author_name author_email <<< "$line"
+
+            # Basic check if it looks like a post
+            if [ -z "$date" ] || [[ "$file" != "$SRC_DIR"* ]]; then
+                continue
+            fi
+
+            # Calculate expected output path
+            local year month day
+            if [[ "$date" =~ ^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2}) ]]; then
+                year="${BASH_REMATCH[1]}"
+                month=$(printf "%02d" "$((10#${BASH_REMATCH[2]}))")
+                day=$(printf "%02d" "$((10#${BASH_REMATCH[3]}))")
+            else
+                year=$(date +%Y); month=$(date +%m); day=$(date +%d)
+            fi
+            local url_path="${URL_SLUG_FORMAT:-Year/Month/Day/slug}"
+            url_path="${url_path//Year/$year}"; url_path="${url_path//Month/$month}";
+            url_path="${url_path//Day/$day}"; url_path="${url_path//slug/$slug}"
+            local output_html_file="${OUTPUT_DIR:-output}/$url_path/index.html"
+
+            # Quick rebuild check
+            common_rebuild_check "$output_html_file"
+            local common_result=$?
+            local needs_rebuild=false
+
+            if [ $common_result -eq 0 ]; then
+                needs_rebuild=true
+            else
+                local input_time=$(get_file_mtime "$file")
+                local output_time=$(get_file_mtime "$output_html_file")
+                if (( input_time > output_time )); then
+                    needs_rebuild=true
+                fi
+            fi
+
+            if $needs_rebuild; then
+                posts_needing_rebuild=$((posts_needing_rebuild + 1))
+                needs_pass1=true
+                # Early exit optimization: if we find posts needing rebuild, we need Pass 1
+                break
+            fi
+        done < "$file_index"
+        
+        echo -e "Quick scan result: ${GREEN}$posts_needing_rebuild${NC} posts need rebuilding"
+    fi
+
+    # --- PASS 1: Only run if needed (posts need rebuilding AND related posts enabled) ---
+    if [ "$needs_pass1" = true ] && [ "${ENABLE_RELATED_POSTS:-true}" = true ]; then
+        echo -e "${BLUE}DEBUG: Both needs_pass1=true and ENABLE_RELATED_POSTS=true, running Pass 1...${NC}"
+        echo -e "${YELLOW}Pass 1: Identifying modified tags for related posts cache invalidation...${NC}"
+        
+        # Clear previous modified tags lists
+        rm -f "$modified_tags_list"
+        rm -f "$modified_authors_list"
+        touch "$modified_tags_list" # Ensure file exists even if empty
+        touch "$modified_authors_list" # Ensure file exists even if empty
+        
+        while IFS= read -r line; do
+            local file filename title date lastmod tags slug image image_caption description author_name author_email
+            IFS='|' read -r file filename title date lastmod tags slug image image_caption description author_name author_email <<< "$line"
+
+            # Basic check if it looks like a post
+            if [ -z "$date" ] || [[ "$file" != "$SRC_DIR"* ]]; then
+                continue
+            fi
+
+            # Calculate expected output path
+            local year month day
+            if [[ "$date" =~ ^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2}) ]]; then
+                year="${BASH_REMATCH[1]}"
+                month=$(printf "%02d" "$((10#${BASH_REMATCH[2]}))")
+                day=$(printf "%02d" "$((10#${BASH_REMATCH[3]}))")
+            else
+                year=$(date +%Y); month=$(date +%m); day=$(date +%d)
+            fi
+            local url_path="${URL_SLUG_FORMAT:-Year/Month/Day/slug}"
+            url_path="${url_path//Year/$year}"; url_path="${url_path//Month/$month}";
+            url_path="${url_path//Day/$day}"; url_path="${url_path//slug/$slug}"
+            local output_html_file="${OUTPUT_DIR:-output}/$url_path/index.html"
+
+            # Perform the rebuild check here
+            common_rebuild_check "$output_html_file"
+            local common_result=$?
+            local needs_rebuild=false
+
+            if [ $common_result -eq 0 ]; then
+                needs_rebuild=true # Common checks failed (config changed, template newer, output missing)
+            else # common_result is 2 (output exists and newer than templates/locale)
+                local input_time=$(get_file_mtime "$file")
+                local output_time=$(get_file_mtime "$output_html_file")
+                if (( input_time > output_time )); then
+                    needs_rebuild=true # Input file is newer
+                fi
+            fi
+
+            # If post needs rebuilding, add its tags to the modified list
+            if $needs_rebuild; then
+                local new_tags="$tags"
+                local old_tags=""
+                # Try to get old tags from the previous index snapshot
+                if [ -f "$file_index_prev" ]; then
+                    old_tags=$(grep "^${file}|" "$file_index_prev" | cut -d'|' -f6)
+                fi
+                
+                # Combine old and new tags
+                local combined_tags="${old_tags},${new_tags}"
+                
+                if [ -n "$combined_tags" ]; then
+                    # Split by comma, trim, filter empty, sort unique, and add each tag on a new line
+                    echo "$combined_tags" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep . | sort -u >> "$modified_tags_list"
+                fi
+
+                # Track modified authors (similar logic to tags)
+                local new_author="$author_name"
+                local old_author=""
+                if [ -f "$file_index_prev" ]; then
+                    old_author=$(grep "^${file}|" "$file_index_prev" | cut -d'|' -f11)
+                fi
+                
+                # Add both old and new authors to the modified list (if they exist)
+                if [ -n "$old_author" ] && [ "$old_author" != "" ]; then
+                    echo "$old_author" >> "$modified_authors_list"
+                fi
+                if [ -n "$new_author" ] && [ "$new_author" != "" ]; then
+                    echo "$new_author" >> "$modified_authors_list"
+                fi
+            fi
+        done < "$file_index"
+
+        # Unique sort the modified tags and authors lists
+        if [ -f "$modified_tags_list" ]; then
+            local temp_tags_list=$(mktemp)
+            sort -u "$modified_tags_list" > "$temp_tags_list"
+            mv "$temp_tags_list" "$modified_tags_list"
+        fi
+        
+        if [ -f "$modified_authors_list" ]; then
+            local temp_authors_list=$(mktemp)
+            sort -u "$modified_authors_list" > "$temp_authors_list"
+            mv "$temp_authors_list" "$modified_authors_list"
+        fi
+
+        # Invalidate related posts cache if there are modified tags
+        if [ -f "$modified_tags_list" ] && [ -s "$modified_tags_list" ]; then
+            # Source related posts functions if not already loaded
+            if ! command -v invalidate_related_posts_cache_for_tags > /dev/null 2>&1; then
+                # shellcheck source=related_posts.sh disable=SC1091
+                source "$(dirname "$0")/related_posts.sh" || { echo -e "${RED}Error: Failed to source related_posts.sh${NC}"; exit 1; }
+            fi
+            
+            # Create a temporary file to capture the list of invalidated posts
+            RELATED_POSTS_INVALIDATED_LIST="${CACHE_DIR:-.bssg_cache}/related_posts_invalidated.list"
+            > "$RELATED_POSTS_INVALIDATED_LIST"  # Create empty file
+            
+            # Call the invalidation function with the output file
+            invalidate_related_posts_cache_for_tags "$modified_tags_list" "$RELATED_POSTS_INVALIDATED_LIST"
+            
+            # Export the list for use in pass 2
+            export RELATED_POSTS_INVALIDATED_LIST
+        fi
+    else
+        echo -e "${BLUE}DEBUG: Pass 1 skipped - needs_pass1=$needs_pass1, ENABLE_RELATED_POSTS=${ENABLE_RELATED_POSTS:-true}${NC}"
+    fi
+
+    # --- PASS 2: Process posts with proper rebuild flags ---
+    echo -e "${YELLOW}Pass 2: Processing posts...${NC}"
 
     # Pre-filter files that need rebuilding
     local files_to_process_list=()
     local files_to_process_count=0
     local skipped_count=0
-
-    # Get template/locale mtimes once (requires utils.sh and cache.sh to be sourced)
-    # IMPORTANT: Assumes get_file_mtime, TEMPLATES_DIR, THEME, LOCALE_DIR, SITE_LANG are available
-    local template_dir="${TEMPLATES_DIR:-templates}"
-    if [ -d "$template_dir/${THEME:-default}" ]; then
-        template_dir="$template_dir/${THEME:-default}"
-    fi
-    local header_template="$template_dir/header.html"
-    local footer_template="$template_dir/footer.html"
-    local active_locale_file=""
-    if [ -f "${LOCALE_DIR:-locales}/${SITE_LANG:-en}.sh" ]; then
-        active_locale_file="${LOCALE_DIR:-locales}/${SITE_LANG:-en}.sh"
-    elif [ -f "${LOCALE_DIR:-locales}/en.sh" ]; then
-        active_locale_file="${LOCALE_DIR:-locales}/en.sh"
-    fi
-    local header_time=$(get_file_mtime "$header_template")
-    local footer_time=$(get_file_mtime "$footer_template")
-    local locale_time=$(get_file_mtime "$active_locale_file")
 
     while IFS= read -r line; do
         local file filename title date lastmod tags slug image image_caption description author_name author_email
@@ -419,8 +592,6 @@ process_all_markdown_files() {
         local output_html_file="${OUTPUT_DIR:-output}/$url_path/index.html"
 
         # Perform the rebuild check here
-        # IMPORTANT: Requires common_rebuild_check, get_file_mtime to be available
-        #            Requires BSSG_CONFIG_CHANGED_STATUS to be exported by main.sh
         common_rebuild_check "$output_html_file"
         local common_result=$?
         local needs_rebuild=false
@@ -435,72 +606,23 @@ process_all_markdown_files() {
             fi
         fi
 
+        # Check if this post needs rebuilding due to related posts cache invalidation
+        if [ "$needs_rebuild" = false ] && [ -n "${RELATED_POSTS_INVALIDATED_LIST:-}" ] && [ -f "$RELATED_POSTS_INVALIDATED_LIST" ]; then
+            if grep -Fxq "$slug" "$RELATED_POSTS_INVALIDATED_LIST" 2>/dev/null; then
+                needs_rebuild=true # Related posts cache was invalidated
+                echo -e "Rebuilding ${GREEN}$(basename "$file")${NC} due to related posts cache invalidation"
+            fi
+        fi
+
         if $needs_rebuild; then
             files_to_process_list+=("$line")
             files_to_process_count=$((files_to_process_count + 1))
-            # --- Start Change: Track ALL modified tags and authors (old and new) ---
-            # 'tags' variable holds the NEW tags from the current file_index line
-            local new_tags="$tags"
-            local old_tags=""
-            # Try to get old tags from the previous index snapshot
-            if [ -f "$file_index_prev" ]; then
-                # Grep for the exact file path ($file), assuming it's the first field
-                # Extract the 6th field (tags)
-                old_tags=$(grep "^${file}|" "$file_index_prev" | cut -d'|' -f6)
-            fi
-            
-            # Combine old and new tags
-            local combined_tags="${old_tags},${new_tags}"
-            
-            #echo "Tracking combined tags for modified file: $file -> Old: '$old_tags' New: '$new_tags' Combined: '$combined_tags'" >&2 # Debug message
-
-            if [ -n "$combined_tags" ]; then
-                # Split by comma, trim, filter empty, sort unique, and add each tag on a new line
-                echo "$combined_tags" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep . | sort -u >> "$modified_tags_list"
-            fi
-
-            # Track modified authors (similar logic to tags)
-            local new_author="$author_name"
-            local old_author=""
-            # Try to get old author from the previous index snapshot
-            if [ -f "$file_index_prev" ]; then
-                # Grep for the exact file path ($file), assuming it's the first field
-                # Extract the 11th field (author_name)
-                old_author=$(grep "^${file}|" "$file_index_prev" | cut -d'|' -f11)
-            fi
-            
-            # Add both old and new authors to the modified list (if they exist)
-            if [ -n "$old_author" ] && [ "$old_author" != "" ]; then
-                echo "$old_author" >> "$modified_authors_list"
-            fi
-            if [ -n "$new_author" ] && [ "$new_author" != "" ]; then
-                echo "$new_author" >> "$modified_authors_list"
-            fi
-            # --- End Change ---
         else
             # Only print skip message if not rebuilding
             echo -e "Skipping unchanged file: ${YELLOW}$(basename "$file")${NC}"
             skipped_count=$((skipped_count + 1))
         fi
     done < "$file_index"
-
-    # --- Start Change: Unique sort the modified tags and authors lists (redundant now but safe) ---
-    if [ -f "$modified_tags_list" ]; then
-        echo "Sorting and making modified tags list unique: $modified_tags_list" >&2 # Debug message
-        local temp_tags_list=$(mktemp)
-        # Sort unique again just in case duplicates were added somehow
-        sort -u "$modified_tags_list" > "$temp_tags_list"
-        mv "$temp_tags_list" "$modified_tags_list"
-    fi
-    
-    if [ -f "$modified_authors_list" ]; then
-        echo "Sorting and making modified authors list unique: $modified_authors_list" >&2 # Debug message
-        local temp_authors_list=$(mktemp)
-        # Sort unique to remove duplicates
-        sort -u "$modified_authors_list" > "$temp_authors_list"
-        mv "$temp_authors_list" "$modified_authors_list"
-    fi
-    # --- End Change ---
 
     # Check if any files need processing
     if [ $files_to_process_count -eq 0 ]; then
@@ -512,7 +634,6 @@ process_all_markdown_files() {
     echo -e "Found ${GREEN}$files_to_process_count${NC} posts needing processing out of $total_file_count (Skipped: $skipped_count)."
 
     # Define a function for processing a single file line from the *filtered* list
-    # Note: This function now assumes the file *needs* processing.
     process_single_file_for_rebuild() {
         local line="$1"
 
@@ -564,6 +685,7 @@ process_all_markdown_files() {
         export SITE_TITLE SITE_DESCRIPTION AUTHOR_NAME MARKDOWN_PROCESSOR MARKDOWN_PL_PATH DATE_FORMAT TIMEZONE SHOW_TIMEZONE
         export MSG_PUBLISHED_ON MSG_UPDATED_ON MSG_READING_TIME_TEMPLATE # Export needed locale messages
         export CONFIG_HASH_FILE BSSG_CONFIG_CHANGED_STATUS # Export status for common_rebuild_check
+        export ENABLE_RELATED_POSTS RELATED_POSTS_COUNT # Export related posts configuration
 
         # Process filtered lines in parallel
         printf "%s\n" "${files_to_process_list[@]}" | parallel --jobs "$cores" --will-cite process_single_file_for_rebuild {} || { echo -e "${RED}Parallel post processing failed.${NC}"; exit 1; }

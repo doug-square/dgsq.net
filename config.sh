@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # BSSG - Configuration File
-# Version 0.30
+# Version 0.31
 # Contains all configurable parameters for the static site generator
 # Developed by Stefano Marinelli (stefano@dragas.it)
 #
@@ -64,6 +64,10 @@ MARKDOWN_PROCESSOR="commonmark" # Options: "pandoc", "commonmark", or "markdown.
 
 # Language Configuration
 SITE_LANG="en"  # Default language code (e.g., en, es, fr). See locales/ directory.
+
+# Related Posts Configuration
+ENABLE_RELATED_POSTS=true # Enable or disable related posts feature
+RELATED_POSTS_COUNT=3 # Number of related posts to show (default: 3)
 
 # Server Configuration (for 'bssg.sh server' command)
 # These are the defaults used by 'bssg.sh server' if not overridden by command-line options.
