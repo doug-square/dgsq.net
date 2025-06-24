@@ -85,10 +85,17 @@ if [ -f "$UTILS_SCRIPT" ]; then
 else
     # Define basic color functions as fallback if utils.sh is missing
     # Needed for messages printed *before* utils.sh is sourced, or if it fails.
-    RED='\033[0;31m'
-    GREEN='\033[0;32m'
-    YELLOW='\033[0;33m'
-    NC='\033[0m' # No Color
+    if [[ -t 1 ]] && [[ -z $NO_COLOR ]]; then
+        RED='\033[0;31m'
+        GREEN='\033[0;32m'
+        YELLOW='\033[0;33m'
+        NC='\033[0m' # No Color
+    else
+        RED=""
+        GREEN=""
+        YELLOW=""
+        NC=""
+    fi
     print_error() { echo -e "${RED}Error: $1${NC}" >&2; }
     print_warning() { echo -e "${YELLOW}Warning: $1${NC}"; }
     print_success() { echo -e "${GREEN}$1${NC}"; }
