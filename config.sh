@@ -27,6 +27,7 @@ CACHE_DIR=".bssg_cache" # Default cache directory location (relative to BSSG roo
 CLEAN_OUTPUT=false # If true, BSSG will always perform a full rebuild
 REBUILD_AFTER_POST=true # Build site automatically after creating a new post (scripts/post.sh)
 REBUILD_AFTER_EDIT=true # Build site automatically after editing a post (scripts/edit.sh)
+PRECOMPRESS_ASSETS="false" # Options: "true", "false". If true, compress text assets (HTML, CSS, XML, JS) with gzip during build.
 
 # Customization
 CUSTOM_CSS="" # Optional: Path to custom CSS file relative to output root (e.g., "/css/custom.css"). File should be placed in STATIC_DIR.

@@ -443,6 +443,46 @@ rm -f "${CACHE_DIR:-.bssg_cache}/related_posts_invalidated.list"
 
 # --- Final Cleanup --- END ---
 
+# --- Pre-compress Assets --- START ---
+precompress_assets() {
+    # Check if pre-compression is enabled in the config.
+    if [ ! "${PRECOMPRESS_ASSETS:-false}" = "true" ]; then
+        return
+    fi
+
+    echo "Starting pre-compression of assets..."
+
+    # 1. Cleanup: Remove any .gz file that does not have a corresponding original file.
+    # This handles cases where original files were deleted.
+    # Using -print0 and read -d '' to safely handle filenames with spaces or special chars.
+    find "${OUTPUT_DIR}" -type f -name "*.gz" -print0 | while IFS= read -r -d '' gzfile; do
+        original_file="${gzfile%.gz}"
+        if [ ! -f "$original_file" ]; then
+            echo "Removing stale compressed file: $gzfile"
+            rm -- "$gzfile"
+        fi
+    done
+
+    # 2. Compression: Compress text files if they are new or have been updated.
+    # We target .html, .css, .xml and .js files.
+    find "${OUTPUT_DIR}" -type f \( -name "*.html" -o -name "*.css" -o -name "*.xml" -o -name "*.js" \) -print0 | while IFS= read -r -d '' file; do
+        gzfile="${file}.gz"
+        # Compress if the .gz file doesn't exist, or if the original file is newer.
+        if [ ! -f "$gzfile" ] || [ "$file" -nt "$gzfile" ]; then
+            echo "Compressing: $file"
+            # Use gzip with best compression (-9) and write to stdout, then redirect.
+            # This is a robust way to handle output and overwriting.
+            gzip -c -9 -- "$file" > "$gzfile"
+        fi
+    done
+
+    echo "Asset pre-compression finished."
+}
+
+# Execute the asset compression.
+precompress_assets
+# --- Pre-compress Assets --- END ---
+
 # --- Deployment --- START ---
 deploy_now="false"
 if [[ "${CMD_DEPLOY_OVERRIDE:-unset}" == "true" ]]; then # Use default value for safety

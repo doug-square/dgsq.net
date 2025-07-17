@@ -226,6 +226,7 @@ BSSG_CONFIG_VARS_ARRAY=(
     DEPLOY_AFTER_BUILD DEPLOY_SCRIPT 
     ARCHIVES_LIST_ALL_POSTS
     ENABLE_RELATED_POSTS RELATED_POSTS_COUNT
+    PRECOMPRESS_ASSETS
     # Add any other custom config variables here if needed
     BSSG_SERVER_PORT_DEFAULT BSSG_SERVER_HOST_DEFAULT # Server defaults
 )
@@ -274,12 +275,13 @@ export ENABLE_AUTHOR_PAGES
 export ENABLE_AUTHOR_RSS
 export SHOW_AUTHORS_MENU_THRESHOLD
 export BACKUP_DIR
-export CACHE_DIR 
+export CACHE_DIR
 export DEPLOY_AFTER_BUILD
-export DEPLOY_SCRIPT 
+export DEPLOY_SCRIPT
 export ARCHIVES_LIST_ALL_POSTS
 export ENABLE_RELATED_POSTS
 export RELATED_POSTS_COUNT
+export PRECOMPRESS_ASSETS
 
 # Server defaults export
 export BSSG_SERVER_PORT_DEFAULT
@@ -307,3 +309,8 @@ export MSG_MONTH_09 MSG_MONTH_10 MSG_MONTH_11 MSG_MONTH_12
 # Fallback using compgen (use with caution, might export unintended vars)
 # compgen -v MSG_ | while read -r var; do export "$var"; done
 # --- Export All Variables --- END --- 
+
+# --- Final Path Adjustments (after all sourcing) --- START ---
+# Ensure relevant directory paths are exported if not already absolute.
+# ... existing code ...
+# --- Final Path Adjustments (after all sourcing) --- END --- 

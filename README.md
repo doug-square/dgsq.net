@@ -40,6 +40,7 @@
 - Dynamic menu generation based on available pages
 - Support for primary and secondary pages with automatic menu organization
 - Generates sitemap.xml and RSS feed with timezone support
+- Asset pre-compression: Can automatically create gzipped versions of text-based files (`.html`, `.css`, `.xml`, `.js`) during the build for servers that support serving pre-compressed content.
 - Clean design
 - No JavaScript required (except for admin interface)
 - Works well without images
@@ -691,44 +692,77 @@ The `config.sh` file contains the default configuration settings for the site ge
 
 ```bash
 # Directory configuration
-SRC_DIR="src"            # Source directory for posts
-PAGES_DIR="pages"        # Source directory for pages
-DRAFTS_DIR="drafts"      # Source directory for drafts (posts and pages)
-OUTPUT_DIR="output"        # Where the generated site is placed
+SRC_DIR="src"
+PAGES_DIR="pages"  # Directory for static pages
+OUTPUT_DIR="output"
 TEMPLATES_DIR="templates"
 THEMES_DIR="themes"
 STATIC_DIR="static"
+DRAFTS_DIR="drafts" # Directory for drafts
 THEME="default"
+CACHE_DIR=".bssg_cache" # Default cache directory location (relative to BSSG root)
 
 # Build configuration
-CLEAN_OUTPUT=false
+CLEAN_OUTPUT=false # If true, BSSG will always perform a full rebuild
+REBUILD_AFTER_POST=true # Build site automatically after creating a new post (scripts/post.sh)
+REBUILD_AFTER_EDIT=true # Build site automatically after editing a post (scripts/edit.sh)
+PRECOMPRESS_ASSETS="false" # Options: "true", "false". If true, compress text assets (HTML, CSS, XML, JS) with gzip during build.
+
+# Customization
+CUSTOM_CSS="" # Optional: Path to custom CSS file relative to output root (e.g., "/css/custom.css"). File should be placed in STATIC_DIR.
 
 # Site information
-SITE_TITLE="My Journal"
-SITE_DESCRIPTION="A personal journal and introspective newspaper"
-SITE_URL="http://localhost"
+SITE_TITLE="My new BSSG site"
+SITE_DESCRIPTION="A complete SSG - written in bash"
+SITE_URL="http://localhost:8000"
 AUTHOR_NAME="Anonymous" 
 AUTHOR_EMAIL="anonymous@example.com"
 
 # Content configuration
 DATE_FORMAT="%Y-%m-%d %H:%M:%S %z"
-TIMEZONE="local"  # Options: "local", "GMT", or a specific timezone
-                  # Affects how dates are displayed in the generated site based on system interpretation.
-SHOW_TIMEZONE="false" # Options: "true", "false". Determines if the timezone offset (e.g., +0200) is shown in displayed dates.
+TIMEZONE="local"  # Options: "local", "GMT", or a specific timezone like "America/New_York"
+SHOW_TIMEZONE="false" # Options: "true", "false". Whether to display the timezone in rendered dates.
 POSTS_PER_PAGE=10
-ENABLE_ARCHIVES=true  # Enable or disable archives by year/month
-URL_SLUG_FORMAT="Year/Month/Day/slug"  # Format for post URLs
 RSS_ITEM_LIMIT=15 # Number of items to include in the RSS feed.
-RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". If set to "true", the full post content will be included in the RSS feed description instead of the excerpt. Useful for readers that consume entire posts via RSS.
-ENABLE_TAG_RSS=true # Options: "true", "false". If set to "true" (default), an additional RSS feed will be generated for each tag at `output/tags/<tag-slug>/rss.xml`.
+RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". Include full post content in RSS feed.
+RSS_FILENAME="rss.xml" # The filename for the main RSS feed (e.g., feed.xml, rss.xml)
+ENABLE_ARCHIVES=true  # Enable or disable archive pages
+ENABLE_AUTHOR_PAGES=false # Enable or disable author pages (default: false)
+ENABLE_AUTHOR_RSS=false # Enable or disable author-specific RSS feeds (default: false)
+SHOW_AUTHORS_MENU_THRESHOLD=2 # Minimum authors to show menu (default: 2)
+URL_SLUG_FORMAT="Year/Month/Day/slug" # Format for post URLs. Available: Year, Month, Day, slug
+ENABLE_TAG_RSS=true # Enable or disable tag-specific RSS feed generation (default: true)
 
-# Related Posts configuration
-ENABLE_RELATED_POSTS=true # Options: "true", "false". If set to "true" (default), related posts based on shared tags will be shown at the end of each post.
-RELATED_POSTS_COUNT=3 # Number of related posts to display (default: 3, recommended maximum: 5).
+# Archive Page Configuration
+ARCHIVES_LIST_ALL_POSTS="false" # Options: "true", "false". If true, list all posts on the main archive page.
+
+# Page configuration
+PAGE_URL_FORMAT="slug" # Format for page URLs. Available: slug, filename (without ext)
+
+# Markdown processing configuration
+MARKDOWN_PROCESSOR="commonmark" # Options: "pandoc", "commonmark", or "markdown.pl"
+
+# Language Configuration
+SITE_LANG="en"  # Default language code (e.g., en, es, fr). See locales/ directory.
+
+# Related Posts Configuration
+ENABLE_RELATED_POSTS=true # Enable or disable related posts feature
+RELATED_POSTS_COUNT=3 # Number of related posts to show (default: 3)
+
+# Server Configuration (for 'bssg.sh server' command)
+# These are the defaults used by 'bssg.sh server' if not overridden by command-line options.
+BSSG_SERVER_PORT_DEFAULT="8000"    # Default port for the local development server
+BSSG_SERVER_HOST_DEFAULT="localhost" # Default host for the local development server
 
 # Deployment configuration
 DEPLOY_AFTER_BUILD="false" # Options: "true", "false". Automatically deploy after a successful build.
 DEPLOY_SCRIPT=""           # Path to the deployment script to execute if DEPLOY_AFTER_BUILD is true.
+
+# Terminal colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color 
 ```
 
 #### Date Format Examples
@@ -895,6 +929,7 @@ BSSG includes a variety of themes to customize the look of your site. Themes are
 - `docs` - A clean, structured theme ideal for technical documentation with excellent code formatting and clear navigation
 - `longform` - Optimized for reading long articles with highly readable typography, contained text width, and minimal distractions
 - `reader-mode` - Simulates browser reader mode with almost total emphasis on text, sepia background, very readable serif font, and minimal graphic elements
+- `thoughtful` -  A warm, accessible, and performant theme for personal reflection blogs and thoughtful writing
 - `text-only` - A step beyond minimalism using browser defaults with clean base typography for readability and lightning-fast loading
 
 #### Special Themes
