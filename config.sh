@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # BSSG - Configuration File
-# Version 0.31
+# Version 0.32
 # Contains all configurable parameters for the static site generator
 # Developed by Stefano Marinelli (stefano@dragas.it)
 #
