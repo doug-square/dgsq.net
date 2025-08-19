@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark light">
+    <meta name="robots" content="noindex, nofollow, noai, noimageai">
+    <meta name="darkreader-lock">
+    <meta name="generator" content="my own :3">
+    <meta name="og:type" content="website">
+    <meta name="og:url" content="">
+    <meta name="og:title" content="Nyaaaaaaaa">
+    <meta name="og:site_name" content="lunahd dot neocities">
+    <meta name="og:description" content="Miku's website">
+    <meta name="description" content="Miku's website">
+    <title>dgsq</title>
+    <link rel="stylesheet" href="/style.css">
+    <!-- <link rel="icon" href="icon.png"> -->
+  </head>
+  <body>
+    <nav id="header">
+      <div id="nav-links">
+        <a href="/">home</a>
+        <a href="/posts">posts</a>
+      </div>
+    </nav>
+    <div id="main-container">
+      <div id="sidebar">
+        <div id="links-general">
+          <div class="sb-header">
+            <h2>links</h2>
+          </div>
+          <div class="sb-box">
+            <ul>
+              <li><a href="https://github.com/doug-square">github</a></li>
+              <li><a href="https://mastodon.social/@dgsq">mastodon</a></li>
+            </ul>
+            (If there's nothing there it's because I do too much of my work off the public radar)
+          </div>
+        </div>
+        <div id="contact">
+          <div class="sb-header">
+            <h2>contact</h2>
+          </div>
+          <div class="sb-box">
+            Maybe I'll add a full suite of options here eventually, but
+            for now, you can <a href="mailto:dgsq@dgsq.net">email me</a>.
+          </div>
+        </div>
+      </div>
+      <article id="content">
+<!-- LaTeX support -->
+<script id="MathJax-script" async
+          src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js">
+</script>
+
+<ul class="blog-title">
+    <li><h1>Computer Architects Can't Find the Average</h1></li>
+    <li></li>
+    <li><h4>March 30, 2025</h4>
+</ul>
+
+<p>Computer architects can't agree on a way to find the average.</p>
+
+<p>
+For years, academic practitioners in this field have been arguing about the appropriate way
+to summarize the average performance of their designs [1]. That is: given \(n\) workloads,
+if system \(A\) outperforms system \(B\) by \(S_1, S_2, \ldots, S_n\) on each, how much faster
+should you say system \(A\) is, on average? I think this argument is kind of pointless through.
+</p>
+
+<p>For the most part, people tend to use the arithmetic mean \(\left(\frac{1}{n} \sum_{i=1}^n S_i\right)\)
+or the geometric mean \(\left(\sqrt[n]{\prod_{i=1}^n S_i}\right)\). Henessey and Patterson's famous
+<i>Computer Architecture: A Quantitative Approach</i> advocates for the latter:</p>
+<blockquote>
+Using the geometric mean ensures two important properties:
+<ol type="1">
+    <li>The geometric mean of the ratios is the same as the ratio of the geometric means.</li>
+    <li>The ratio of the geometric means is equal to the geometric mean of the performance ratios, which implies that the choice of the reference computer is irrelevant.</li>
+</ol>
+
+Therefore the motivations to use the geometric mean are substantial, especially when we use performance ratios to make comparisons.
+</blockquote>
+
+<p>Other people disagree with H&P's reasoning, but I think it's just about as good as it gets.</p>
+
+<h2>All Means are Bad</h2>
+
+<p>
+Recently (well, over a year ago now), a <a href="https://ieeexplore.ieee.org/document/10419888">paper</a>
+appeared in <i>IEEE Computer Architecture Letters</i> with the title <i>R.I.P. Geomean Speedup Use Equal-Work
+(Or Equal-Time) Harmonic Mean Speedup Instead</i>. Its author, Eeckhout, argues that geomean is bad, and people
+should instead be using what he calls the <i>Equal-Work Harmonic Speedup</i> or the
+<i>Equal-Time Harmonic Speedup</i>. Eeckhout also presented this work at
+<a href="https://hpca-conf.org/2025/main-program/">HPCA 2025</a> as a part of the
+<i>Best of Computer Architecture Letters</i> session.
+</p>
+
+<p>
+The main thing that Eeckhout seems to dislike about the geometric mean is that it "lacks physical meaning."
+He claims that using one of his alternatives is better because they have physical meaning. One of the 
+alternatives that he proposes is the <i>Equal-Time Harmonic Speedup</i> (\(ETS\)), which is just the harmonic
+mean of the speedups observed on each workload.
+</p>
+
+$$ETS = \frac{n}{\sum_{i=1}^n \frac{1}{S_i}}$$
+
+<p>
+Why use the Harmonic Mean instead of the Geometric Mean? Well, if every workload takes the same amount of time
+to run on the baseline system, the ETS is equal to the total speedup observed when running each of those
+workloads sequentially [2]. Eeckhout says that this physical meaning provides us with a compelling reason to
+use something like this over the geometric mean.
+</p>
+
+
+<p>
+<b>But this physical meaning doesn't matter!</b> When I report a score for SPEC, I don't <i>really</i> care
+about how long it takes to run every single workload in that benchmark in a sequential fashion! It's not like
+I expect to run a suduko solver (`exchange2`), then immediately compile `gcc`, and then perform video compression
+(`x264`). I mean, I might run all of these at some point, but certainly not for the exact same amount of time [3].
+Although the harmonic mean has a clear physical meaning, it's not one that really matters for many benchmark suites.
+</p>
+
+<p>
+Admittedly, I don't <i>really</i> care about the geometric mean of these workloads either. I agree with Eeckhout
+when he says the geomean doesn't have a clear physical meaning. But it comes down to a choice between an average
+that doesn't have a clear physical meaning and one whose physical meaning isn't relevant in most situations.
+</p>
+
+<h2>So is there actually a good number to report?</h2>
+
+<p>
+Unless you actually know the precise mix of workloads being run in a real system, any number you report is going 
+to fail to accurately predict the effect of your design on that system. Benchmarks like SPEC are useful insofar as
+they show general performance patterns, but no matter how you cut it, a single number is always going to fail to
+provide a perfect comparison between machines when using a general-purpose benchmark suite.
+</p>
+
+<p>
+If you do know the particular applications that you care about, and you know their relative importance, then by
+all means, take their weighted average and you'll be set.
+</p>
+
+<p>
+Otherwise, you might as well just using the geomean. It's easy to compare, and everyone else is familiar with it. Use
+another mean at your own risk: they'll all just be wrong in different ways.
+</p>
+
+<h2>Why are people still talking about this?</h2>
+
+<p>
+I really don't know. Seems like this argument should be over by now.
+</p>
+
+<p>
+One of my former mentors once told me that he never looks at an academic paper's evaluation section. If the idea
+presented in the rest of the paper sounds reasonable, maybe he'll try to apply its innovations to the production
+design. If the idea sounds rediculous, or addresses a problem he's already solved in another way, then it's of
+no use, regardless of much speedup the authors might claim [4].
+</p>
+
+<p>
+There are other problems that contribute to the industry perspective of academic evaluations. But I share this
+anecdote just to say: academic computer architects should spend more time coming up with new, inherently interesting
+ideas, and less time talking about which method of averaging is the least meaningless.
+</p>
+
+<h2>Footnotes</h2>
+
+<p>
+[1]: This argument goes back at least as far at 1986 with the paper
+<a href="https://dl.acm.org/doi/pdf/10.1145/5666.5673"><i>How not to lie with statistics: The correct way to summarize benchmark results</i></a>.
+Eeckhout provides a good account of this history in <a href="https://ieeexplore.ieee.org/document/10419888">his paper</a>.
+</p>
+
+<p>
+[2]: Interestingly, even though we can assign a physical meaning to ETS, it can still provide non-intuitive
+results. For example, if machine \(A\) runs workload 1 twice as fast as machine \(B\) (\(S_1=2\)), but workload
+2 only half as fast (\(S_2 = 0.5\)), then computing the ETS of \(A\) over \(B\) yields 0.8 (meaning a slowdown
+overall). But by symmetry, the ETS of \(B\) over \(A\) is also 0.8. How can both machines be "slower" than the
+other? Because unlike the geometric mean, the reference machine does matter for ETS! We're assigning different
+weights to the workloads depending on our starting point!
+</p>
+
+<p>
+[3]: Personally, my machines have probably spent much more time running `x264` than compiling gcc or solving suduko. Thanks YouTube.
+</p>
+
+<p>
+[4]: There are other problems that contribute to this perception of academic evaluations, beyond the 
+relatively unimportant issue of averaging workload results. In particular, academic microarchitectural simulators
+are often inaccurate, and baseline systems are often poor comparison points.
+</p>
+
+      </article>
+    </div>
+    <br>
+    <div id="after">
+      I used to have a boring website made in Jekyll, but then I saw <a href="https://lunahd.neocities.org/">Miku's</a> and stole hers (<a href "https://github.com/doug-square/dgsq.net">source</a>).
+    </div>
+  </body>
+</html>
