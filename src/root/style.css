@@ -202,6 +202,9 @@ a:visited {
 .light-text {
   display: none;
 }
+.signoff {
+  padding-left: 1em;
+}
 
 @media (prefers-color-scheme: light) {
   :root { /* catppuccin latte */
@@ -221,3 +224,4 @@ a:visited {
     display: unset;
   }
 }
+

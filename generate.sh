@@ -24,5 +24,8 @@ do
     cat "$SRC/post.html"
   } >> "$OUT/$page_name"
 done
+
+python list_articles.py
+
 echo "generated site content from $SRC into $OUT"
 
