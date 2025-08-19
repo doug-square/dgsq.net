@@ -6,7 +6,7 @@ rm -rf "/${OUT}"
 mkdir -p "/${OUT}"
 
 cp -r "$SRC"/assets "$OUT"
-cp -r "$SRC"/root/* "$OUT"
+cp -r "$SRC"/root/. "$OUT"
 
 # shellcheck disable=SC2044
 for page in $(find "$SRC"/pages -type f)
