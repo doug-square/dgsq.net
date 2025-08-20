@@ -2,9 +2,6 @@
 SRC="$(pwd)/src"
 OUT="$(pwd)/public"
 
-rm -rf "/${OUT}"
-mkdir -p "/${OUT}"
-
 cp -r "$SRC"/assets "$OUT"
 cp -r "$SRC"/root/. "$OUT"
 
