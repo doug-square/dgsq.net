@@ -4,6 +4,7 @@ OUT="$(pwd)/public"
 
 rm -rf $OUT/*
 
+mkdir -p "$SRC"/assets
 cp -r "$SRC"/assets "$OUT"
 cp -r "$SRC"/root/. "$OUT"
 

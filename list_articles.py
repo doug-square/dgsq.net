@@ -62,5 +62,6 @@ with open("public/posts/index.html") as f:
     posts_div.append(BeautifulSoup(postlist, "html.parser"))
 
 with open("public/posts/index.html", "w") as f:
-    f.write(html.prettify())
+    #f.write(html.prettify())
+    f.write(str(html))
 
