@@ -1,6 +1,8 @@
 import os
 import sys
 
+from feeds import Article, create_feed
+
 try: 
     from BeautifulSoup import BeautifulSoup
 except ImportError:
@@ -22,6 +24,7 @@ months = {
 }
 
 posts = []
+articles = []
 
 for subdir, dirs, files in os.walk('src/pages/posts'):
     for file in files:
@@ -45,6 +48,7 @@ for subdir, dirs, files in os.walk('src/pages/posts'):
         path = os.path.join(base_path, file)
 
         posts.append((year, month, day, title, path))
+        articles.append(Article(title, f"{year}-{month}-{day}", path))
 
 posts = list(reversed(sorted(posts)))
 
@@ -64,4 +68,7 @@ with open("public/posts/index.html") as f:
 with open("public/posts/index.html", "w") as f:
     #f.write(html.prettify())
     f.write(str(html))
+
+with open("public/rss.xml", "wb") as f:
+    f.write(create_feed(articles))
 
