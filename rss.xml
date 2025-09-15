@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0">
+  <channel>
+    <title>dgsq</title>
+    <link>https://dgsq.net/rss.xml</link>
+    <description>Whereupon dgsq writes</description>
+    <atom:link href="https://dgsq.net/rss.xml" rel="self"/>
+    <docs>http://www.rssboard.org/rss-specification</docs>
+    <generator>python-feedgen</generator>
+    <language>en</language>
+    <lastBuildDate>Mon, 15 Sep 2025 20:38:37 +0000</lastBuildDate>
+    <item>
+      <title>New blog</title>
+      <link>/posts/2025-03-30-new-blog.html</link>
+      <description>New blog</description>
+      <guid isPermaLink="false">/posts/2025-03-30-new-blog.html</guid>
+      <pubDate>Sun, 30 Mar 2025 12:00:00 -0500</pubDate>
+    </item>
+    <item>
+      <title>New theme</title>
+      <link>/posts/2025-08-19-new-theme.html</link>
+      <description>New theme</description>
+      <guid isPermaLink="false">/posts/2025-08-19-new-theme.html</guid>
+      <pubDate>Tue, 19 Aug 2025 12:00:00 -0500</pubDate>
+    </item>
+    <item>
+      <title>Computer Architects Can't Find the Average</title>
+      <link>/posts/2025-04-27-averages.html</link>
+      <description>Computer Architects Can't Find the Average</description>
+      <guid isPermaLink="false">/posts/2025-04-27-averages.html</guid>
+      <pubDate>Sun, 27 Apr 2025 12:00:00 -0500</pubDate>
+    </item>
+  </channel>
+</rss>
