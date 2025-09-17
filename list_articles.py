@@ -26,6 +26,8 @@ months = {
 posts = []
 articles = []
 
+root = "https://dgsq.net"
+
 for subdir, dirs, files in os.walk('src/pages/posts'):
     for file in files:
         if ".html" not in file:
@@ -48,7 +50,7 @@ for subdir, dirs, files in os.walk('src/pages/posts'):
         path = os.path.join(base_path, file)
 
         posts.append((year, month, day, title, path))
-        articles.append(Article(title, f"{year}-{month}-{day}", path))
+        articles.append(Article(title, f"{year}-{month}-{day}", root + path))
 
 posts = list(reversed(sorted(posts)))
 

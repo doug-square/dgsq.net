@@ -17,6 +17,7 @@ def create_feed(articles):
     fg.language('en')
     
     for article in articles:
+        print(article.url)
         fe = fg.add_entry()
         fe.id(article.url)
         fe.title(article.title)
