@@ -96,7 +96,7 @@ check_dependencies() {
     if [[ "$(uname)" == "NetBSD" ]]; then
         echo -e "${YELLOW}Parallel processing is unreliable on NetBSD. Using sequential processing.${NC}"
         export HAS_PARALLEL=false
-    elif command -v parallel > /dev/null 2>&1; then
+    elif command -v parallel > /dev/null 2>&1 && { read -r _version < <(parallel -V 2>/dev/null ) && [[ "${_version:0:3}" = "GNU" ]]; }; then
         echo -e "${GREEN}GNU parallel found! Using parallel processing.${NC}"
         export HAS_PARALLEL=true
     else
