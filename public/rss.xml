@@ -8,7 +8,14 @@
     <docs>http://www.rssboard.org/rss-specification</docs>
     <generator>python-feedgen</generator>
     <language>en</language>
-    <lastBuildDate>Wed, 17 Sep 2025 20:09:08 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 29 Oct 2025 14:37:34 +0000</lastBuildDate>
+    <item>
+      <title>Some thoughts on Deepseek-OCR</title>
+      <link>https://dgsq.net/posts/2025-10-29-deepseek-ocr.html</link>
+      <description>Some thoughts on Deepseek-OCR</description>
+      <guid isPermaLink="false">https://dgsq.net/posts/2025-10-29-deepseek-ocr.html</guid>
+      <pubDate>Wed, 29 Oct 2025 12:00:00 -0500</pubDate>
+    </item>
     <item>
       <title>New blog</title>
       <link>https://dgsq.net/posts/2025-03-30-new-blog.html</link>
@@ -17,18 +24,18 @@
       <pubDate>Sun, 30 Mar 2025 12:00:00 -0500</pubDate>
     </item>
     <item>
-      <title>New theme</title>
-      <link>https://dgsq.net/posts/2025-08-19-new-theme.html</link>
-      <description>New theme</description>
-      <guid isPermaLink="false">https://dgsq.net/posts/2025-08-19-new-theme.html</guid>
-      <pubDate>Tue, 19 Aug 2025 12:00:00 -0500</pubDate>
-    </item>
-    <item>
       <title>Computer Architects Can't Find the Average</title>
       <link>https://dgsq.net/posts/2025-04-27-averages.html</link>
       <description>Computer Architects Can't Find the Average</description>
       <guid isPermaLink="false">https://dgsq.net/posts/2025-04-27-averages.html</guid>
       <pubDate>Sun, 27 Apr 2025 12:00:00 -0500</pubDate>
+    </item>
+    <item>
+      <title>New theme</title>
+      <link>https://dgsq.net/posts/2025-08-19-new-theme.html</link>
+      <description>New theme</description>
+      <guid isPermaLink="false">https://dgsq.net/posts/2025-08-19-new-theme.html</guid>
+      <pubDate>Tue, 19 Aug 2025 12:00:00 -0500</pubDate>
     </item>
   </channel>
 </rss>
