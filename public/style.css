@@ -156,6 +156,15 @@ a:visited {
   margin-top: 1em;
 }
 
+@media (max-width: 640px) 
+{
+   #sidebar
+   {
+      display: none;
+   }
+}
+
+
 .sb-box {
   border: 2px solid var(--accent);
   background-color: var(--base);
