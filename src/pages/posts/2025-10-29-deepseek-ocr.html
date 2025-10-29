@@ -25,6 +25,8 @@ Experiments show that when the number of text tokens is within 10 times that of 
 compression ratio &lt; 10x), the model can achieve decoding (OCR) precision of 97%. Even at a
 compression ratio of 20x, the OCR accuracy still remains at about 60%.
     </blockquote>
+</p>
+<p>
     This sounds pretty good, but there are other ways to compress transformers. DeepSeek-OCR was released using BF16 weights, and since
     they didn't mention anything about their data precision in the paper, I'm assuming that's what they evaluated on.
 </p>
