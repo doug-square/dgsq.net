@@ -210,6 +210,9 @@ main() {
     command="$1"
     shift # Consume the command itself
 
+    # expand variables such as POSTS_DIR, PAGES_DIR embedded in the command-line
+    set -- $(eval echo "$@")
+
     case "$command" in
         post)
             scripts/post.sh "$@"
