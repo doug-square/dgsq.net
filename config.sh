@@ -47,6 +47,7 @@ POSTS_PER_PAGE=10
 RSS_ITEM_LIMIT=15 # Number of items to include in the RSS feed.
 RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". Include full post content in RSS feed.
 RSS_FILENAME="rss.xml" # The filename for the main RSS feed (e.g., feed.xml, rss.xml)
+INDEX_SHOW_FULL_CONTENT="false" # Options: "true", "false". Show full post content on homepage instead of just description/excerpt.
 ENABLE_ARCHIVES=true  # Enable or disable archive pages
 ENABLE_AUTHOR_PAGES=false # Enable or disable author pages (default: false)
 ENABLE_AUTHOR_RSS=false # Enable or disable author-specific RSS feeds (default: false)

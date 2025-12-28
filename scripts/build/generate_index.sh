@@ -229,7 +229,67 @@ EOF
                 </div>
 EOF
                     fi
-                    if [ -n "$description" ]; then
+                    # Show either full content or just description based on config
+                    if [ "${INDEX_SHOW_FULL_CONTENT:-false}" = "true" ]; then
+                        # Show full post content
+                        local post_content=""
+                        local content_cache_file="${CACHE_DIR:-.bssg_cache}/content/$(basename "$file")"
+
+                        # Try to get content from cache first
+                        if [ -f "$content_cache_file" ]; then
+                            post_content=$(cat "$content_cache_file")
+                        else
+                            # Extract content from source file if cache doesn't exist
+                            local in_frontmatter=false
+                            local found_frontmatter=false
+                            {
+                                while IFS= read -r line; do
+                                    if [[ "$line" == "---" ]]; then
+                                        if ! $in_frontmatter && ! $found_frontmatter; then
+                                            in_frontmatter=true
+                                            found_frontmatter=true
+                                            continue
+                                        elif $in_frontmatter; then
+                                            in_frontmatter=false
+                                            continue
+                                        fi
+                                    fi
+                                    if ! $in_frontmatter && $found_frontmatter; then
+                                        post_content+="$line"$'\n'
+                                    fi
+                                done
+                            } < "$file"
+
+                            # If no frontmatter was found, use the whole file
+                            if ! $found_frontmatter; then
+                                post_content=$(cat "$file")
+                            fi
+                        fi
+
+                        # Convert to HTML if it's a markdown file
+                        local html_content=""
+                        if [[ "$file" == *.md ]]; then
+                            html_content=$(convert_markdown_to_html "$post_content")
+                        elif [[ "$file" == *.html ]]; then
+                            # For HTML files, content is already HTML
+                            html_content=$(sed -n '/<body.*>/,/<\/body>/p' "$file" | sed '1d;$d')
+                            # If body extraction failed, use content as-is
+                            if [ -z "$html_content" ]; then
+                                html_content="$post_content"
+                            fi
+                        else
+                            html_content="$post_content"
+                        fi
+
+                        if [ -n "$html_content" ]; then
+                            cat >> "$output_file" << EOF
+                <div class="post-content">
+                    $html_content
+                </div>
+EOF
+                        fi
+                    elif [ -n "$description" ]; then
+                        # Show just the description/excerpt (default behavior)
                         cat >> "$output_file" << EOF
                 <div class="summary">
                     $description
@@ -305,10 +365,11 @@ EOF
         export OUTPUT_DIR URL_SLUG_FORMAT POSTS_PER_PAGE CACHE_DIR
         export SITE_TITLE SITE_DESCRIPTION AUTHOR_NAME DATE_FORMAT SITE_URL
         export FORCE_REBUILD HEADER_TEMPLATE FOOTER_TEMPLATE SHOW_TIMEZONE
-        export MSG_LATEST_POSTS MSG_HOME MSG_PAGINATION_TITLE MSG_PUBLISHED_ON MSG_BY 
+        export INDEX_SHOW_FULL_CONTENT
+        export MSG_LATEST_POSTS MSG_HOME MSG_PAGINATION_TITLE MSG_PUBLISHED_ON MSG_BY
         export MSG_NEWER_POSTS MSG_OLDER_POSTS MSG_PAGE_INFO_TEMPLATE
         # Note: total_posts_orig is NOT exported, passed as argument now
-        export -f process_index_page file_needs_rebuild get_file_mtime format_date generate_slug fix_url
+        export -f process_index_page file_needs_rebuild get_file_mtime format_date generate_slug fix_url convert_markdown_to_html
         
         # Ensure templates are exported
         if [ -z "$HEADER_TEMPLATE" ] || [ -z "$FOOTER_TEMPLATE" ]; then

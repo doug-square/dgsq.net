@@ -726,6 +726,7 @@ POSTS_PER_PAGE=10
 RSS_ITEM_LIMIT=15 # Number of items to include in the RSS feed.
 RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". Include full post content in RSS feed.
 RSS_FILENAME="rss.xml" # The filename for the main RSS feed (e.g., feed.xml, rss.xml)
+INDEX_SHOW_FULL_CONTENT="false" # Options: "true", "false". Show full post content on homepage instead of just description/excerpt.
 ENABLE_ARCHIVES=true  # Enable or disable archive pages
 ENABLE_AUTHOR_PAGES=false # Enable or disable author pages (default: false)
 ENABLE_AUTHOR_RSS=false # Enable or disable author-specific RSS feeds (default: false)
@@ -1171,6 +1172,7 @@ ENABLE_ARCHIVES=true  # Enable or disable archives by year/month
 URL_SLUG_FORMAT="Year/Month/Day/slug"  # Format for post URLs
 RSS_ITEM_LIMIT=15 # Number of items to include in the RSS feed.
 RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". If set to "true", the full post content will be included in the RSS feed description instead of the excerpt. Useful for readers that consume entire posts via RSS.
+INDEX_SHOW_FULL_CONTENT="false" # Options: "true", "false". If set to "true", the full post content will be displayed on the homepage and paginated index pages instead of just the description/excerpt.
 ENABLE_TAG_RSS=true # Options: "true", "false". If set to "true" (default), an additional RSS feed will be generated for each tag at `output/tags/<tag-slug>/rss.xml`.
 
 # Related Posts configuration
