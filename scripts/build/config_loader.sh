@@ -34,6 +34,7 @@ RSS_FILENAME="${RSS_FILENAME:-rss.xml}" # Default RSS filename
 INDEX_SHOW_FULL_CONTENT="${INDEX_SHOW_FULL_CONTENT:-false}" # Default: show excerpt on homepage
 CLEAN_OUTPUT="${CLEAN_OUTPUT:-false}"
 FORCE_REBUILD="${FORCE_REBUILD:-false}"
+BUILD_MODE="${BUILD_MODE:-normal}" # Build mode: normal or ram
 SITE_LANG="${SITE_LANG:-en}"
 LOCALE_DIR="${LOCALE_DIR:-locales}"
 PAGES_DIR="${PAGES_DIR:-pages}"
@@ -62,11 +63,19 @@ BSSG_SERVER_HOST_DEFAULT="${BSSG_SERVER_HOST_DEFAULT:-localhost}"
 CUSTOM_CSS="${CUSTOM_CSS:-}" # Default to empty string
 
 # Define default colors here so utils.sh can use them if not overridden by config
-RED="${RED:-$(tput setaf 1)}"
-GREEN="${GREEN:-$(tput setaf 2)}"
-YELLOW="${YELLOW:-$(tput setaf 3)}"
-BLUE="${BLUE:-$(tput setaf 4)}" # Added Blue for print_info, using tput
-NC="${NC:-$(tput sgr0)}"       # No Color, using tput
+if [[ -t 1 ]] && command -v tput > /dev/null 2>&1 && tput setaf 1 > /dev/null 2>&1; then
+    RED="${RED:-$(tput setaf 1)}"
+    GREEN="${GREEN:-$(tput setaf 2)}"
+    YELLOW="${YELLOW:-$(tput setaf 3)}"
+    BLUE="${BLUE:-$(tput setaf 4)}"
+    NC="${NC:-$(tput sgr0)}"
+else
+    RED="${RED:-}"
+    GREEN="${GREEN:-}"
+    YELLOW="${YELLOW:-}"
+    BLUE="${BLUE:-}"
+    NC="${NC:-}"
+fi
 # --- Default Configuration Variables --- END ---
 
 
@@ -219,7 +228,7 @@ BSSG_CONFIG_VARS_ARRAY=(
     SITE_TITLE SITE_DESCRIPTION SITE_URL AUTHOR_NAME AUTHOR_EMAIL
     DATE_FORMAT TIMEZONE SHOW_TIMEZONE POSTS_PER_PAGE RSS_ITEM_LIMIT RSS_INCLUDE_FULL_CONTENT RSS_FILENAME
     INDEX_SHOW_FULL_CONTENT
-    CLEAN_OUTPUT FORCE_REBUILD SITE_LANG LOCALE_DIR PAGES_DIR MARKDOWN_PROCESSOR
+    CLEAN_OUTPUT FORCE_REBUILD BUILD_MODE SITE_LANG LOCALE_DIR PAGES_DIR MARKDOWN_PROCESSOR
     MARKDOWN_PL_PATH ENABLE_ARCHIVES URL_SLUG_FORMAT PAGE_URL_FORMAT
     DRAFTS_DIR REBUILD_AFTER_POST REBUILD_AFTER_EDIT
     CUSTOM_CSS
@@ -261,6 +270,7 @@ export RSS_FILENAME
 export INDEX_SHOW_FULL_CONTENT
 export CLEAN_OUTPUT
 export FORCE_REBUILD
+export BUILD_MODE
 export SITE_LANG
 export LOCALE_DIR
 export PAGES_DIR

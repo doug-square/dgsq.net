@@ -99,10 +99,17 @@ fi
 # Terminal colors (still needed here if config_loader doesn't export them, though it should)
 # These are now primarily set and exported by config_loader.sh based on config files.
 # The ':-' syntax provides a fallback if they somehow aren't set, using tput.
-RED="${RED:-$(tput setaf 1)}"
-GREEN="${GREEN:-$(tput setaf 2)}"
-YELLOW="${YELLOW:-$(tput setaf 3)}"
-NC="${NC:-$(tput sgr0)}" # Reset color
+if [[ -t 1 ]] && command -v tput > /dev/null 2>&1 && tput setaf 1 > /dev/null 2>&1; then
+    RED="${RED:-$(tput setaf 1)}"
+    GREEN="${GREEN:-$(tput setaf 2)}"
+    YELLOW="${YELLOW:-$(tput setaf 3)}"
+    NC="${NC:-$(tput sgr0)}" # Reset color
+else
+    RED="${RED:-}"
+    GREEN="${GREEN:-}"
+    YELLOW="${YELLOW:-}"
+    NC="${NC:-}"
+fi
 
 # Make sure all scripts are executable
 chmod +x scripts/*.sh 2>/dev/null || true
@@ -163,6 +170,7 @@ show_build_help() {
     echo "  --static DIR            Override Static directory (from config: ${STATIC_DIR:-static})"
     echo "  --clean-output [bool]   Clean output directory before building (default from config: ${CLEAN_OUTPUT:-false})"
     echo "  --force-rebuild, -f     Force rebuild of all files regardless of modification time"
+    echo "  --build-mode MODE       Build mode: normal or ram (default from config: ${BUILD_MODE:-normal})"
     echo "  --site-title TITLE      Override Site title"
     echo "  --site-url URL          Override Site URL"
     echo "  --site-description DESC Override Site description"
@@ -300,6 +308,22 @@ main() {
                     -f|--force-rebuild)
                         export FORCE_REBUILD=true
                         shift 1
+                        ;;
+                    --build-mode)
+                        if [[ -z "$2" || "$2" == -* ]]; then
+                            echo -e "${RED}Error: --build-mode requires a value (normal|ram).${NC}" >&2
+                            exit 1
+                        fi
+                        case "$2" in
+                            normal|ram)
+                                export BUILD_MODE="$2"
+                                ;;
+                            *)
+                                echo -e "${RED}Error: Invalid --build-mode '$2'. Use 'normal' or 'ram'.${NC}" >&2
+                                exit 1
+                                ;;
+                        esac
+                        shift 2
                         ;;
                     --site-title)
                         export SITE_TITLE="$2"

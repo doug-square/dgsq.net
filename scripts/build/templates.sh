@@ -63,7 +63,9 @@ load_template() {
 # Function to pre-load all templates and process menus/placeholders
 preload_templates() {
     # Create template cache directory if it doesn't exist
-    mkdir -p "$TEMPLATE_CACHE_DIR"
+    if [ "${BSSG_RAM_MODE:-false}" != true ]; then
+        mkdir -p "$TEMPLATE_CACHE_DIR"
+    fi
 
     local template_dir
     local templates_to_load=("header.html" "footer.html" "post.html" "page.html" "index.html" "tag.html" "archive.html")
@@ -131,8 +133,12 @@ preload_templates() {
 
     # Scan pages directory for markdown and HTML files
     if [ -d "${PAGES_DIR:-pages}" ]; then
-        local page_files
-        page_files=($(find "${PAGES_DIR:-pages}" -type f \( -name "*.md" -o -name "*.html" \) | sort))
+        local page_files=()
+        if [ "${BSSG_RAM_MODE:-false}" = true ] && declare -F ram_mode_list_page_files > /dev/null; then
+            mapfile -t page_files < <(ram_mode_list_page_files)
+        else
+            page_files=($(find "${PAGES_DIR:-pages}" -type f \( -name "*.md" -o -name "*.html" \) | sort))
+        fi
 
         for file in "${page_files[@]}"; do
             # Skip if file is hidden
@@ -144,10 +150,19 @@ preload_templates() {
             local title slug date secondary
             if [[ "$file" == *.html ]]; then
                 # Crude HTML parsing - assumes specific meta tags exist
-                title=$(grep -m 1 '<title>' "$file" 2>/dev/null | sed 's/<[^>]*>//g')
-                slug=$(grep -m 1 'meta name="slug"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
-                date=$(grep -m 1 'meta name="date"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/') # Extract date from meta
-                secondary=$(grep -m 1 'meta name="secondary"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+                local html_source=""
+                if [ "${BSSG_RAM_MODE:-false}" = true ] && declare -F ram_mode_has_file > /dev/null && ram_mode_has_file "$file"; then
+                    html_source=$(ram_mode_get_content "$file")
+                    title=$(printf '%s\n' "$html_source" | grep -m 1 '<title>' 2>/dev/null | sed 's/<[^>]*>//g')
+                    slug=$(printf '%s\n' "$html_source" | grep -m 1 'meta name="slug"' 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+                    date=$(printf '%s\n' "$html_source" | grep -m 1 'meta name="date"' 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+                    secondary=$(printf '%s\n' "$html_source" | grep -m 1 'meta name="secondary"' 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+                else
+                    title=$(grep -m 1 '<title>' "$file" 2>/dev/null | sed 's/<[^>]*>//g')
+                    slug=$(grep -m 1 'meta name="slug"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+                    date=$(grep -m 1 'meta name="date"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/') # Extract date from meta
+                    secondary=$(grep -m 1 'meta name="secondary"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+                fi
             else
                 # Assumes parse_metadata is available
                 title=$(parse_metadata "$file" "title")
@@ -206,18 +221,33 @@ preload_templates() {
 
     # Add standard menu items
     local tags_flag_file="${CACHE_DIR:-.bssg_cache}/has_tags.flag"
-    # Add tags link only if the flag file exists (meaning tags were found in the last indexing run)
-    if [ -f "$tags_flag_file" ]; then
+    local has_tags=false
+    if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+        [ -n "$(ram_mode_get_dataset "has_tags")" ] && has_tags=true
+    elif [ -f "$tags_flag_file" ]; then
+        has_tags=true
+    fi
+    # Add tags link only if tags are present.
+    if [ "$has_tags" = true ]; then
         menu_items+=" <a href=\"${SITE_URL}/tags/\">${MSG_TAGS:-"Tags"}</a>"
     fi
 
     # Add Authors link if enabled and multiple authors exist
     local authors_flag_file="${CACHE_DIR:-.bssg_cache}/has_authors.flag"
-    if [ "${ENABLE_AUTHOR_PAGES:-true}" = true ] && [ -f "$authors_flag_file" ]; then
+    if [ "${ENABLE_AUTHOR_PAGES:-true}" = true ]; then
         # Check if we have multiple authors (more than the threshold)
         local authors_index_file="${CACHE_DIR:-.bssg_cache}/authors_index.txt"
-        if [ -f "$authors_index_file" ]; then
-            local unique_author_count=$(awk -F'|' '{print $1}' "$authors_index_file" | sort -u | wc -l)
+        local unique_author_count=0
+        if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+            local authors_index_data
+            authors_index_data=$(ram_mode_get_dataset "authors_index")
+            if [ -n "$authors_index_data" ]; then
+                unique_author_count=$(printf '%s\n' "$authors_index_data" | awk -F'|' 'NF { print $1 }' | sort -u | wc -l | tr -d ' ')
+            fi
+        elif [ -f "$authors_index_file" ] && [ -f "$authors_flag_file" ]; then
+            unique_author_count=$(awk -F'|' '{print $1}' "$authors_index_file" | sort -u | wc -l)
+        fi
+        if [ "$unique_author_count" -gt 0 ]; then
             local threshold="${SHOW_AUTHORS_MENU_THRESHOLD:-2}"
             if [ "$unique_author_count" -ge "$threshold" ]; then
                 menu_items+=" <a href=\"${SITE_URL}/authors/\">${MSG_AUTHORS:-"Authors"}</a>"
@@ -233,14 +263,23 @@ preload_templates() {
     menu_items+=" <a href=\"${SITE_URL}/${RSS_FILENAME:-rss.xml}\">${MSG_RSS:-"RSS"}</a>"
 
     # Add tags link to footer only if the flag file exists
-    if [ -f "$tags_flag_file" ]; then
+    if [ "$has_tags" = true ]; then
         footer_items+=" <a href=\"${SITE_URL}/tags/\">${MSG_TAGS:-"Tags"}</a> &middot;"
     fi
 
     # Add Authors link to footer if enabled and multiple authors exist
-    if [ "${ENABLE_AUTHOR_PAGES:-true}" = true ] && [ -f "$authors_flag_file" ]; then
-        if [ -f "$authors_index_file" ]; then
-            local unique_author_count_footer=$(awk -F'|' '{print $1}' "$authors_index_file" | sort -u | wc -l)
+    if [ "${ENABLE_AUTHOR_PAGES:-true}" = true ]; then
+        local unique_author_count_footer=0
+        if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+            local authors_index_data_footer
+            authors_index_data_footer=$(ram_mode_get_dataset "authors_index")
+            if [ -n "$authors_index_data_footer" ]; then
+                unique_author_count_footer=$(printf '%s\n' "$authors_index_data_footer" | awk -F'|' 'NF { print $1 }' | sort -u | wc -l | tr -d ' ')
+            fi
+        elif [ -f "$authors_index_file" ] && [ -f "$authors_flag_file" ]; then
+            unique_author_count_footer=$(awk -F'|' '{print $1}' "$authors_index_file" | sort -u | wc -l)
+        fi
+        if [ "$unique_author_count_footer" -gt 0 ]; then
             local threshold_footer="${SHOW_AUTHORS_MENU_THRESHOLD:-2}"
             if [ "$unique_author_count_footer" -ge "$threshold_footer" ]; then
                 footer_items+=" <a href=\"${SITE_URL}/authors/\">${MSG_AUTHORS:-"Authors"}</a> &middot;"
@@ -299,50 +338,55 @@ preload_templates() {
     HEADER_TEMPLATE=$(echo "$HEADER_TEMPLATE" | sed "s|{{[[:space:]]*custom_css_link[[:space:]]*}}|${custom_css_tag}|")
     # --- Handle Custom CSS --- END ---
 
-    # Write primary and secondary page lists to cache files only if changed
-    local primary_pages_cache="$CACHE_DIR/primary_pages.tmp"
-    local secondary_pages_cache="$CACHE_DIR/secondary_pages.tmp"
-    local secondary_pages_list_file="$CACHE_DIR/secondary_pages.list" # <-- Define list file path
-    
-    # Prepare content in temporary files
-    local primary_tmp=$(mktemp)
-    local secondary_tmp=$(mktemp)
-    local secondary_list_tmp=$(mktemp) # <-- Temp file for the list
-    
-    # Write current content to temporary files
-    # Use printf for safer writing
-    for page in "${primary_pages[@]}"; do
-        printf "%s\n" "$page" >> "$primary_tmp"
-    done
-    for page in "${SECONDARY_PAGES[@]}"; do
-        # Write to the temp file for comparison
-        printf "%s\n" "$page" >> "$secondary_tmp"
-        # Also write to the list temp file, one per line
-        printf "%s\n" "$page" >> "$secondary_list_tmp"
-    done
+    if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+        ram_mode_set_dataset "primary_pages" "$(printf '%s\n' "${primary_pages[@]}")"
+        ram_mode_set_dataset "secondary_pages" "$(printf '%s\n' "${SECONDARY_PAGES[@]}")"
+    else
+        # Write primary and secondary page lists to cache files only if changed
+        local primary_pages_cache="$CACHE_DIR/primary_pages.tmp"
+        local secondary_pages_cache="$CACHE_DIR/secondary_pages.tmp"
+        local secondary_pages_list_file="$CACHE_DIR/secondary_pages.list" # <-- Define list file path
+        
+        # Prepare content in temporary files
+        local primary_tmp=$(mktemp)
+        local secondary_tmp=$(mktemp)
+        local secondary_list_tmp=$(mktemp) # <-- Temp file for the list
+        
+        # Write current content to temporary files
+        # Use printf for safer writing
+        for page in "${primary_pages[@]}"; do
+            printf "%s\n" "$page" >> "$primary_tmp"
+        done
+        for page in "${SECONDARY_PAGES[@]}"; do
+            # Write to the temp file for comparison
+            printf "%s\n" "$page" >> "$secondary_tmp"
+            # Also write to the list temp file, one per line
+            printf "%s\n" "$page" >> "$secondary_list_tmp"
+        done
 
-    # Function to compare and update cache file
-    update_cache_if_changed() {
-        local temp_file="$1"
-        local cache_file="$2"
-        local file_desc="$3"
+        # Function to compare and update cache file
+        update_cache_if_changed() {
+            local temp_file="$1"
+            local cache_file="$2"
+            local file_desc="$3"
 
-        if [ ! -f "$cache_file" ] || ! cmp -s "$temp_file" "$cache_file"; then
-            mv "$temp_file" "$cache_file"
-            # echo "DEBUG: Updated $file_desc cache file." # Optional debug
-        else
-            rm "$temp_file"
-            # echo "DEBUG: $file_desc cache file unchanged." # Optional debug
-        fi
-    }
+            if [ ! -f "$cache_file" ] || ! cmp -s "$temp_file" "$cache_file"; then
+                mv "$temp_file" "$cache_file"
+                # echo "DEBUG: Updated $file_desc cache file." # Optional debug
+            else
+                rm "$temp_file"
+                # echo "DEBUG: $file_desc cache file unchanged." # Optional debug
+            fi
+        }
 
-    # Compare and update cache files
-    update_cache_if_changed "$primary_tmp" "$primary_pages_cache"
-    update_cache_if_changed "$secondary_tmp" "$secondary_pages_cache"
-    update_cache_if_changed "$secondary_list_tmp" "$secondary_pages_list_file" # <-- Update the list file
+        # Compare and update cache files
+        update_cache_if_changed "$primary_tmp" "$primary_pages_cache"
+        update_cache_if_changed "$secondary_tmp" "$secondary_pages_cache"
+        update_cache_if_changed "$secondary_list_tmp" "$secondary_pages_list_file" # <-- Update the list file
 
-    # Clean up temporary files
-    rm -f "$primary_tmp" "$secondary_tmp" "$secondary_list_tmp" # <-- Cleanup list temp file
+        # Clean up temporary files
+        rm -f "$primary_tmp" "$secondary_tmp" "$secondary_list_tmp" # <-- Cleanup list temp file
+    fi
 
     echo -e "${GREEN}Templates pre-processed (menus, locale placeholders).${NC}"
 }

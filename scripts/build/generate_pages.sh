@@ -24,9 +24,13 @@ convert_page() {
 
     # IMPORTANT: Assumes CACHE_DIR, FORCE_REBUILD, PAGES_DIR, SITE_TITLE, SITE_DESCRIPTION, SITE_URL, AUTHOR_NAME are exported/available
     local output_html_file="$output_base_path/index.html"
+    local ram_mode_active=false
+    if [ "${BSSG_RAM_MODE:-false}" = true ] && declare -F ram_mode_has_file > /dev/null && ram_mode_has_file "$input_file"; then
+        ram_mode_active=true
+    fi
 
     # Check if the source file exists
-    if [ ! -f "$input_file" ]; then
+    if ! $ram_mode_active && [ ! -f "$input_file" ]; then
         echo -e "${RED}Error: Source page '$input_file' not found${NC}" >&2
         return 1
     fi
@@ -45,21 +49,31 @@ convert_page() {
 
     if [[ "$input_file" == *.html ]]; then
         # For HTML files, extract content between <body> tags (simple approach)
-        html_content=$(sed -n '/<body>/,/<\/body>/p' "$input_file" | sed '1d;$d')
+        local html_source=""
+        if $ram_mode_active; then
+            html_source=$(ram_mode_get_content "$input_file")
+        else
+            html_source=$(cat "$input_file")
+        fi
+        html_content=$(printf '%s\n' "$html_source" | sed -n '/<body>/,/<\/body>/p' | sed '1d;$d')
         # We might not have raw content for reading time easily here
          content=$(echo "$html_content" | sed 's/<[^>]*>//g') # Basic text extraction for reading time
     else
         # For markdown files, extract content after frontmatter
-        local start_line=$(grep -n "^---$" "$input_file" | head -1 | cut -d: -f1)
-        local end_line=$(grep -n "^---$" "$input_file" | head -2 | tail -1 | cut -d: -f1)
-
-        if [[ -z "$start_line" || -z "$end_line" || ! $start_line -lt $end_line ]]; then
-            # No valid frontmatter found, use the whole file
-            content=$(cat "$input_file")
+        local source_stream=""
+        if $ram_mode_active; then
+            source_stream=$(ram_mode_get_content "$input_file")
         else
-            # Extract content after the second --- line
-            content=$(tail -n +$((end_line + 1)) "$input_file")
+            source_stream=$(cat "$input_file")
         fi
+        content=$(printf '%s\n' "$source_stream" | awk '
+            BEGIN { in_fm = 0; found_fm = 0; }
+            /^---$/ {
+                if (!in_fm && !found_fm) { in_fm = 1; found_fm = 1; next; }
+                if (in_fm) { in_fm = 0; next; }
+            }
+            { if (!in_fm) print; }
+        ')
 
         # --- MODIFIED PART --- START ---
         # Convert markdown content to HTML using the function from content.sh
@@ -178,10 +192,13 @@ process_all_pages() {
         return 0
     fi
 
-    echo -e "Checking ${GREEN}${#page_files[@]}${NC} pages for changes"
-
     # Use mapfile -t to read sorted files into array (newline-separated, trailing newline stripped)
-    mapfile -t page_files < <(find "${PAGES_DIR:-pages}" -type f \( -name "*.md" -o -name "*.html" \) -not -path "*/.*" | sort)
+    local page_files=()
+    if [ "${BSSG_RAM_MODE:-false}" = true ] && declare -F ram_mode_list_page_files > /dev/null; then
+        mapfile -t page_files < <(ram_mode_list_page_files)
+    else
+        mapfile -t page_files < <(find "${PAGES_DIR:-pages}" -type f \( -name "*.md" -o -name "*.html" \) -not -path "*/.*" | sort)
+    fi
 
     local num_pages=${#page_files[@]}
     if [ "$num_pages" -eq 0 ]; then
@@ -190,14 +207,37 @@ process_all_pages() {
     fi
     echo -e "Found ${GREEN}$num_pages${NC} potential pages."
 
+    local ram_mode_active=false
+    if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+        ram_mode_active=true
+    fi
+
+    # RAM mode keeps source content only in-process (bash arrays).
+    # GNU parallel spawns fresh shells that cannot access those arrays.
+    if $ram_mode_active; then
+        if [ "$num_pages" -gt 1 ]; then
+            echo -e "${YELLOW}Using shell parallel workers for $num_pages RAM-mode pages${NC}"
+            local cores
+            cores=$(get_parallel_jobs)
+
+            {
+                local file quoted_file
+                for file in "${page_files[@]}"; do
+                    printf -v quoted_file '%q' "$file"
+                    echo "process_single_page_file $quoted_file"
+                done
+            } | run_parallel "$cores"
+        else
+            echo -e "${YELLOW}Using sequential processing for RAM-mode pages${NC}"
+            process_single_page_file "${page_files[0]}"
+        fi
     # Use GNU parallel if available, otherwise fallback
     # IMPORTANT: Assumes HAS_PARALLEL is exported/available
-    if [ "${HAS_PARALLEL:-false}" = true ]; then
+    elif [ "${HAS_PARALLEL:-false}" = true ]; then
         echo -e "${GREEN}Using GNU parallel to generate pages${NC}"
         # Determine number of cores
-        local cores=1
-        if command -v nproc > /dev/null 2>&1; then cores=$(nproc); 
-        elif command -v sysctl > /dev/null 2>&1; then cores=$(sysctl -n hw.ncpu 2>/dev/null || echo 1); fi
+        local cores
+        cores=$(get_parallel_jobs)
         
         # Export functions needed by the parallel process and its children
         export -f convert_page process_single_page_file

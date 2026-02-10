@@ -14,10 +14,29 @@ source "$(dirname "$0")/utils.sh" || { echo >&2 "Error: Failed to source utils.s
 parse_metadata() {
     local file="$1"
     local field="$2"
+    local value=""
+
+    # RAM mode: parse directly from preloaded content to avoid disk/cache I/O.
+    if [ "${BSSG_RAM_MODE:-false}" = true ] && declare -F ram_mode_has_file > /dev/null && ram_mode_has_file "$file"; then
+        local file_content frontmatter
+        file_content=$(ram_mode_get_content "$file")
+        frontmatter=$(printf '%s\n' "$file_content" | awk '
+            BEGIN { in_fm = 0; found_fm = 0; }
+            /^---$/ {
+                if (!in_fm && !found_fm) { in_fm = 1; found_fm = 1; next; }
+                if (in_fm) { exit; }
+            }
+            in_fm { print; }
+        ')
+        if [ -n "$frontmatter" ]; then
+            value=$(printf '%s\n' "$frontmatter" | grep -m 1 "^$field:[[:space:]]*" | cut -d ':' -f 2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        fi
+        echo "$value"
+        return 0
+    fi
 
     # IMPORTANT: Assumes CACHE_DIR is exported/available
     local cache_file="${CACHE_DIR:-.bssg_cache}/meta/$(basename "$file")"
-    local value=""
 
     # Get locks for cache access
     # IMPORTANT: Assumes lock_file/unlock_file are sourced/available
@@ -70,9 +89,13 @@ extract_metadata() {
     local file="$1"
     local metadata_cache_file="${CACHE_DIR:-.bssg_cache}/meta/$(basename "$file")"
     local frontmatter_changes_marker="${CACHE_DIR:-.bssg_cache}/frontmatter_changes_marker"
+    local ram_mode_active=false
+    if [ "${BSSG_RAM_MODE:-false}" = true ] && declare -F ram_mode_has_file > /dev/null && ram_mode_has_file "$file"; then
+        ram_mode_active=true
+    fi
 
     # Check if file exists
-    if [ ! -f "$file" ]; then
+    if ! $ram_mode_active && [ ! -f "$file" ]; then
         echo "ERROR_FILE_NOT_FOUND"
         return 1
     fi
@@ -81,7 +104,7 @@ extract_metadata() {
     local frontmatter_changed=false
 
     # Check if cache exists and is newer than the source file
-    if [ "${FORCE_REBUILD:-false}" = false ] && [ -f "$metadata_cache_file" ] && [ "$metadata_cache_file" -nt "$file" ]; then
+    if ! $ram_mode_active && [ "${FORCE_REBUILD:-false}" = false ] && [ -f "$metadata_cache_file" ] && [ "$metadata_cache_file" -nt "$file" ]; then
         # Read from cache file (optimized - read once)
         echo "$(cat "$metadata_cache_file")"
         return 0
@@ -98,25 +121,39 @@ extract_metadata() {
         # Parse <meta> tags for HTML files
         # Use grep -m 1 for efficiency, handle missing tags gracefully
         # Note: This is basic parsing, assumes simple meta tag structure.
-        title=$(grep -m 1 -o '<title>[^<]*</title>' "$file" 2>/dev/null | sed -e 's/<title>//' -e 's/<\/title>//')
-        date=$(grep -m 1 -o 'name="date" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
-        lastmod=$(grep -m 1 -o 'name="lastmod" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
-        tags=$(grep -m 1 -o 'name="tags" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
-        slug=$(grep -m 1 -o 'name="slug" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
-        image=$(grep -m 1 -o 'name="image" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
-        image_caption=$(grep -m 1 -o 'name="image_caption" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
-        description=$(grep -m 1 -o 'name="description" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
-        author_name=$(grep -m 1 -o 'name="author_name" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
-        author_email=$(grep -m 1 -o 'name="author_email" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+        local html_source=""
+        if $ram_mode_active; then
+            html_source=$(ram_mode_get_content "$file")
+            title=$(printf '%s\n' "$html_source" | grep -m 1 -o '<title>[^<]*</title>' 2>/dev/null | sed -e 's/<title>//' -e 's/<\/title>//')
+            date=$(printf '%s\n' "$html_source" | grep -m 1 -o 'name="date" content="[^"]*"' 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+            lastmod=$(printf '%s\n' "$html_source" | grep -m 1 -o 'name="lastmod" content="[^"]*"' 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+            tags=$(printf '%s\n' "$html_source" | grep -m 1 -o 'name="tags" content="[^"]*"' 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+            slug=$(printf '%s\n' "$html_source" | grep -m 1 -o 'name="slug" content="[^"]*"' 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+            image=$(printf '%s\n' "$html_source" | grep -m 1 -o 'name="image" content="[^"]*"' 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+            image_caption=$(printf '%s\n' "$html_source" | grep -m 1 -o 'name="image_caption" content="[^"]*"' 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+            description=$(printf '%s\n' "$html_source" | grep -m 1 -o 'name="description" content="[^"]*"' 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+            author_name=$(printf '%s\n' "$html_source" | grep -m 1 -o 'name="author_name" content="[^"]*"' 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+            author_email=$(printf '%s\n' "$html_source" | grep -m 1 -o 'name="author_email" content="[^"]*"' 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+        else
+            title=$(grep -m 1 -o '<title>[^<]*</title>' "$file" 2>/dev/null | sed -e 's/<title>//' -e 's/<\/title>//')
+            date=$(grep -m 1 -o 'name="date" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+            lastmod=$(grep -m 1 -o 'name="lastmod" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+            tags=$(grep -m 1 -o 'name="tags" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+            slug=$(grep -m 1 -o 'name="slug" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+            image=$(grep -m 1 -o 'name="image" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+            image_caption=$(grep -m 1 -o 'name="image_caption" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+            description=$(grep -m 1 -o 'name="description" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+            author_name=$(grep -m 1 -o 'name="author_name" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+            author_email=$(grep -m 1 -o 'name="author_email" content="[^"]*"' "$file" 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+        fi
         # Note: Excerpt generation (fallback for description) might not work well for HTML
 
     elif [[ "$file" == *.md ]]; then
         # Parse YAML frontmatter for Markdown files
-        # Use awk with a here document for reliable script passing
-        
-        # Run awk and read results
+        # Use a shared awk parser for both disk and RAM paths.
         local parsed_data
-        parsed_data=$(awk -f - "$file" <<'EOF'
+        local awk_frontmatter_parser
+        awk_frontmatter_parser=$(cat <<'EOF'
         BEGIN {
             in_fm = 0;
             found_fm = 0;
@@ -162,6 +199,12 @@ extract_metadata() {
         }
 EOF
         )
+
+        if $ram_mode_active; then
+            parsed_data=$(printf '%s\n' "$(ram_mode_get_content "$file")" | awk "$awk_frontmatter_parser")
+        else
+            parsed_data=$(awk "$awk_frontmatter_parser" "$file")
+        fi
         
         IFS='|' read -r title date lastmod tags slug image image_caption description author_name author_email <<< "$parsed_data"
 
@@ -207,7 +250,7 @@ EOF
     local new_metadata="$title|$date|$lastmod|$tags|$slug|$image|$image_caption|$description|$author_name|$author_email"
 
     # Check if there was a previous metadata file and compare
-    if [ -f "$metadata_cache_file" ]; then
+    if ! $ram_mode_active && [ -f "$metadata_cache_file" ]; then
         local old_metadata=$(cat "$metadata_cache_file")
         if [ "$old_metadata" != "$new_metadata" ]; then
             frontmatter_changed=true
@@ -215,13 +258,15 @@ EOF
     fi
 
     # Store all metadata in one write operation
-    lock_file "$metadata_cache_file"
-    mkdir -p "$(dirname "$metadata_cache_file")"
-    echo "$new_metadata" > "$metadata_cache_file"
-    unlock_file "$metadata_cache_file"
+    if ! $ram_mode_active; then
+        lock_file "$metadata_cache_file"
+        mkdir -p "$(dirname "$metadata_cache_file")"
+        echo "$new_metadata" > "$metadata_cache_file"
+        unlock_file "$metadata_cache_file"
+    fi
 
     # If frontmatter has changed, update the marker file's timestamp
-    if $frontmatter_changed; then
+    if ! $ram_mode_active && $frontmatter_changed; then
         touch "$frontmatter_changes_marker"
     fi
 
@@ -234,17 +279,30 @@ generate_excerpt() {
     local file="$1"
     local max_length="${2:-160}"  # Default to 160 characters
 
-    # Extract content after frontmatter
-    local start_line=$(grep -n "^---$" "$file" | head -1 | cut -d: -f1)
-    local end_line=$(grep -n "^---$" "$file" | head -n 2 | tail -1 | cut -d: -f1)
-
     local raw_content_stream
-    if [[ -n "$start_line" && -n "$end_line" && $start_line -lt $end_line ]]; then
-        # Stream content after frontmatter
-        raw_content_stream=$(tail -n +$((end_line + 1)) "$file")
+    if [ "${BSSG_RAM_MODE:-false}" = true ] && declare -F ram_mode_has_file > /dev/null && ram_mode_has_file "$file"; then
+        # Remove frontmatter directly from preloaded content
+        raw_content_stream=$(printf '%s\n' "$(ram_mode_get_content "$file")" | awk '
+            BEGIN { in_fm = 0; found_fm = 0; }
+            /^---$/ {
+                if (!in_fm && !found_fm) { in_fm = 1; found_fm = 1; next; }
+                if (in_fm) { in_fm = 0; next; }
+            }
+            { if (!in_fm) print; }
+        ')
     else
-        # No valid frontmatter, stream the whole file
-        raw_content_stream=$(cat "$file")
+        # Extract content after frontmatter
+        local start_line end_line
+        start_line=$(grep -n "^---$" "$file" | head -1 | cut -d: -f1)
+        end_line=$(grep -n "^---$" "$file" | head -n 2 | tail -1 | cut -d: -f1)
+
+        if [[ -n "$start_line" && -n "$end_line" && $start_line -lt $end_line ]]; then
+            # Stream content after frontmatter
+            raw_content_stream=$(tail -n +$((end_line + 1)) "$file")
+        else
+            # No valid frontmatter, stream the whole file
+            raw_content_stream=$(cat "$file")
+        fi
     fi
 
     # Sanitize and extract the first non-empty paragraph/line
@@ -324,26 +382,19 @@ convert_markdown_to_html() {
     elif [ "$MARKDOWN_PROCESSOR" = "markdown.pl" ]; then
         # Preprocess content to handle fenced code blocks for markdown.pl
         local preprocessed_content="$content"
-        local temp_file
-        temp_file=$(mktemp)
-        # Use printf to avoid issues with content starting with -
-        printf '%s' "$preprocessed_content" > "$temp_file"
-
         # Handle fenced code blocks (``` and ~~~) -> indented
         # Requires awk
         if command -v awk &> /dev/null; then
-            preprocessed_content=$(awk '
+            preprocessed_content=$(printf '%s' "$preprocessed_content" | awk '
                 BEGIN { in_code = 0; }
                 /^```[a-zA-Z0-9]*$/ || /^~~~[a-zA-Z0-9]*$/ { if (!in_code) { in_code = 1; print ""; next; } }
                 /^```$/ || /^~~~$/ { if (in_code) { in_code = 0; print ""; next; } }
                 { if (in_code) { print "    " $0; } else { print $0; } }
-            ' "$temp_file")
-            rm "$temp_file"
+            ')
         else
             echo -e "${YELLOW}Warning: awk not found, markdown.pl fenced code block conversion skipped.${NC}" >&2
             # Content remains as original if awk fails
-             preprocessed_content=$(cat "$temp_file")
-             rm "$temp_file"
+            preprocessed_content="$content"
         fi
 
         # Ensure MARKDOWN_PL_PATH is set and executable

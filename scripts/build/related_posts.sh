@@ -12,6 +12,169 @@ source "$(dirname "$0")/cache.sh" || { echo >&2 "Error: Failed to source cache.s
 
 # --- Related Posts Functions --- START ---
 
+declare -gA BSSG_RAM_RELATED_POSTS_HTML=()
+declare -g BSSG_RAM_RELATED_POSTS_READY=false
+declare -g BSSG_RAM_RELATED_POSTS_LIMIT=""
+
+_build_post_url_from_date_slug() {
+    local post_date="$1"
+    local post_slug="$2"
+    local post_year post_month post_day
+
+    if [[ "$post_date" =~ ^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2}) ]]; then
+        post_year="${BASH_REMATCH[1]}"
+        post_month=$(printf "%02d" "$((10#${BASH_REMATCH[2]}))")
+        post_day=$(printf "%02d" "$((10#${BASH_REMATCH[3]}))")
+    else
+        post_year=$(date +%Y)
+        post_month=$(date +%m)
+        post_day=$(date +%d)
+    fi
+
+    local url_path="${URL_SLUG_FORMAT:-Year/Month/Day/slug}"
+    url_path="${url_path//Year/$post_year}"
+    url_path="${url_path//Month/$post_month}"
+    url_path="${url_path//Day/$post_day}"
+    url_path="${url_path//slug/$post_slug}"
+    printf '/%s/\n' "$url_path"
+}
+
+_build_ram_related_posts_cache() {
+    local max_results="${1:-3}"
+    local file_index_data
+    file_index_data=$(ram_mode_get_dataset "file_index")
+
+    BSSG_RAM_RELATED_POSTS_HTML=()
+    BSSG_RAM_RELATED_POSTS_READY=true
+    BSSG_RAM_RELATED_POSTS_LIMIT="$max_results"
+
+    [ -z "$file_index_data" ] && return 0
+
+    local scored_results=""
+    scored_results=$(printf '%s\n' "$file_index_data" | awk -F'|' '
+        function trim(s) {
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", s)
+            return s
+        }
+
+        {
+            n++
+            title[n] = $3
+            date[n] = $4
+            tags_raw[n] = $6
+            slug[n] = $7
+            desc[n] = $10
+
+            split(tags_raw[n], tag_arr, ",")
+            for (k in tag_arr) {
+                t = trim(tag_arr[k])
+                if (t != "") {
+                    tags[n SUBSEP t] = 1
+                }
+            }
+        }
+
+        END {
+            for (i = 1; i <= n; i++) {
+                if (slug[i] == "" || tags_raw[i] == "") {
+                    continue
+                }
+
+                split(tags_raw[i], i_tags, ",")
+                for (j = 1; j <= n; j++) {
+                    if (i == j || slug[j] == "" || date[j] == "" || tags_raw[j] == "") {
+                        continue
+                    }
+
+                    score = 0
+                    delete seen
+                    for (k in i_tags) {
+                        t = trim(i_tags[k])
+                        if (t == "" || seen[t]) {
+                            continue
+                        }
+                        seen[t] = 1
+                        if (tags[j SUBSEP t]) {
+                            score++
+                        }
+                    }
+
+                    if (score > 0) {
+                        printf "%s|%d|%s|%s|%s|%s\n", slug[i], score, date[j], title[j], slug[j], desc[j]
+                    }
+                }
+            }
+        }
+    ' | sort -t'|' -k1,1 -k2,2nr -k3,3r)
+
+    [ -z "$scored_results" ] && return 0
+
+    local current_slug="" current_count=0
+    local html_output=""
+    local slug score date title related_slug description
+
+    while IFS='|' read -r slug score date title related_slug description; do
+        [ -z "$slug" ] && continue
+
+        if [ "$slug" != "$current_slug" ]; then
+            if [ -n "$current_slug" ] && [ "$current_count" -gt 0 ]; then
+                html_output+='</div>'$'\n'
+                html_output+='</section>'$'\n'
+                BSSG_RAM_RELATED_POSTS_HTML["$current_slug"]="$html_output"
+            fi
+            current_slug="$slug"
+            current_count=0
+            html_output=""
+        fi
+
+        if [ "$current_count" -ge "$max_results" ]; then
+            continue
+        fi
+
+        local post_url
+        post_url=$(_build_post_url_from_date_slug "$date" "$related_slug")
+
+        local short_desc="$description"
+        if [[ ${#short_desc} -gt 120 ]]; then
+            short_desc="${short_desc:0:117}..."
+        fi
+
+        if [ "$current_count" -eq 0 ]; then
+            html_output+='<section class="related-posts">'$'\n'
+            html_output+='<h3>'"${MSG_RELATED_POSTS:-Related Posts}"'</h3>'$'\n'
+            html_output+='<div class="related-posts-list">'$'\n'
+        fi
+
+        html_output+='<article class="related-post">'$'\n'
+        html_output+='<h4><a href="'"${SITE_URL:-}${post_url}"'">'"$title"'</a></h4>'$'\n'
+        if [ -n "$short_desc" ]; then
+            html_output+='<p>'"$short_desc"'</p>'$'\n'
+        fi
+        html_output+='</article>'$'\n'
+
+        current_count=$((current_count + 1))
+    done <<< "$scored_results"
+
+    if [ -n "$current_slug" ] && [ "$current_count" -gt 0 ]; then
+        html_output+='</div>'$'\n'
+        html_output+='</section>'$'\n'
+        BSSG_RAM_RELATED_POSTS_HTML["$current_slug"]="$html_output"
+    fi
+}
+
+prepare_related_posts_ram_cache() {
+    local max_results="${1:-3}"
+    if [ "${BSSG_RAM_MODE:-false}" != true ]; then
+        return 0
+    fi
+
+    if [ "$BSSG_RAM_RELATED_POSTS_READY" = true ] && [ "$BSSG_RAM_RELATED_POSTS_LIMIT" = "$max_results" ]; then
+        return 0
+    fi
+
+    _build_ram_related_posts_cache "$max_results"
+}
+
 # Generate related posts for a given post based on shared tags
 # Args: $1=current_post_slug $2=current_post_tags $3=current_post_date $4=max_results (optional, default=3)
 # Returns: HTML snippet with related posts
@@ -26,6 +189,17 @@ generate_related_posts() {
         return 0  # No related posts if missing essential data
     fi
     
+    # RAM mode uses a precomputed in-memory map to avoid repeated O(n^2) scans.
+    if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+        if [ "$BSSG_RAM_RELATED_POSTS_READY" != true ] || [ "$BSSG_RAM_RELATED_POSTS_LIMIT" != "$max_results" ]; then
+            _build_ram_related_posts_cache "$max_results"
+        fi
+        if [[ -n "${BSSG_RAM_RELATED_POSTS_HTML[$current_slug]+_}" ]]; then
+            printf '%s' "${BSSG_RAM_RELATED_POSTS_HTML[$current_slug]}"
+        fi
+        return 0
+    fi
+
     # Check cache first
     local cache_file="${CACHE_DIR:-.bssg_cache}/related_posts/${current_slug}.html"
     local file_index="${CACHE_DIR:-.bssg_cache}/file_index.txt"
@@ -60,8 +234,18 @@ compute_related_posts() {
     local max_results="$4"
     
     local file_index="${CACHE_DIR:-.bssg_cache}/file_index.txt"
+    local file_index_data=""
+    local ram_mode_active=false
+    if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+        ram_mode_active=true
+        file_index_data=$(ram_mode_get_dataset "file_index")
+    fi
     
-    if [[ ! -f "$file_index" ]]; then
+    if $ram_mode_active; then
+        if [[ -z "$file_index_data" ]]; then
+            return 0
+        fi
+    elif [[ ! -f "$file_index" ]]; then
         return 0  # No posts to compare against
     fi
     
@@ -81,7 +265,7 @@ compute_related_posts() {
     fi
     
     # Process all posts and calculate similarity scores
-    local temp_results=$(mktemp)
+    local temp_results=""
     
     while IFS='|' read -r file filename title date lastmod tags slug image image_caption description author_name author_email; do
         # Skip current post
@@ -113,17 +297,22 @@ compute_related_posts() {
         # Only consider posts with at least one shared tag
         if [[ $score -gt 0 ]]; then
             # Store: score|date|title|slug|description
-            echo "${score}|${date}|${title}|${slug}|${description}" >> "$temp_results"
+            temp_results+="${score}|${date}|${title}|${slug}|${description}"$'\n'
         fi
         
-    done < "$file_index"
+    done < <(
+        if $ram_mode_active; then
+            printf '%s\n' "$file_index_data" | awk 'NF'
+        else
+            cat "$file_index"
+        fi
+    )
     
     # Sort by score (descending), then by date (descending), limit results
     local sorted_results=""
-    if [[ -s "$temp_results" ]]; then
-        sorted_results=$(sort -t'|' -k1,1nr -k2,2r "$temp_results" | head -n "$max_results")
+    if [[ -n "$temp_results" ]]; then
+        sorted_results=$(printf '%s\n' "$temp_results" | awk 'NF' | sort -t'|' -k1,1nr -k2,2r | head -n "$max_results")
     fi
-    rm -f "$temp_results"
     
     # Generate HTML output
     if [[ -z "$sorted_results" ]]; then
@@ -248,4 +437,5 @@ invalidate_related_posts_cache_for_tags() {
 # --- Related Posts Functions --- END ---
 
 # Export functions for use by other scripts
-export -f generate_related_posts compute_related_posts clean_related_posts_cache invalidate_related_posts_cache_for_tags 
+export -f generate_related_posts compute_related_posts clean_related_posts_cache invalidate_related_posts_cache_for_tags
+export -f prepare_related_posts_ram_cache

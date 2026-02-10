@@ -16,6 +16,63 @@ source "$(dirname "$0")/related_posts.sh" || { echo >&2 "Error: Failed to source
 
 # --- Post Generation Functions --- START ---
 
+declare -gA BSSG_POST_ISO8601_CACHE=()
+
+format_iso8601_post_date() {
+    local input_dt="$1"
+    local iso_dt=""
+
+    if [ -z "$input_dt" ]; then
+        echo ""
+        return
+    fi
+
+    local cache_key="${TIMEZONE:-local}|${input_dt}"
+    if [[ "$(declare -p BSSG_POST_ISO8601_CACHE 2>/dev/null || true)" != "declare -A"* ]]; then
+        unset BSSG_POST_ISO8601_CACHE 2>/dev/null || true
+        declare -gA BSSG_POST_ISO8601_CACHE=()
+    fi
+    if [[ -n "${BSSG_POST_ISO8601_CACHE[$cache_key]+_}" ]]; then
+        echo "${BSSG_POST_ISO8601_CACHE[$cache_key]}"
+        return
+    fi
+
+    # Handle "now" separately
+    if [ "$input_dt" = "now" ]; then
+        iso_dt=$(LC_ALL=C date +"%Y-%m-%dT%H:%M:%S%z" 2>/dev/null)
+    else
+        # Try parsing different formats based on OS
+        if [[ "$OSTYPE" == "darwin"* ]] || [[ "$OSTYPE" == *"bsd"* ]]; then
+            # Format 1: YYYY-MM-DD HH:MM:SS ZZZZ (e.g., +0200)
+            iso_dt=$(LC_ALL=C date -j -f "%Y-%m-%d %H:%M:%S %z" "$input_dt" +"%Y-%m-%dT%H:%M:%S%z" 2>/dev/null)
+            # Format 2: YYYY-MM-DD HH:MM:SS
+            [ -z "$iso_dt" ] && iso_dt=$(LC_ALL=C date -j -f "%Y-%m-%d %H:%M:%S" "$input_dt" +"%Y-%m-%dT%H:%M:%S%z" 2>/dev/null)
+            # Format 3: YYYY-MM-DD (assume T00:00:00)
+            [ -z "$iso_dt" ] && iso_dt=$(LC_ALL=C date -j -f "%Y-%m-%d" "$input_dt" +"%Y-%m-%dT00:00:00%z" 2>/dev/null)
+            # Format 4: RFC 2822 subset (e.g., 07 Sep 2023 08:10:00 +0200)
+            [ -z "$iso_dt" ] && iso_dt=$(LC_ALL=C date -j -f "%d %b %Y %H:%M:%S %z" "$input_dt" +"%Y-%m-%dT%H:%M:%S%z" 2>/dev/null)
+        else
+            # GNU date -d handles many formats.
+            iso_dt=$(LC_ALL=C date -d "$input_dt" +"%Y-%m-%dT%H:%M:%S%z" 2>/dev/null)
+        fi
+    fi
+
+    # Normalize timezone from +0000 to Z and +hhmm to +hh:mm.
+    if [ -n "$iso_dt" ] && [[ "$iso_dt" =~ ([+-][0-9]{2})([0-9]{2})$ ]]; then
+        local tz_offset="${BASH_REMATCH[0]}"
+        local tz_hh="${BASH_REMATCH[1]}"
+        local tz_mm="${BASH_REMATCH[2]}"
+        if [ "$tz_hh" = "+00" ] && [ "$tz_mm" = "00" ]; then
+            iso_dt="${iso_dt%$tz_offset}Z"
+        else
+            iso_dt="${iso_dt%$tz_offset}${tz_hh}:${tz_mm}"
+        fi
+    fi
+
+    BSSG_POST_ISO8601_CACHE["$cache_key"]="$iso_dt"
+    echo "$iso_dt"
+}
+
 # Convert markdown to HTML
 convert_markdown() {
     local input_file="$1"
@@ -30,61 +87,74 @@ convert_markdown() {
     local description="${10}"
     local author_name="${11}"
     local author_email="${12}"
+    local skip_rebuild_check="${13:-false}"
     
     local content_cache_file="${CACHE_DIR:-.bssg_cache}/content/$(basename "$input_file")"
     local output_html_file="$output_base_path/index.html"
+    local ram_mode_active=false
+    if [ "${BSSG_RAM_MODE:-false}" = true ] && declare -F ram_mode_has_file > /dev/null && ram_mode_has_file "$input_file"; then
+        ram_mode_active=true
+    fi
 
     # Check if the source file exists
-    if [ ! -f "$input_file" ]; then
+    if ! $ram_mode_active && [ ! -f "$input_file" ]; then
         echo -e "${RED}Error: Source file '$input_file' not found${NC}" >&2
         return 1
     fi
 
-    # Skip if output file is newer than input file and no force rebuild
-    if ! file_needs_rebuild "$input_file" "$output_html_file"; then
-        echo -e "Skipping unchanged file: ${YELLOW}$(basename "$input_file")${NC}"
-        return 0
+    # Skip if output file is newer than input file and no force rebuild.
+    # When callers already prefiltered rebuild candidates, this check can be skipped.
+    if [ "$skip_rebuild_check" != true ]; then
+        if ! file_needs_rebuild "$input_file" "$output_html_file"; then
+            echo -e "Skipping unchanged file: ${YELLOW}$(basename "$input_file")${NC}"
+            return 0
+        fi
     fi
 
-    echo -e "Processing post: ${GREEN}$(basename "$input_file")${NC}"
+    if [ "${BSSG_RAM_MODE:-false}" != true ] || [ "${RAM_MODE_VERBOSE:-false}" = true ]; then
+        echo -e "Processing post: ${GREEN}$(basename "$input_file")${NC}"
+    fi
 
-    # IMPORTANT: Assumes lock_file/unlock_file are sourced/available
-    lock_file "$content_cache_file"
-    
-    # Try to get content from cache or file
+    # Extract body content (without frontmatter) in one awk pass.
+    # This is materially faster than line-by-line bash parsing on large markdown files.
     local content=""
-    local in_frontmatter=false
-    local found_frontmatter=false
-    {
-        while IFS= read -r line; do
-            if [[ "$line" == "---" ]]; then
-                if ! $in_frontmatter && ! $found_frontmatter; then
-                    in_frontmatter=true
-                    found_frontmatter=true
-                    continue
-                elif $in_frontmatter; then
-                    in_frontmatter=false
-                    continue # Skip the closing --- line itself
-                fi
-            fi
-            if ! $in_frontmatter && $found_frontmatter; then
-                content+="$line"$'\n'
-            fi
-        done
-    } < "$input_file"
-    
-    # If no frontmatter was found, use the whole file as content
-    if ! $found_frontmatter; then
-        content=$(cat "$input_file")
+    local source_stream=""
+    if $ram_mode_active; then
+        source_stream=$(ram_mode_get_content "$input_file")
+    else
+        source_stream=$(cat "$input_file")
     fi
+    content=$(printf '%s' "$source_stream" | awk '
+        NR == 1 {
+            if ($0 == "---") {
+                has_frontmatter = 1
+                in_frontmatter = 1
+                next
+            }
+        }
+
+        {
+            if (has_frontmatter) {
+                if (in_frontmatter) {
+                    if ($0 == "---") {
+                        in_frontmatter = 0
+                    }
+                    next
+                }
+                print
+            } else {
+                print
+            }
+        }
+    ')
     
     # Cache the markdown content *without frontmatter* for potential use in RSS full content
-    if [ -n "$CACHE_DIR" ] && [ -d "${CACHE_DIR}/content" ]; then
+    if ! $ram_mode_active && [ -n "$CACHE_DIR" ] && [ -d "${CACHE_DIR}/content" ]; then
         # Write the $content variable (which has frontmatter removed) to the cache file
+        lock_file "$content_cache_file"
         printf '%s' "$content" > "$content_cache_file"
+        unlock_file "$content_cache_file"
     fi
-    
-    unlock_file "$content_cache_file"
 
     # Calculate reading time
     local reading_time
@@ -122,7 +192,7 @@ convert_markdown() {
             [[ -z "$tag" ]] && continue
             local tag_slug=$(echo "$tag" | tr '[:upper:]' '[:lower:]' | sed -e 's/ /-/g' -e 's/[^a-z0-9-]//g')
             if [[ -n "$tag_slug" ]]; then # Ensure tag slug is not empty
-                tags_html+=$(printf ' <a href="%s/tags/%s/" class="tag">%s</a>' "${SITE_URL:-}" "$tag_slug" "$tag")
+                tags_html+=" <a href=\"${SITE_URL:-}/tags/${tag_slug}/\" class=\"tag\">${tag}</a>"
             fi
         done
         tags_html+="</div>"
@@ -178,62 +248,16 @@ convert_markdown() {
     if [ -n "$date" ]; then
         local iso_date iso_lastmod_date
 
-        # Function to format date to ISO 8601 with corrected timezone
-        format_iso8601() {
-            local input_dt="$1"
-            local iso_dt=""
-            if [ -z "$input_dt" ]; then echo ""; return; fi
-
-            # Handle "now" separately
-            if [ "$input_dt" = "now" ]; then
-                iso_dt=$(LC_ALL=C date +"%Y-%m-%dT%H:%M:%S%z" 2>/dev/null)
-            else
-                # Try parsing different formats based on OS
-                # Add LC_ALL=C for consistent parsing
-                if [[ "$OSTYPE" == "darwin"* ]] || [[ "$OSTYPE" == *"bsd"* ]]; then
-                    # macOS/BSD: Try formats one by one with date -j -f
-                    # Format 1: YYYY-MM-DD HH:MM:SS ZZZZ (e.g., +0200)
-                    iso_dt=$(LC_ALL=C date -j -f "%Y-%m-%d %H:%M:%S %z" "$input_dt" +"%Y-%m-%dT%H:%M:%S%z" 2>/dev/null)
-                    # Format 2: YYYY-MM-DD HH:MM:SS
-                    [ -z "$iso_dt" ] && iso_dt=$(LC_ALL=C date -j -f "%Y-%m-%d %H:%M:%S" "$input_dt" +"%Y-%m-%dT%H:%M:%S%z" 2>/dev/null)
-                    # Format 3: YYYY-MM-DD (assume T00:00:00)
-                    [ -z "$iso_dt" ] && iso_dt=$(LC_ALL=C date -j -f "%Y-%m-%d" "$input_dt" +"%Y-%m-%dT00:00:00%z" 2>/dev/null)
-                    # Format 4: RFC 2822 subset (e.g., 07 Sep 2023 08:10:00 +0200)
-                    [ -z "$iso_dt" ] && iso_dt=$(LC_ALL=C date -j -f "%d %b %Y %H:%M:%S %z" "$input_dt" +"%Y-%m-%dT%H:%M:%S%z" 2>/dev/null)
-                else # Linux
-                    # GNU date -d is more flexible and handles many formats automatically
-                    iso_dt=$(LC_ALL=C date -d "$input_dt" +"%Y-%m-%dT%H:%M:%S%z" 2>/dev/null)
-                fi
-            fi
-
-            # If parsing succeeded, fix timezone format
-            if [ -n "$iso_dt" ]; then
-                 # Fix timezone format from +0000 to +00:00 or Z
-                 if [[ "$iso_dt" =~ ([+-][0-9]{2})([0-9]{2})$ ]]; then
-                     local tz_offset="${BASH_REMATCH[0]}"
-                     local tz_hh="${BASH_REMATCH[1]}"
-                     local tz_mm="${BASH_REMATCH[2]}"
-                     if [ "$tz_hh" == "+00" ] && [ "$tz_mm" == "00" ]; then
-                         iso_dt="${iso_dt%$tz_offset}Z"
-                     else
-                         iso_dt="${iso_dt%$tz_offset}${tz_hh}:${tz_mm}"
-                     fi
-                 fi
-                 echo "$iso_dt"
-            else
-                echo "" # Return empty if formatting failed
-            fi
-        }
-
-        iso_date=$(format_iso8601 "$date")
+        iso_date=$(format_iso8601_post_date "$date")
         # Use date as fallback for lastmod, then format
-        iso_lastmod_date=$(format_iso8601 "${lastmod:-$date}")
+        iso_lastmod_date=$(format_iso8601_post_date "${lastmod:-$date}")
         # If lastmod still empty, use iso_date as fallback
         [ -z "$iso_lastmod_date" ] && iso_lastmod_date="$iso_date"
 
         # Fallback to build time if both are empty (should be rare)
         if [ -z "$iso_date" ]; then
-            local now_iso=$(format_iso8601 "now")
+            local now_iso
+            now_iso=$(format_iso8601_post_date "now")
             iso_date="$now_iso"
             iso_lastmod_date="$now_iso"
         fi
@@ -319,10 +343,24 @@ convert_markdown() {
     # Generate related posts if enabled and tags exist
     local related_posts_html=""
     if [ "${ENABLE_RELATED_POSTS:-true}" = true ] && [ -n "$tags" ]; then
-        echo -e "${BLUE}DEBUG: Generating related posts for $slug with tags: $tags${NC}"
-        related_posts_html=$(generate_related_posts "$slug" "$tags" "$date" "${RELATED_POSTS_COUNT:-3}")
+        # RAM fast path: direct map lookup avoids per-post command-substitution/function overhead.
+        if [ "${BSSG_RAM_MODE:-false}" = true ] && \
+           [ "${BSSG_RAM_RELATED_POSTS_READY:-false}" = true ] && \
+           [ "${BSSG_RAM_RELATED_POSTS_LIMIT:-}" = "${RELATED_POSTS_COUNT:-3}" ]; then
+            related_posts_html="${BSSG_RAM_RELATED_POSTS_HTML[$slug]-}"
+            if [ "${RAM_MODE_VERBOSE:-false}" = true ]; then
+                echo -e "${BLUE}DEBUG: Generating related posts for $slug with tags: $tags${NC}"
+            fi
+        else
+            if [ "${BSSG_RAM_MODE:-false}" != true ] || [ "${RAM_MODE_VERBOSE:-false}" = true ]; then
+                echo -e "${BLUE}DEBUG: Generating related posts for $slug with tags: $tags${NC}"
+            fi
+            related_posts_html=$(generate_related_posts "$slug" "$tags" "$date" "${RELATED_POSTS_COUNT:-3}")
+        fi
     else
-        echo -e "${BLUE}DEBUG: Skipping related posts for $slug - ENABLE_RELATED_POSTS=${ENABLE_RELATED_POSTS:-true}, tags=$tags${NC}"
+        if [ "${BSSG_RAM_MODE:-false}" != true ] || [ "${RAM_MODE_VERBOSE:-false}" = true ]; then
+            echo -e "${BLUE}DEBUG: Skipping related posts for $slug - ENABLE_RELATED_POSTS=${ENABLE_RELATED_POSTS:-true}, tags=$tags${NC}"
+        fi
     fi
     
     # Construct article body
@@ -368,13 +406,24 @@ process_all_markdown_files() {
     local modified_tags_list="${CACHE_DIR:-.bssg_cache}/modified_tags.list" # Define path for modified tags
     local modified_authors_list="${CACHE_DIR:-.bssg_cache}/modified_authors.list" # Define path for modified authors
     local file_index_prev="${CACHE_DIR:-.bssg_cache}/file_index_prev.txt" # Path to previous index
+    local ram_mode_active=false
+    local file_index_data=""
+    if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+        ram_mode_active=true
+        file_index_data=$(ram_mode_get_dataset "file_index")
+    fi
 
-    if [ ! -f "$file_index" ]; then
+    if ! $ram_mode_active && [ ! -f "$file_index" ]; then
         echo -e "${RED}Error: File index not found at '$file_index'. Run indexing first.${NC}" >&2
         return 1
     fi
 
-    local total_file_count=$(wc -l < "$file_index")
+    local total_file_count=0
+    if $ram_mode_active; then
+        total_file_count=$(printf '%s\n' "$file_index_data" | awk 'NF { c++ } END { print c+0 }')
+    else
+        total_file_count=$(wc -l < "$file_index")
+    fi
     if [ "$total_file_count" -eq 0 ]; then
         echo -e "${YELLOW}No posts found in file index. Skipping post generation.${NC}"
         return 0
@@ -386,7 +435,7 @@ process_all_markdown_files() {
     local posts_needing_rebuild=0
 
     # Only do expensive Pass 1 if related posts are enabled AND posts might need rebuilding
-    if [ "${ENABLE_RELATED_POSTS:-true}" = true ]; then
+    if [ "${ENABLE_RELATED_POSTS:-true}" = true ] && ! $ram_mode_active; then
         echo -e "${BLUE}DEBUG: Related posts enabled, starting quick scan...${NC}"
         # Quick scan to see if ANY posts need rebuilding before doing expensive Pass 1
         echo -e "${YELLOW}Quick scan: Checking if any posts need rebuilding...${NC}"
@@ -435,13 +484,19 @@ process_all_markdown_files() {
                 # Early exit optimization: if we find posts needing rebuild, we need Pass 1
                 break
             fi
-        done < "$file_index"
+        done < <(
+            if $ram_mode_active; then
+                printf '%s\n' "$file_index_data" | awk 'NF'
+            else
+                cat "$file_index"
+            fi
+        )
         
         echo -e "Quick scan result: ${GREEN}$posts_needing_rebuild${NC} posts need rebuilding"
     fi
 
     # --- PASS 1: Only run if needed (posts need rebuilding AND related posts enabled) ---
-    if [ "$needs_pass1" = true ] && [ "${ENABLE_RELATED_POSTS:-true}" = true ]; then
+    if [ "$needs_pass1" = true ] && [ "${ENABLE_RELATED_POSTS:-true}" = true ] && ! $ram_mode_active; then
         echo -e "${BLUE}DEBUG: Both needs_pass1=true and ENABLE_RELATED_POSTS=true, running Pass 1...${NC}"
         echo -e "${YELLOW}Pass 1: Identifying modified tags for related posts cache invalidation...${NC}"
         
@@ -554,6 +609,8 @@ process_all_markdown_files() {
             # Export the list for use in pass 2
             export RELATED_POSTS_INVALIDATED_LIST
         fi
+    elif $ram_mode_active; then
+        echo -e "${BLUE}DEBUG: RAM mode active, skipping Pass 1 related-posts invalidation (in-memory computation).${NC}"
     else
         echo -e "${BLUE}DEBUG: Pass 1 skipped - needs_pass1=$needs_pass1, ENABLE_RELATED_POSTS=${ENABLE_RELATED_POSTS:-true}${NC}"
     fi
@@ -566,63 +623,81 @@ process_all_markdown_files() {
     local files_to_process_count=0
     local skipped_count=0
 
-    while IFS= read -r line; do
-        local file filename title date lastmod tags slug image image_caption description author_name author_email
-        IFS='|' read -r file filename title date lastmod tags slug image image_caption description author_name author_email <<< "$line"
-
-        # Basic check if it looks like a post
-        if [ -z "$date" ] || [[ "$file" != "$SRC_DIR"* ]]; then
-             # echo -e "Skipping non-post file listed in index (pre-check): ${YELLOW}$file${NC}" >&2 # Too verbose
-             continue
-        fi
-
-        # Calculate expected output path (logic copied from process_single_file)
-        local output_path
-        local year month day
-        if [[ "$date" =~ ^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2}) ]]; then
-            year="${BASH_REMATCH[1]}"
-            month=$(printf "%02d" "$((10#${BASH_REMATCH[2]}))")
-            day=$(printf "%02d" "$((10#${BASH_REMATCH[3]}))")
-        else
-            year=$(date +%Y); month=$(date +%m); day=$(date +%d)
-        fi
-        local url_path="${URL_SLUG_FORMAT:-Year/Month/Day/slug}"
-        url_path="${url_path//Year/$year}"; url_path="${url_path//Month/$month}";
-        url_path="${url_path//Day/$day}"; url_path="${url_path//slug/$slug}"
-        local output_html_file="${OUTPUT_DIR:-output}/$url_path/index.html"
-
-        # Perform the rebuild check here
-        common_rebuild_check "$output_html_file"
-        local common_result=$?
-        local needs_rebuild=false
-
-        if [ $common_result -eq 0 ]; then
-            needs_rebuild=true # Common checks failed (config changed, template newer, output missing)
-        else # common_result is 2 (output exists and newer than templates/locale)
-            local input_time=$(get_file_mtime "$file")
-            local output_time=$(get_file_mtime "$output_html_file")
-            if (( input_time > output_time )); then
-                needs_rebuild=true # Input file is newer
+    if $ram_mode_active && [ "${FORCE_REBUILD:-false}" = true ]; then
+        echo -e "RAM mode force rebuild: skipping per-post rebuild checks."
+        while IFS= read -r line; do
+            local file filename title date
+            IFS='|' read -r file filename _ date _ <<< "$line"
+            if [ -n "$date" ] && [[ "$file" == "$SRC_DIR"* ]]; then
+                files_to_process_list+=("$line")
+                files_to_process_count=$((files_to_process_count + 1))
             fi
-        fi
+        done < <(printf '%s\n' "$file_index_data" | awk 'NF')
+    else
+        while IFS= read -r line; do
+            local file filename title date lastmod tags slug image image_caption description author_name author_email
+            IFS='|' read -r file filename title date lastmod tags slug image image_caption description author_name author_email <<< "$line"
 
-        # Check if this post needs rebuilding due to related posts cache invalidation
-        if [ "$needs_rebuild" = false ] && [ -n "${RELATED_POSTS_INVALIDATED_LIST:-}" ] && [ -f "$RELATED_POSTS_INVALIDATED_LIST" ]; then
-            if grep -Fxq "$slug" "$RELATED_POSTS_INVALIDATED_LIST" 2>/dev/null; then
-                needs_rebuild=true # Related posts cache was invalidated
-                echo -e "Rebuilding ${GREEN}$(basename "$file")${NC} due to related posts cache invalidation"
+            # Basic check if it looks like a post
+            if [ -z "$date" ] || [[ "$file" != "$SRC_DIR"* ]]; then
+                 # echo -e "Skipping non-post file listed in index (pre-check): ${YELLOW}$file${NC}" >&2 # Too verbose
+                 continue
             fi
-        fi
 
-        if $needs_rebuild; then
-            files_to_process_list+=("$line")
-            files_to_process_count=$((files_to_process_count + 1))
-        else
-            # Only print skip message if not rebuilding
-            echo -e "Skipping unchanged file: ${YELLOW}$(basename "$file")${NC}"
-            skipped_count=$((skipped_count + 1))
-        fi
-    done < "$file_index"
+            # Calculate expected output path (logic copied from process_single_file)
+            local output_path
+            local year month day
+            if [[ "$date" =~ ^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2}) ]]; then
+                year="${BASH_REMATCH[1]}"
+                month=$(printf "%02d" "$((10#${BASH_REMATCH[2]}))")
+                day=$(printf "%02d" "$((10#${BASH_REMATCH[3]}))")
+            else
+                year=$(date +%Y); month=$(date +%m); day=$(date +%d)
+            fi
+            local url_path="${URL_SLUG_FORMAT:-Year/Month/Day/slug}"
+            url_path="${url_path//Year/$year}"; url_path="${url_path//Month/$month}";
+            url_path="${url_path//Day/$day}"; url_path="${url_path//slug/$slug}"
+            local output_html_file="${OUTPUT_DIR:-output}/$url_path/index.html"
+
+            # Perform the rebuild check here
+            common_rebuild_check "$output_html_file"
+            local common_result=$?
+            local needs_rebuild=false
+
+            if [ $common_result -eq 0 ]; then
+                needs_rebuild=true # Common checks failed (config changed, template newer, output missing)
+            else # common_result is 2 (output exists and newer than templates/locale)
+                local input_time=$(get_file_mtime "$file")
+                local output_time=$(get_file_mtime "$output_html_file")
+                if (( input_time > output_time )); then
+                    needs_rebuild=true # Input file is newer
+                fi
+            fi
+
+            # Check if this post needs rebuilding due to related posts cache invalidation
+            if ! $ram_mode_active && [ "$needs_rebuild" = false ] && [ -n "${RELATED_POSTS_INVALIDATED_LIST:-}" ] && [ -f "$RELATED_POSTS_INVALIDATED_LIST" ]; then
+                if grep -Fxq "$slug" "$RELATED_POSTS_INVALIDATED_LIST" 2>/dev/null; then
+                    needs_rebuild=true # Related posts cache was invalidated
+                    echo -e "Rebuilding ${GREEN}$(basename "$file")${NC} due to related posts cache invalidation"
+                fi
+            fi
+
+            if $needs_rebuild; then
+                files_to_process_list+=("$line")
+                files_to_process_count=$((files_to_process_count + 1))
+            else
+                # Only print skip message if not rebuilding
+                echo -e "Skipping unchanged file: ${YELLOW}$(basename "$file")${NC}"
+                skipped_count=$((skipped_count + 1))
+            fi
+        done < <(
+            if $ram_mode_active; then
+                printf '%s\n' "$file_index_data" | awk 'NF'
+            else
+                cat "$file_index"
+            fi
+        )
+    fi
 
     # Check if any files need processing
     if [ $files_to_process_count -eq 0 ]; then
@@ -632,6 +707,10 @@ process_all_markdown_files() {
     fi
 
     echo -e "Found ${GREEN}$files_to_process_count${NC} posts needing processing out of $total_file_count (Skipped: $skipped_count)."
+
+    if $ram_mode_active && [ "${ENABLE_RELATED_POSTS:-true}" = true ]; then
+        prepare_related_posts_ram_cache "${RELATED_POSTS_COUNT:-3}"
+    fi
 
     # Define a function for processing a single file line from the *filtered* list
     process_single_file_for_rebuild() {
@@ -658,21 +737,59 @@ process_all_markdown_files() {
         url_path="${url_path//Day/$day}"; url_path="${url_path//slug/$slug}"
         output_path="${OUTPUT_DIR:-output}/$url_path"
 
-        # Call the main conversion function
-        # We no longer rely on its internal file_needs_rebuild check
-        # TODO: Consider modifying convert_markdown to accept a force flag or skip its check
-        if ! convert_markdown "$file" "$output_path" "$title" "$date" "$lastmod" "$tags" "$slug" "$image" "$image_caption" "$description" "$author_name" "$author_email"; then
+        # Call the conversion function, skipping internal rebuild checks because this
+        # function only receives files pre-selected for rebuild.
+        if ! convert_markdown "$file" "$output_path" "$title" "$date" "$lastmod" "$tags" "$slug" "$image" "$image_caption" "$description" "$author_name" "$author_email" true; then
             local exit_code=$?
             echo -e "${RED}ERROR:${NC} convert_markdown failed for '$file' with exit code $exit_code. Output HTML may be missing or incomplete." >&2
         fi
     }
 
     # Use GNU parallel if available
-    if [ "${HAS_PARALLEL:-false}" = true ]; then
+    if $ram_mode_active; then
+        local cores
+        cores=$(get_parallel_jobs)
+        if [ "$cores" -gt "$files_to_process_count" ]; then
+            cores="$files_to_process_count"
+        fi
+
+        if [ "$files_to_process_count" -gt 1 ] && [ "$cores" -gt 1 ]; then
+            echo -e "${YELLOW}Using shell parallel workers for $files_to_process_count RAM-mode posts${NC}"
+
+            local worker_pids=()
+            local worker_idx
+            for ((worker_idx = 0; worker_idx < cores; worker_idx++)); do
+                (
+                    local idx
+                    for ((idx = worker_idx; idx < files_to_process_count; idx += cores)); do
+                        process_single_file_for_rebuild "${files_to_process_list[$idx]}"
+                    done
+                ) &
+                worker_pids+=("$!")
+            done
+
+            local pid
+            local worker_failed=false
+            for pid in "${worker_pids[@]}"; do
+                if ! wait "$pid"; then
+                    worker_failed=true
+                fi
+            done
+            if $worker_failed; then
+                echo -e "${RED}Parallel RAM-mode post processing failed.${NC}"
+                exit 1
+            fi
+        else
+            echo -e "${YELLOW}Using sequential processing for $files_to_process_count RAM-mode posts${NC}"
+            local line
+            for line in "${files_to_process_list[@]}"; do
+                process_single_file_for_rebuild "$line"
+            done
+        fi
+    elif [ "${HAS_PARALLEL:-false}" = true ]; then
         echo -e "${GREEN}Using GNU parallel to process $files_to_process_count posts${NC}"
-        local cores=1
-        if command -v nproc > /dev/null 2>&1; then cores=$(nproc);
-        elif command -v sysctl > /dev/null 2>&1; then cores=$(sysctl -n hw.ncpu 2>/dev/null || echo 1); fi
+        local cores
+        cores=$(get_parallel_jobs)
 
         # Export functions and variables needed by parallel tasks
         # Note: We export the new process function
@@ -680,6 +797,7 @@ process_all_markdown_files() {
         # Export dependencies of convert_markdown and its helpers
         export -f file_needs_rebuild get_file_mtime common_rebuild_check config_has_changed # Still needed by convert_markdown *internally* for now
         export -f calculate_reading_time generate_slug format_date fix_url parse_metadata extract_metadata convert_markdown_to_html
+        export -f format_iso8601_post_date
         export -f portable_md5sum # Used by cache funcs
         export CACHE_DIR FORCE_REBUILD OUTPUT_DIR SITE_URL URL_SLUG_FORMAT HEADER_TEMPLATE FOOTER_TEMPLATE
         export SITE_TITLE SITE_DESCRIPTION AUTHOR_NAME MARKDOWN_PROCESSOR MARKDOWN_PL_PATH DATE_FORMAT TIMEZONE SHOW_TIMEZONE

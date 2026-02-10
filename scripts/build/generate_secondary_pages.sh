@@ -14,6 +14,10 @@ generate_pages_index() {
     # --- Define Target File --- 
     local pages_index="$OUTPUT_DIR/pages.html"
     local secondary_pages_list_file="${CACHE_DIR:-.bssg_cache}/secondary_pages.list"
+    local ram_mode_active=false
+    if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+        ram_mode_active=true
+    fi
 
     # --- Cache Check --- START ---
     # Rebuild if force flag is set OR if list file exists and output is older than list file
@@ -22,13 +26,13 @@ generate_pages_index() {
     if [[ "${FORCE_REBUILD:-false}" == true ]]; then
         should_rebuild=true
         echo -e "${YELLOW}Forcing pages index rebuild (--force-rebuild).${NC}"
-    elif [ ! -f "$secondary_pages_list_file" ]; then
+    elif ! $ram_mode_active && [ ! -f "$secondary_pages_list_file" ]; then
          # If list file doesn't exist, we need to generate pages.html (or handle absence)
          # This case might mean 0 secondary pages after a clean build.
          # Let the existing logic handle the case of 0 pages later.
          should_rebuild=true 
          echo -e "${YELLOW}Secondary pages list file not found, rebuilding pages index.${NC}"
-    elif [ ! -f "$pages_index" ] || [ "$pages_index" -ot "$secondary_pages_list_file" ]; then
+    elif ! $ram_mode_active && { [ ! -f "$pages_index" ] || [ "$pages_index" -ot "$secondary_pages_list_file" ]; }; then
         should_rebuild=true
         echo -e "${YELLOW}Pages index is older than secondary pages list, rebuilding.${NC}"
     # Add checks for template file changes? More complex, rely on overall rebuild for now.
@@ -47,7 +51,9 @@ generate_pages_index() {
     # --- Read secondary pages from cache file --- START ---
     local temp_secondary_pages=()
     
-    if [ -f "$secondary_pages_list_file" ]; then
+    if $ram_mode_active; then
+        mapfile -t temp_secondary_pages < <(printf '%s\n' "$(ram_mode_get_dataset "secondary_pages")" | awk 'NF')
+    elif [ -f "$secondary_pages_list_file" ]; then
         # Use mapfile (readarray) to read lines into the array
         mapfile -t temp_secondary_pages < "$secondary_pages_list_file"
         # Optional: Trim whitespace from each element if necessary (mapfile usually handles newlines)
@@ -86,10 +92,8 @@ generate_pages_index() {
 
     # Generate CollectionPage schema
     local schema_json_ld=""
-    local tmp_schema=$(mktemp)
-
     # Create CollectionPage schema
-    cat > "$tmp_schema" << EOF
+    schema_json_ld=$(cat << EOF
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -105,12 +109,7 @@ generate_pages_index() {
 }
 </script>
 EOF
-
-    # Read the schema from the temporary file
-    schema_json_ld=$(cat "$tmp_schema")
-
-    # Remove the temporary file
-    rm "$tmp_schema"
+)
 
     # Add schema markup to header
     header_content=${header_content//\{\{schema_json_ld\}\}/"$schema_json_ld"}

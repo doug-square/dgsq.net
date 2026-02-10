@@ -13,6 +13,7 @@ BUILD_START_TIME=$(date +%s)
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 # Determine the project root (one level up from the SCRIPT_DIR's parent)
 PROJECT_ROOT="$( dirname "$( dirname "$SCRIPT_DIR" )" )"
+export BSSG_PROJECT_ROOT="$PROJECT_ROOT"
 # Check if PROJECT_ROOT is already the current directory to avoid unnecessary cd
 if [ "$PWD" != "$PROJECT_ROOT" ]; then
   echo "Changing directory to project root: $PROJECT_ROOT"
@@ -81,25 +82,180 @@ fi
 # shellcheck source=utils.sh
 source "${SCRIPT_DIR}/utils.sh" || { echo -e "\033[0;31mError: Failed to source utils.sh\033[0m"; exit 1; }
 
+# Build mode validation and setup
+BUILD_MODE="${BUILD_MODE:-normal}"
+case "$BUILD_MODE" in
+    normal|ram) ;;
+    *)
+        echo -e "${RED}Error: Invalid BUILD_MODE '$BUILD_MODE'. Use 'normal' or 'ram'.${NC}" >&2
+        exit 1
+        ;;
+esac
+export BUILD_MODE
+export BSSG_RAM_MODE=false
+
 # Print the theme being used for this build (final value after potential random selection)
 echo -e "${GREEN}Using theme: ${THEME}${NC}"
 
 echo "Loaded utilities."
 
+# --- RAM Mode Stage Timing --- START ---
+BSSG_RAM_TIMING_ENABLED=false
+if [ "$BUILD_MODE" = "ram" ]; then
+    BSSG_RAM_TIMING_ENABLED=true
+fi
+declare -ga BSSG_RAM_TIMING_STAGE_KEYS=()
+declare -ga BSSG_RAM_TIMING_STAGE_LABELS=()
+declare -ga BSSG_RAM_TIMING_STAGE_MS=()
+BSSG_RAM_TIMING_STAGE_ACTIVE=false
+BSSG_RAM_TIMING_CURRENT_STAGE_KEY=""
+BSSG_RAM_TIMING_CURRENT_STAGE_LABEL=""
+BSSG_RAM_TIMING_CURRENT_STAGE_START_MS=0
+
+_bssg_ram_timing_now_ms() {
+    if [ -n "${EPOCHREALTIME:-}" ]; then
+        local epoch_norm sec frac ms_part
+        # Some locales expose EPOCHREALTIME with ',' instead of '.' as decimal separator.
+        epoch_norm="${EPOCHREALTIME/,/.}"
+        if [[ "$epoch_norm" =~ ^([0-9]+)([.][0-9]+)?$ ]]; then
+            sec="${BASH_REMATCH[1]}"
+            frac="${BASH_REMATCH[2]#.}"
+            frac="${frac}000"
+            ms_part="${frac:0:3}"
+            printf '%s\n' $(( 10#$sec * 1000 + 10#$ms_part ))
+            return
+        fi
+    fi
+
+    if command -v perl >/dev/null 2>&1; then
+        perl -MTime::HiRes=time -e 'printf("%.0f\n", time()*1000)'
+    else
+        printf '%s\n' $(( $(date +%s) * 1000 ))
+    fi
+}
+
+_bssg_ram_timing_format_ms() {
+    local ms="$1"
+    printf '%d.%03ds' $((ms / 1000)) $((ms % 1000))
+}
+
+bssg_ram_timing_start() {
+    if [ "$BSSG_RAM_TIMING_ENABLED" != true ]; then
+        return
+    fi
+
+    if [ "$BSSG_RAM_TIMING_STAGE_ACTIVE" = true ]; then
+        bssg_ram_timing_end
+    fi
+
+    BSSG_RAM_TIMING_CURRENT_STAGE_KEY="$1"
+    BSSG_RAM_TIMING_CURRENT_STAGE_LABEL="$2"
+    BSSG_RAM_TIMING_CURRENT_STAGE_START_MS="$(_bssg_ram_timing_now_ms)"
+    BSSG_RAM_TIMING_STAGE_ACTIVE=true
+}
+
+bssg_ram_timing_end() {
+    if [ "$BSSG_RAM_TIMING_ENABLED" != true ] || [ "$BSSG_RAM_TIMING_STAGE_ACTIVE" != true ]; then
+        return
+    fi
+
+    local end_ms elapsed_ms
+    end_ms="$(_bssg_ram_timing_now_ms)"
+    elapsed_ms=$((end_ms - BSSG_RAM_TIMING_CURRENT_STAGE_START_MS))
+    if [ "$elapsed_ms" -lt 0 ]; then
+        elapsed_ms=0
+    fi
+
+    BSSG_RAM_TIMING_STAGE_KEYS+=("$BSSG_RAM_TIMING_CURRENT_STAGE_KEY")
+    BSSG_RAM_TIMING_STAGE_LABELS+=("$BSSG_RAM_TIMING_CURRENT_STAGE_LABEL")
+    BSSG_RAM_TIMING_STAGE_MS+=("$elapsed_ms")
+
+    BSSG_RAM_TIMING_STAGE_ACTIVE=false
+    BSSG_RAM_TIMING_CURRENT_STAGE_KEY=""
+    BSSG_RAM_TIMING_CURRENT_STAGE_LABEL=""
+    BSSG_RAM_TIMING_CURRENT_STAGE_START_MS=0
+}
+
+bssg_ram_timing_print_summary() {
+    if [ "$BSSG_RAM_TIMING_ENABLED" != true ]; then
+        return
+    fi
+
+    # Close any open stage (defensive; build flow should end stages explicitly).
+    if [ "$BSSG_RAM_TIMING_STAGE_ACTIVE" = true ]; then
+        bssg_ram_timing_end
+    fi
+
+    local count="${#BSSG_RAM_TIMING_STAGE_MS[@]}"
+    if [ "$count" -eq 0 ]; then
+        return
+    fi
+
+    local total_ms=0
+    local max_ms=0
+    local max_label=""
+    local i
+    for ((i = 0; i < count; i++)); do
+        local stage_ms="${BSSG_RAM_TIMING_STAGE_MS[$i]}"
+        total_ms=$((total_ms + stage_ms))
+        if [ "$stage_ms" -gt "$max_ms" ]; then
+            max_ms="$stage_ms"
+            max_label="${BSSG_RAM_TIMING_STAGE_LABELS[$i]}"
+        fi
+    done
+
+    echo "------------------------------------------------------"
+    echo -e "${GREEN}RAM mode timing summary:${NC}"
+    printf "  %-26s %12s %10s\n" "Stage" "Duration" "Share"
+    for ((i = 0; i < count; i++)); do
+        local stage_label="${BSSG_RAM_TIMING_STAGE_LABELS[$i]}"
+        local stage_ms="${BSSG_RAM_TIMING_STAGE_MS[$i]}"
+        local pct_tenths=0
+        if [ "$total_ms" -gt 0 ]; then
+            pct_tenths=$(( (stage_ms * 1000 + total_ms / 2) / total_ms ))
+        fi
+        local formatted_ms
+        formatted_ms="$(_bssg_ram_timing_format_ms "$stage_ms")"
+        printf "  %-26s %12s %6d.%d%%\n" "$stage_label" "$formatted_ms" $((pct_tenths / 10)) $((pct_tenths % 10))
+    done
+    echo -e "  ${GREEN}Total (timed stages):$(_bssg_ram_timing_format_ms "$total_ms")${NC}"
+    if [ -n "$max_label" ]; then
+        echo -e "  ${YELLOW}Slowest stage:${NC} ${max_label} ($(_bssg_ram_timing_format_ms "$max_ms"))"
+    fi
+}
+# --- RAM Mode Stage Timing --- END ---
+
 # Check Dependencies
 # shellcheck source=deps.sh
+bssg_ram_timing_start "dependencies" "Dependencies"
 source "${SCRIPT_DIR}/deps.sh" || { echo -e "${RED}Error: Failed to source deps.sh${NC}"; exit 1; }
 check_dependencies # Call the function to perform checks and export HAS_PARALLEL
+bssg_ram_timing_end
+
+if [ "$BUILD_MODE" = "ram" ]; then
+    export BSSG_RAM_MODE=true
+    export FORCE_REBUILD=true
+
+    # shellcheck source=ram_mode.sh
+    source "${SCRIPT_DIR}/ram_mode.sh" || { echo -e "${RED}Error: Failed to source ram_mode.sh${NC}"; exit 1; }
+    print_info "RAM mode enabled: source/template files and build indexes are held in memory."
+    print_info "RAM mode parallel worker cap: ${RAM_MODE_MAX_JOBS:-6} (set RAM_MODE_MAX_JOBS to tune)."
+fi
+
 echo "Checked dependencies. Parallel available: ${HAS_PARALLEL:-false}"
 
 # Source Cache Manager (defines cache functions)
 # shellcheck source=cache.sh
+bssg_ram_timing_start "cache_setup" "Cache Setup/Clean"
 source "${SCRIPT_DIR}/cache.sh" || { echo -e "${RED}Error: Failed to source cache.sh${NC}"; exit 1; }
 echo "Loaded cache manager."
 
 # Check if config changed BEFORE updating the hash file, store status for later use
 BSSG_CONFIG_CHANGED_STATUS=1 # Default to 1 (not changed)
-if config_has_changed; then
+if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+    # RAM mode is intentionally ephemeral, always rebuild from preloaded inputs.
+    BSSG_CONFIG_CHANGED_STATUS=0
+elif config_has_changed; then
     BSSG_CONFIG_CHANGED_STATUS=0 # Set to 0 (changed)
 fi
 export BSSG_CONFIG_CHANGED_STATUS
@@ -118,17 +274,21 @@ fi
 # --- Add check for CLEAN_OUTPUT influencing FORCE_REBUILD --- END ---
 
 # Handle --force-rebuild first
-if [ "${FORCE_REBUILD:-false}" = true ]; then
+if [ "${BSSG_RAM_MODE:-false}" != true ] && [ "${FORCE_REBUILD:-false}" = true ]; then
     echo -e "${YELLOW}Force rebuild enabled, deleting entire cache directory (${CACHE_DIR:-.bssg_cache})...${NC}"
     rm -rf "${CACHE_DIR:-.bssg_cache}"
     echo -e "${GREEN}Cache deleted!${NC}"
 fi
 
-echo "Ensuring cache directory structure exists... (${CACHE_DIR:-.bssg_cache})"
-mkdir -p "${CACHE_DIR:-.bssg_cache}/meta" "${CACHE_DIR:-.bssg_cache}/content"
+if [ "${BSSG_RAM_MODE:-false}" != true ]; then
+    echo "Ensuring cache directory structure exists... (${CACHE_DIR:-.bssg_cache})"
+    mkdir -p "${CACHE_DIR:-.bssg_cache}/meta" "${CACHE_DIR:-.bssg_cache}/content"
 
-# Create initial config hash *after* ensuring cache dir exists
-create_config_hash
+    # Create initial config hash *after* ensuring cache dir exists
+    create_config_hash
+else
+    echo "RAM mode: skipping cache directory creation and config hash persistence."
+fi
 # --- Initial Cache Setup & Cleaning --- END
 
 # Handle --clean-output flag (using logic moved from original main/clean_output_directory)
@@ -148,10 +308,12 @@ if [ "${CLEAN_OUTPUT:-false}" = true ]; then
         echo -e "${YELLOW}Output directory (${OUTPUT_DIR:-output}) does not exist, no need to clean.${NC}"
     fi
 fi
+bssg_ram_timing_end
 
 # Source Content Processor (defines functions like extract_metadata, convert_markdown_to_html)
 # Moved up before indexing as indexing uses some content functions (e.g., generate_slug)
 # shellcheck source=content.sh
+bssg_ram_timing_start "index_build" "Index/Data Build"
 source "${SCRIPT_DIR}/content.sh" || { echo -e "${RED}Error: Failed to source content.sh${NC}"; exit 1; }
 echo "Loaded content processing functions."
 
@@ -161,17 +323,23 @@ echo "Loaded content processing functions."
 source "${SCRIPT_DIR}/indexing.sh" || { echo -e "${RED}Error: Failed to source indexing.sh${NC}"; exit 1; }
 echo "Loaded indexing functions."
 
+if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+    ram_mode_preload_inputs || { echo -e "${RED}Error: RAM preload failed.${NC}"; exit 1; }
+fi
+
 # --- Build Intermediate Indexes ---
 # Moved up before preload_templates
 # --- Start Change: Snapshot previous file index ---
 file_index_file="${CACHE_DIR:-.bssg_cache}/file_index.txt"
 file_index_prev_file="${CACHE_DIR:-.bssg_cache}/file_index_prev.txt"
-if [ -f "$file_index_file" ]; then
-    echo "Snapshotting previous file index to $file_index_prev_file" >&2 # Debug
-    cp "$file_index_file" "$file_index_prev_file"
-else
-    # Ensure previous file doesn't exist if current doesn't
-    rm -f "$file_index_prev_file"
+if [ "${BSSG_RAM_MODE:-false}" != true ]; then
+    if [ -f "$file_index_file" ]; then
+        echo "Snapshotting previous file index to $file_index_prev_file" >&2 # Debug
+        cp "$file_index_file" "$file_index_prev_file"
+    else
+        # Ensure previous file doesn't exist if current doesn't
+        rm -f "$file_index_prev_file"
+    fi
 fi
 # --- End Change ---
 optimized_build_file_index || { echo -e "${RED}Error: Failed to build file index.${NC}"; exit 1; }
@@ -179,12 +347,14 @@ optimized_build_file_index || { echo -e "${RED}Error: Failed to build file index
 # --- Start Change: Snapshot previous tags index ---
 tags_index_file="${CACHE_DIR:-.bssg_cache}/tags_index.txt"
 tags_index_prev_file="${CACHE_DIR:-.bssg_cache}/tags_index_prev.txt"
-if [ -f "$tags_index_file" ]; then
-    echo "Snapshotting previous tags index to $tags_index_prev_file" >&2 # Debug
-    cp "$tags_index_file" "$tags_index_prev_file"
-else
-    # Ensure previous file doesn't exist if current doesn't
-    rm -f "$tags_index_prev_file"
+if [ "${BSSG_RAM_MODE:-false}" != true ]; then
+    if [ -f "$tags_index_file" ]; then
+        echo "Snapshotting previous tags index to $tags_index_prev_file" >&2 # Debug
+        cp "$tags_index_file" "$tags_index_prev_file"
+    else
+        # Ensure previous file doesn't exist if current doesn't
+        rm -f "$tags_index_prev_file"
+    fi
 fi
 # --- End Change ---
 
@@ -199,12 +369,14 @@ build_tags_index || { echo -e "${RED}Error: Failed to build tags index.${NC}"; e
 # --- Start Change: Snapshot previous authors index ---
 authors_index_file="${CACHE_DIR:-.bssg_cache}/authors_index.txt"
 authors_index_prev_file="${CACHE_DIR:-.bssg_cache}/authors_index_prev.txt"
-if [ -f "$authors_index_file" ]; then
-    echo "Snapshotting previous authors index to $authors_index_prev_file" >&2 # Debug
-    cp "$authors_index_file" "$authors_index_prev_file"
-else
-    # Ensure previous file doesn't exist if current doesn't
-    rm -f "$authors_index_prev_file"
+if [ "${BSSG_RAM_MODE:-false}" != true ]; then
+    if [ -f "$authors_index_file" ]; then
+        echo "Snapshotting previous authors index to $authors_index_prev_file" >&2 # Debug
+        cp "$authors_index_file" "$authors_index_prev_file"
+    else
+        # Ensure previous file doesn't exist if current doesn't
+        rm -f "$authors_index_prev_file"
+    fi
 fi
 # --- End Change ---
 
@@ -218,12 +390,14 @@ if [ "${ENABLE_ARCHIVES:-false}" = true ]; then
     # --- Start Change: Snapshot previous archive index ---
     archive_index_file="${CACHE_DIR:-.bssg_cache}/archive_index.txt"
     archive_index_prev_file="${CACHE_DIR:-.bssg_cache}/archive_index_prev.txt"
-    if [ -f "$archive_index_file" ]; then
-        echo "Snapshotting previous archive index to $archive_index_prev_file" >&2 # Debug
-        cp "$archive_index_file" "$archive_index_prev_file"
-    else
-        # Ensure previous file doesn't exist if current doesn't
-        rm -f "$archive_index_prev_file"
+    if [ "${BSSG_RAM_MODE:-false}" != true ]; then
+        if [ -f "$archive_index_file" ]; then
+            echo "Snapshotting previous archive index to $archive_index_prev_file" >&2 # Debug
+            cp "$archive_index_file" "$archive_index_prev_file"
+        else
+            # Ensure previous file doesn't exist if current doesn't
+            rm -f "$archive_index_prev_file"
+        fi
     fi
     # --- End Change ---
     build_archive_index || { echo -e "${RED}Error: Failed to build archive index.${NC}"; exit 1; }
@@ -232,10 +406,12 @@ if [ "${ENABLE_ARCHIVES:-false}" = true ]; then
     # --- End Change ---
 fi
 echo "Built intermediate cache indexes."
+bssg_ram_timing_end
 
 # Load Templates (and generate dynamic menus, exports vars like HEADER_TEMPLATE)
 # Moved down after indexing
 # shellcheck source=templates.sh
+bssg_ram_timing_start "templates" "Template Prep"
 source "${SCRIPT_DIR}/templates.sh" || { echo -e "${RED}Error: Failed to source templates.sh${NC}"; exit 1; }
 preload_templates # Call the function
 echo "Loaded and processed templates."
@@ -279,6 +455,7 @@ fi
 export BSSG_MAX_TEMPLATE_LOCALE_TIME=$latest_template_locale_time
 echo "Latest template/locale time: $BSSG_MAX_TEMPLATE_LOCALE_TIME (Header: $header_time, Footer: $footer_time, Locale: $locale_time)"
 # --- Pre-calculate Max Template/Locale Time --- END ---
+bssg_ram_timing_end
 
 # --- Prepare for Parallel Processing ---
 if [ "${HAS_PARALLEL:-false}" = true ]; then
@@ -311,32 +488,39 @@ fi
 # --- Generate Content HTML ---
 # Source and run Post Generator
 # shellcheck source=generate_posts.sh
+bssg_ram_timing_start "posts" "Posts"
 source "${SCRIPT_DIR}/generate_posts.sh" || { echo -e "${RED}Error: Failed to source generate_posts.sh${NC}"; exit 1; }
 process_all_markdown_files || { echo -e "${RED}Error: Post processing failed.${NC}"; exit 1; }
 echo "Generated post HTML files."
+bssg_ram_timing_end
 
 # --- Post Generation --- END ---
 
 # --- Page Generation --- START --
 # Source the page generation script
 # shellcheck source=generate_pages.sh disable=SC1091
+bssg_ram_timing_start "pages" "Static Pages"
 source "$SCRIPT_DIR/generate_pages.sh" || { echo -e "${RED}Error: Failed to source generate_pages.sh${NC}"; exit 1; }
 # Call the main page processing function
 process_all_pages || { echo -e "${RED}Error: Page processing failed.${NC}"; exit 1; }
+bssg_ram_timing_end
 # --- Page Generation --- END ---
 
 # --- Tag Page Generation --- START ---
 # Source and run Tag Page Generator
 # shellcheck source=generate_tags.sh disable=SC1091
+bssg_ram_timing_start "tags" "Tags"
 source "$SCRIPT_DIR/generate_tags.sh" || { echo -e "${RED}Error: Failed to source generate_tags.sh${NC}"; exit 1; }
 # Call the main function from the sourced script
 generate_tag_pages || { echo -e "${RED}Error: Tag page generation failed.${NC}"; exit 1; }
 echo "Generated tag list pages."
+bssg_ram_timing_end
 # --- Tag Page Generation --- END ---
 
 # --- Author Page Generation --- START ---
 # Source and run Author Page Generator (if enabled)
 if [ "${ENABLE_AUTHOR_PAGES:-true}" = true ]; then
+    bssg_ram_timing_start "authors" "Authors"
     # shellcheck source=generate_authors.sh disable=SC1091
     source "$SCRIPT_DIR/generate_authors.sh" || { echo -e "${RED}Error: Failed to source generate_authors.sh${NC}"; exit 1; }
     
@@ -344,12 +528,14 @@ if [ "${ENABLE_AUTHOR_PAGES:-true}" = true ]; then
     # It will internally use AFFECTED_AUTHORS and AUTHORS_INDEX_NEEDS_REBUILD
     generate_author_pages || { echo -e "${RED}Error: Author page generation failed.${NC}"; exit 1; }
     echo "Generated author pages."
+    bssg_ram_timing_end
 fi
 # --- Author Page Generation --- END ---
 
 # --- Archive Page Generation --- START ---
 # Source and run Archive Page Generator (if enabled)
 if [ "${ENABLE_ARCHIVES:-false}" = true ]; then
+    bssg_ram_timing_start "archives" "Archives"
     # Source the script (loads functions)
     # shellcheck source=generate_archives.sh disable=SC1091
     source "$SCRIPT_DIR/generate_archives.sh" || { echo -e "${RED}Error: Failed to source generate_archives.sh${NC}"; exit 1; }
@@ -358,28 +544,68 @@ if [ "${ENABLE_ARCHIVES:-false}" = true ]; then
     # It will internally use AFFECTED_ARCHIVE_MONTHS and ARCHIVE_INDEX_NEEDS_REBUILD
     generate_archive_pages || { echo -e "${RED}Error: Archive page generation failed.${NC}"; exit 1; }
     echo "Generated archive pages."
+    bssg_ram_timing_end
 fi
 # --- Archive Page Generation --- END ---
 
 # --- Main Index Page Generation --- START ---
 # Source and run Main Index Page Generator
 # shellcheck source=generate_index.sh disable=SC1091
+bssg_ram_timing_start "main_index" "Main Index"
 source "$SCRIPT_DIR/generate_index.sh" || { echo -e "${RED}Error: Failed to source generate_index.sh${NC}"; exit 1; }
 # Call the main function from the sourced script
 generate_index || { echo -e "${RED}Error: Index page generation failed.${NC}"; exit 1; }
 echo "Generated main index/pagination pages."
+bssg_ram_timing_end
 # --- Main Index Page Generation --- END ---
 
 # --- Feed Generation --- START ---
 # Source and run Feed Generator
 # shellcheck source=generate_feeds.sh disable=SC1091
+bssg_ram_timing_start "feeds" "Sitemap/RSS"
 source "$SCRIPT_DIR/generate_feeds.sh" || { echo -e "${RED}Error: Failed to source generate_feeds.sh${NC}"; exit 1; }
 # Call the functions from the sourced script
 echo "Timing sitemap generation..."
-generate_sitemap || echo -e "${YELLOW}Sitemap generation failed, continuing build...${NC}" # Allow failure
-echo "Timing RSS feed generation..."
-generate_rss || echo -e "${YELLOW}RSS feed generation failed, continuing build...${NC}" # Allow failure
+if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+    echo "Timing RSS feed generation..."
+    feed_jobs=0
+    feed_jobs=$(get_parallel_jobs)
+    if [ "$feed_jobs" -gt 1 ]; then
+        echo "RAM mode: generating sitemap and RSS in parallel..."
+
+        sitemap_failed=false
+        rss_failed=false
+
+        generate_sitemap &
+        sitemap_pid=$!
+
+        generate_rss &
+        rss_pid=$!
+
+        if ! wait "$sitemap_pid"; then
+            sitemap_failed=true
+        fi
+        if ! wait "$rss_pid"; then
+            rss_failed=true
+        fi
+
+        if $sitemap_failed; then
+            echo -e "${YELLOW}Sitemap generation failed, continuing build...${NC}"
+        fi
+        if $rss_failed; then
+            echo -e "${YELLOW}RSS feed generation failed, continuing build...${NC}"
+        fi
+    else
+        generate_sitemap || echo -e "${YELLOW}Sitemap generation failed, continuing build...${NC}" # Allow failure
+        generate_rss || echo -e "${YELLOW}RSS feed generation failed, continuing build...${NC}" # Allow failure
+    fi
+else
+    generate_sitemap || echo -e "${YELLOW}Sitemap generation failed, continuing build...${NC}" # Allow failure
+    echo "Timing RSS feed generation..."
+    generate_rss || echo -e "${YELLOW}RSS feed generation failed, continuing build...${NC}" # Allow failure
+fi
 echo "Generated RSS feed and sitemap."
+bssg_ram_timing_end
 # --- Feed Generation --- END ---
 
 # --- Secondary Pages Index Generation --- START ---
@@ -389,10 +615,12 @@ echo "Generated RSS feed and sitemap."
 # We attempt to reconstruct the array from the exported string.
 # shellcheck disable=SC2154 # SECONDARY_PAGES is exported by templates.sh
 if [ -n "$SECONDARY_PAGES" ] && [ "$SECONDARY_PAGES" != "()" ]; then
+    bssg_ram_timing_start "secondary_index" "Secondary Index"
     # shellcheck source=generate_secondary_pages.sh disable=SC1091
     source "$SCRIPT_DIR/generate_secondary_pages.sh" || { echo -e "${RED}Error: Failed to source generate_secondary_pages.sh${NC}"; exit 1; }
     generate_pages_index || echo -e "${YELLOW}Secondary pages index generation failed, continuing build...${NC}" # Allow failure
     echo "Generated secondary pages index."
+    bssg_ram_timing_end
 else
     echo "No secondary pages defined, skipping secondary index generation."
 fi
@@ -401,6 +629,7 @@ fi
 # --- Asset Handling --- START ---
 # Source the asset handling script
 # shellcheck source=assets.sh disable=SC1091
+bssg_ram_timing_start "assets" "Assets/CSS"
 source "$SCRIPT_DIR/assets.sh" || { echo -e "${RED}Error: Failed to source assets.sh${NC}"; exit 1; }
 # Copy static assets
 echo "Timing static files copy..."
@@ -409,41 +638,60 @@ copy_static_files || { echo -e "${RED}Error: Failed to copy static assets.${NC}"
 echo "Timing CSS/Theme processing..."
 create_css "$OUTPUT_DIR" "$THEME" || { echo -e "${RED}Error: Failed to process CSS.${NC}"; exit 1; } # Pass OUTPUT_DIR and THEME
 echo "Handled static assets and CSS."
+bssg_ram_timing_end
 # --- Asset Handling --- END ---
 
 # --- Post Processing --- START ---
 # Source and run Post Processor
 # shellcheck source=post_process.sh disable=SC1091
+bssg_ram_timing_start "post_process" "Post Processing"
 source "$SCRIPT_DIR/post_process.sh" || { echo -e "${RED}Error: Failed to source post_process.sh${NC}"; exit 1; }
 echo "Timing URL post-processing..."
 post_process_urls || echo -e "${YELLOW}URL post-processing failed, continuing...${NC}" # Allow failure
 echo "Timing output permissions fix..."
 fix_output_permissions || echo -e "${YELLOW}Fixing output permissions failed, continuing...${NC}" # Allow failure
 echo "Completed post-processing."
+bssg_ram_timing_end
 # --- Post Processing --- END ---
 
 # --- Final Cache Update --- START ---
-create_config_hash
+if [ "${BSSG_RAM_MODE:-false}" != true ]; then
+    create_config_hash
+fi
 # --- Final Cache Update --- END ---
 
 # --- Final Cleanup --- START ---
-echo "Cleaning up previous index files..."
-rm -f "${CACHE_DIR:-.bssg_cache}/file_index_prev.txt"
-rm -f "${CACHE_DIR:-.bssg_cache}/tags_index_prev.txt"
-rm -f "${CACHE_DIR:-.bssg_cache}/authors_index_prev.txt"
-rm -f "${CACHE_DIR:-.bssg_cache}/archive_index_prev.txt"
+if [ "${BSSG_RAM_MODE:-false}" != true ]; then
+    echo "Cleaning up previous index files..."
+    rm -f "${CACHE_DIR:-.bssg_cache}/file_index_prev.txt"
+    rm -f "${CACHE_DIR:-.bssg_cache}/tags_index_prev.txt"
+    rm -f "${CACHE_DIR:-.bssg_cache}/authors_index_prev.txt"
+    rm -f "${CACHE_DIR:-.bssg_cache}/archive_index_prev.txt"
 
-# Remove the frontmatter changes marker if it exists
-rm -f "${CACHE_DIR:-.bssg_cache}/frontmatter_changes_marker"
+    # Remove the frontmatter changes marker if it exists
+    rm -f "${CACHE_DIR:-.bssg_cache}/frontmatter_changes_marker"
 
-# Clean up related posts temporary files to prevent unnecessary cache invalidation on next build
-rm -f "${CACHE_DIR:-.bssg_cache}/modified_tags.list"
-rm -f "${CACHE_DIR:-.bssg_cache}/modified_authors.list"
-rm -f "${CACHE_DIR:-.bssg_cache}/related_posts_invalidated.list"
+    # Clean up related posts temporary files to prevent unnecessary cache invalidation on next build
+    rm -f "${CACHE_DIR:-.bssg_cache}/modified_tags.list"
+    rm -f "${CACHE_DIR:-.bssg_cache}/modified_authors.list"
+    rm -f "${CACHE_DIR:-.bssg_cache}/related_posts_invalidated.list"
+fi
 
 # --- Final Cleanup --- END ---
 
 # --- Pre-compress Assets --- START ---
+_precompress_single_file() {
+    local file="$1"
+    local gzfile="$2"
+    local compression_level="$3"
+    local verbose_logs="$4"
+
+    if [ "$verbose_logs" = "true" ]; then
+        echo "Compressing: $file"
+    fi
+    gzip -c "-${compression_level}" -- "$file" > "$gzfile"
+}
+
 precompress_assets() {
     # Check if pre-compression is enabled in the config.
     if [ ! "${PRECOMPRESS_ASSETS:-false}" = "true" ]; then
@@ -451,6 +699,11 @@ precompress_assets() {
     fi
 
     echo "Starting pre-compression of assets..."
+    local compression_level="${PRECOMPRESS_GZIP_LEVEL:-9}"
+    if ! [[ "$compression_level" =~ ^[1-9]$ ]]; then
+        compression_level=9
+    fi
+    local verbose_logs="${PRECOMPRESS_VERBOSE:-${RAM_MODE_VERBOSE:-false}}"
 
     # 1. Cleanup: Remove any .gz file that does not have a corresponding original file.
     # This handles cases where original files were deleted.
@@ -465,25 +718,63 @@ precompress_assets() {
 
     # 2. Compression: Compress text files if they are new or have been updated.
     # We target .html, .css, .xml and .js files.
-    find "${OUTPUT_DIR}" -type f \( -name "*.html" -o -name "*.css" -o -name "*.xml" -o -name "*.js" \) -print0 | while IFS= read -r -d '' file; do
-        gzfile="${file}.gz"
+    local changed_files=()
+    while IFS= read -r -d '' file; do
+        local gzfile="${file}.gz"
         # Compress if the .gz file doesn't exist, or if the original file is newer.
         if [ ! -f "$gzfile" ] || [ "$file" -nt "$gzfile" ]; then
-            echo "Compressing: $file"
-            # Use gzip with best compression (-9) and write to stdout, then redirect.
-            # This is a robust way to handle output and overwriting.
-            gzip -c -9 -- "$file" > "$gzfile"
+            changed_files+=("$file")
         fi
-    done
+    done < <(find "${OUTPUT_DIR}" -type f \( -name "*.html" -o -name "*.css" -o -name "*.xml" -o -name "*.js" \) -print0)
+
+    if [ "${#changed_files[@]}" -eq 0 ]; then
+        echo "No changed assets to pre-compress."
+        echo "Asset pre-compression finished."
+        return
+    fi
+
+    local compress_jobs
+    compress_jobs=$(get_parallel_jobs "${PRECOMPRESS_MAX_JOBS:-0}")
+    if [ "$compress_jobs" -gt "${#changed_files[@]}" ]; then
+        compress_jobs="${#changed_files[@]}"
+    fi
+
+    if [ "$compress_jobs" -gt 1 ]; then
+        local file gzfile q_file q_gzfile q_level q_verbose
+        q_level=$(printf '%q' "$compression_level")
+        q_verbose=$(printf '%q' "$verbose_logs")
+        run_parallel "$compress_jobs" < <(
+            for file in "${changed_files[@]}"; do
+                gzfile="${file}.gz"
+                q_file=$(printf '%q' "$file")
+                q_gzfile=$(printf '%q' "$gzfile")
+                printf "_precompress_single_file %s %s %s %s\n" "$q_file" "$q_gzfile" "$q_level" "$q_verbose"
+            done
+        ) || { echo -e "${RED}Asset pre-compression failed.${NC}"; return 1; }
+    else
+        local file gzfile
+        for file in "${changed_files[@]}"; do
+            gzfile="${file}.gz"
+            _precompress_single_file "$file" "$gzfile" "$compression_level" "$verbose_logs" || {
+                echo -e "${RED}Asset pre-compression failed for ${file}.${NC}"
+                return 1
+            }
+        done
+    fi
+
+    echo "Pre-compressed ${#changed_files[@]} assets using ${compress_jobs} worker(s) (gzip -${compression_level})."
 
     echo "Asset pre-compression finished."
 }
 
 # Execute the asset compression.
+bssg_ram_timing_start "precompress" "Pre-compress"
 precompress_assets
+bssg_ram_timing_end
 # --- Pre-compress Assets --- END ---
 
 # --- Deployment --- START ---
+bssg_ram_timing_start "deployment" "Deployment Decision/Run"
 deploy_now="false"
 if [[ "${CMD_DEPLOY_OVERRIDE:-unset}" == "true" ]]; then # Use default value for safety
     deploy_now="true"
@@ -544,12 +835,15 @@ if [[ "$deploy_now" == "true" ]]; then
         echo -e "${YELLOW}Warning: Deployment was requested, but DEPLOY_SCRIPT is not set in configuration.${NC}"
     fi
 fi
+bssg_ram_timing_end
 # --- Deployment --- END ---
 
 # --- End of execution ---
 
 BUILD_END_TIME=$(date +%s)
 BUILD_DURATION=$((BUILD_END_TIME - BUILD_START_TIME))
+bssg_ram_timing_print_summary
 echo "------------------------------------------------------"
 echo -e "${GREEN}Build process completed in ${BUILD_DURATION} seconds.${NC}"
+
 exit 0 

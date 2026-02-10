@@ -28,19 +28,21 @@
 
 - Generates HTML from Markdown using pandoc, commonmark, or markdown.pl (configurable)
 - Supports post metadata (title, date, tags)
-- Supports `lastmod` timestamp in frontmatter for tracking content updates (used in sitemap, RSS feed, and optionally displayed on posts).
+- Supports `lastmod` timestamp in frontmatter for tracking content updates (used in sitemap, RSS feed, and optionally displayed on posts)
 - Full date and time support with timezone awareness
 - Post descriptions/summaries for previews, OpenGraph, and RSS
 - Admin interface for managing posts and scheduling publications (planned for future release)
 - Standalone post editor with modern Ghost-like interface for visual content creation
-- Creates tag index pages
-- Related Posts: Automatically suggests related posts based on shared tags at the end of each post
-- Author index pages with conditional navigation menu
+- Creates tag index pages with optional tag RSS feeds
+- Related Posts: automatically suggests related posts based on shared tags at the end of each post
+- Author index pages with conditional navigation menu and optional author RSS feeds
 - Archives by year and month for chronological browsing
 - Dynamic menu generation based on available pages
 - Support for primary and secondary pages with automatic menu organization
-- Generates sitemap.xml and RSS feed with timezone support
-- Asset pre-compression: Can automatically create gzipped versions of text-based files (`.html`, `.css`, `.xml`, `.js`) during the build for servers that support serving pre-compressed content.
+- Generates `sitemap.xml` and RSS feeds with timezone support
+- Two build modes: `normal` (incremental, cache-backed) and `ram` (memory-first)
+- RAM mode stage timing summary printed at the end of each RAM build
+- Asset pre-compression with incremental and parallel gzip processing (`.html`, `.css`, `.xml`, `.js`)
 - Clean design
 - No JavaScript required (except for admin interface)
 - Works well without images
@@ -52,11 +54,9 @@
 - Supports static files (images, CSS, JS, etc.)
 - Configurable clean output directory option
 - Draft posts support
-- Post scheduling system
 - Backup and restore functionality
-- Incremental builds with file caching for improved performance
-- Smart metadata caching system
-- Parallel processing support using GNU parallel (if available)
+- Incremental builds with file and metadata caching for improved performance
+- Parallel processing with GNU parallel (if available) plus shell-worker fallbacks
 - File locking for safe concurrent operations
 - Automatic handling of different operating systems (Linux/macOS/BSDs)
 - Custom URL slugs with SEO-friendly permalinks
@@ -207,20 +207,25 @@ BSSG/
 ├── scripts/                       # Supporting scripts
 │   ├── build/                     # Modular build scripts
 │   │   ├── main.sh                # Main build orchestrator
-│   │   ├── utils.sh               # Utility functions (colors, formatting, etc.)
-│   │   ├── cli.sh                 # Command-line argument parsing
-│   │   ├── config_loader.sh       # Loads default and user configuration
-│   │   ├── deps.sh                # Dependency checking
-│   │   ├── cache.sh               # Cache management functions
-│   │   ├── content_discovery.sh   # Finds posts, pages, drafts
-│   │   ├── markdown_processor.sh  # Markdown conversion logic
-│   │   ├── process_posts.sh       # Processes individual posts
-│   │   ├── process_pages.sh       # Processes individual pages
-│   │   ├── generate_indexes.sh    # Creates index, tag, and archive pages
-│   │   ├── generate_feeds.sh      # Creates RSS feed and sitemap
+│   │   ├── config_loader.sh       # Loads defaults and local overrides
+│   │   ├── deps.sh                # Dependency checks
+│   │   ├── cache.sh               # Cache/config hash helpers
+│   │   ├── content.sh             # Metadata/excerpt/markdown helpers
+│   │   ├── indexing.sh            # File/tags/authors/archive index builders
+│   │   ├── templates.sh           # Template preload/menu generation
+│   │   ├── generate_posts.sh      # Post rendering
+│   │   ├── generate_pages.sh      # Static page rendering
+│   │   ├── generate_index.sh      # Homepage/pagination generation
+│   │   ├── generate_tags.sh       # Tag pages (+ optional tag RSS)
+│   │   ├── generate_authors.sh    # Author pages (+ optional author RSS)
+│   │   ├── generate_archives.sh   # Archive pages (year/month)
+│   │   ├── generate_feeds.sh      # Main RSS + sitemap
 │   │   ├── generate_secondary_pages.sh # Creates pages.html index
-│   │   ├── copy_static.sh         # Copies static files and theme assets
-│   │   └── theme_utils.sh         # Theme-related utilities
+│   │   ├── related_posts.sh       # Related-post indexing/render helpers
+│   │   ├── post_process.sh        # URL rewrite + permissions fixes
+│   │   ├── assets.sh              # Static copy + CSS/theme handling
+│   │   ├── ram_mode.sh            # RAM-mode preload/in-memory datasets
+│   │   └── utils.sh               # Shared helpers (time, URLs, parallel)
 │   ├── post.sh                    # Handles post creation
 │   ├── page.sh                    # Handles page creation
 │   ├── edit.sh                    # Handles post/page editing (updates lastmod)
@@ -228,6 +233,8 @@ BSSG/
 │   ├── list.sh                    # Lists posts, pages, drafts, tags
 │   ├── backup.sh                  # Backup functionality
 │   ├── restore.sh                 # Restore functionality
+│   ├── benchmark.sh               # Build benchmarking helper
+│   ├── server.sh                  # Local development server implementation
 │   ├── theme.sh                   # Theme management and processing (legacy helper)
 │   ├── template.sh                # Template processing utilities (legacy helper)
 │   └── css.sh                     # CSS generation utilities (legacy helper)
@@ -261,58 +268,33 @@ BSSG/
 
 ```bash
 cd BSSG
-./bssg.sh [command] [options]
+./bssg.sh [--config <path>] [command] [options]
 ```
 
 ### Available Commands
 
 ```
-Usage: ./bssg.sh command [options]
+Usage: ./bssg.sh [--config <path>] command [options]
 
 Commands:
-  post [-html] [draft_file]    # Interactive: Create/edit post/draft, prompt for title, open editor.
-                               # Rebuilds site afterwards if REBUILD_AFTER_POST=true in config.
-                               # Use -html for HTML format.
+  post [-html] [draft_file]
+                               Interactive: create/edit post or continue a draft.
   post -t <title> [-T <tags>] [-s <slug>] [--html] [-d] {-c <content> | -f <file> | --stdin} [--build]
-                               # Command-line: Create post non-interactively.
-                               #   -t: Title (required)
-                               #   -T: Tags (comma-sep)
-                               #   -s: Slug (optional)
-                               #   --html: HTML format (default: MD)
-                               #   -d: Save as draft
-                               #   -c: Content string
-                               #   -f: Content file
-                               #   --stdin: Content from stdin
-                               #   --build: Force rebuild (overrides REBUILD_AFTER_POST=false)
-  page [-html] [-s] [draft_file] Create a new page (in $PAGES_DIR or $DRAFTS_DIR/pages)
-                               or continue editing a draft (in $DRAFTS_DIR/pages)
-                               Use -html to edit in HTML instead of Markdown
-                               Use -s to mark page as secondary (for menu)
-  edit [-n] <file>             Edit an existing post/page/draft (updates lastmod)
-                               File path should point to $SRC_DIR, $PAGES_DIR, $DRAFTS_DIR etc.
-                               Use -n to rename based on title (posts/drafts only currently)
-  delete [-f] <file>           Delete a post/page/draft
-                               File path should point to $SRC_DIR, $PAGES_DIR, $DRAFTS_DIR etc.
-                               Use -f to skip confirmation
-  list {posts|pages|drafts|tags [-n]}
-                               List posts ($SRC_DIR), pages ($PAGES_DIR),
-                               drafts ($DRAFTS_DIR and $DRAFTS_DIR/pages), or tags.
-                               For tags, use -n to sort by count.
-  backup                       Create a backup of all posts, pages, drafts, and config
-  restore [backup_file|ID]     Restore from a backup (all content by default)
-                               Options: --no-content, --no-config
-  backups                      List all available backups
-  build [opts]                 Build the site using the modular build system in scripts/build/
-                               Options: -c|--clean-output, -f|--force-rebuild,
-                                        --config FILE, --theme NAME,
-                                        --site-url URL, --output DIR
-  init <target_directory>      Initialize a new, empty site structure in the specified directory.
-                               This is useful for separating your site content from the BSSG core scripts.
-                               The script will preserve the path format you provide (relative, absolute, or tilde-prefixed)
-                               in the generated site 'config.sh.local' for portability.
-                               Note: If using '~' for your home directory, quote the path (e.g., '~/mysite' or "~/mysite")
-                               to ensure the tilde is preserved in the generated config.
-  help                         Show this help message
+                               Command-line: create post non-interactively.
+  page [-html] [-s] [draft_file]
+                               Create a page or continue a page draft.
+  edit [-n] <file>             Edit an existing post/page/draft (updates lastmod).
+  delete [-f] <file>           Delete a post/page/draft.
+  list                         List all posts.
+  tags [-n]                    List all tags. Use -n to sort by post count.
+  drafts                       List all draft posts.
+  backup                       Create a backup of posts, pages, drafts, and config.
+  restore [backup_file|ID]     Restore from a backup (options: --no-content, --no-config).
+  backups                      List all available backups.
+  build [options]              Build the site (run './bssg.sh build --help' for full options).
+  server [options]             Build and run local server (run './bssg.sh server --help').
+  init <target_directory>      Initialize a new site in the specified directory.
+  help                         Show help.
 ```
 
 ### Creating Posts and Pages
@@ -469,22 +451,38 @@ You can use these options with restore to selectively restore content:
 Usage: ./bssg.sh build [options]
 
 Options:
-  -c, --clean-output      Empty the output directory before building
+  --src DIR               Override source directory (from config: SRC_DIR)
+  --pages DIR             Override pages directory (from config: PAGES_DIR)
+  --drafts DIR            Override drafts directory (from config: DRAFTS_DIR)
+  --output DIR            Override output directory (from config: OUTPUT_DIR)
+  --templates DIR         Override templates directory (from config: TEMPLATES_DIR)
+  --themes-dir DIR        Override themes directory (from config: THEMES_DIR)
+  --theme NAME            Override theme for this build
+  --static DIR            Override static directory (from config: STATIC_DIR)
+  --clean-output [bool]   Clean output directory before build (default from config)
   -f, --force-rebuild     Ignore cache and rebuild all files
-  --config FILE           Use a specific configuration file (e.g., my_config.sh)
-                          instead of the default config.sh
-  --src DIR               Override the SRC_DIR specified in the config file
-  --pages DIR             Override the PAGES_DIR specified in the config file
-  --drafts DIR            Override the DRAFTS_DIR specified in the config file
-  --output DIR            Build the site to a specific output directory
-  --templates DIR         Override the TEMPLATES_DIR specified in the config file
-  --themes-dir DIR        Override the THEMES_DIR specified in the config file
-  --theme NAME            Override the theme specified in the config file for this build
-  --static DIR            Override the STATIC_DIR specified in the config file
-  --site-url URL          Override the SITE_URL specified in the config file for this build
+  --build-mode MODE       Build mode: normal or ram
+  --site-title TITLE      Override site title
+  --site-url URL          Override site URL
+  --site-description DESC Override site description
+  --author-name NAME      Override author name
+  --author-email EMAIL    Override author email
+  --posts-per-page NUM    Override pagination size
   --deploy                Force deployment after successful build (overrides config)
-  --no-deploy             Prevent deployment after build (overrides config)
+  --no-deploy             Skip deployment after build (overrides config)
+  --help                  Show build help
 ```
+
+`--config <path>` is a global option and can be passed with any command (including `build`) to load a specific configuration file.
+
+Examples:
+
+```bash
+./bssg.sh --config /path/to/site/config.sh.local build --build-mode ram
+./bssg.sh build --output ./public --clean-output true
+```
+
+The option list above reflects the current `build --help` output.
 
 ### Internationalization (i18n)
 
@@ -707,6 +705,16 @@ CLEAN_OUTPUT=false # If true, BSSG will always perform a full rebuild
 REBUILD_AFTER_POST=true # Build site automatically after creating a new post (scripts/post.sh)
 REBUILD_AFTER_EDIT=true # Build site automatically after editing a post (scripts/edit.sh)
 PRECOMPRESS_ASSETS="false" # Options: "true", "false". If true, compress text assets (HTML, CSS, XML, JS) with gzip during build.
+BUILD_MODE="normal" # Options: "normal", "ram". RAM mode preloads inputs and keeps build indexes/data in memory.
+
+# Optional performance tunables (not required):
+# RAM_MODE_MAX_JOBS=6            # Cap parallel workers in RAM mode (defaults to 6)
+# RAM_MODE_VERBOSE=false         # Extra RAM-mode debug/timing logs
+# PRECOMPRESS_GZIP_LEVEL=9       # gzip level for precompression (1-9)
+# PRECOMPRESS_MAX_JOBS=0         # 0=auto based on CPU/RAM mode cap
+# PRECOMPRESS_VERBOSE=false      # Verbose logs for precompression
+# RAM_RSS_PREFILL_MIN_HITS=2     # RAM tag-RSS cache prefill threshold
+# RAM_RSS_PREFILL_MAX_POSTS=24   # RAM tag-RSS prefill upper bound
 
 # Customization
 CUSTOM_CSS="" # Optional: Path to custom CSS file relative to output root (e.g., "/css/custom.css"). File should be placed in STATIC_DIR.
@@ -1130,13 +1138,25 @@ The system maintains a cache of extracted metadata from markdown files to reduce
 - File index information is stored in `.bssg_cache/file_index.txt`
 - Tags index information is stored in `.bssg_cache/tags_index.txt`
 
+### RAM Build Mode
+
+BSSG supports a RAM-first build mode for faster full rebuilds and lower disk churn:
+
+- Set `BUILD_MODE="ram"` in `config.sh.local`, or run `./bssg.sh build --build-mode ram`
+- Source/posts/pages/templates/locales are preloaded in memory
+- Build indexes (file/tags/authors/archive, plus page lists) are kept in memory
+- RAM mode intentionally skips cache persistence and always behaves like an in-memory full rebuild
+- A stage timing summary is printed at the end of RAM-mode builds
+- On low-end disk-bound hosts, RAM mode can significantly reduce build time by avoiding repeated disk reads
+
 ### Parallel Processing
 
-If GNU parallel is installed on your system, BSSG can process multiple files simultaneously:
+BSSG uses multiple execution strategies to process files in parallel:
 
 - Automatically detects GNU parallel and enables it for builds with many files
-- Uses 80% of available CPU cores for optimal performance
-- Falls back to sequential processing if parallel is not available
+- Falls back to internal shell workers when GNU parallel is unavailable or unsuitable for a stage
+- Auto-detects CPU core count for worker sizing
+- In RAM mode, worker count is capped by `RAM_MODE_MAX_JOBS` (default: `6`) to reduce memory pressure
 
 To take advantage of parallel processing, install GNU parallel:
 
@@ -1150,6 +1170,10 @@ brew install parallel
 # FreeBSD
 pkg install parallel
 ```
+
+### Real-World Result
+
+On a single-core OpenBSD server with spinning disks, the maintainer observed build time dropping to about one third of the previous release when building with `BUILD_MODE="ram"`.
 
 ## Site Configuration
 
@@ -1168,12 +1192,25 @@ DATE_FORMAT="%Y-%m-%d %H:%M:%S %z"
 TIMEZONE="local"  # Options: "local", "GMT", or a specific timezone
 SHOW_TIMEZONE="false" # Options: "true", "false". Determines if the timezone offset (e.g., +0200) is shown in displayed dates.
 POSTS_PER_PAGE=10
+BUILD_MODE="normal" # "normal" (incremental cache-backed) or "ram" (memory-first)
 ENABLE_ARCHIVES=true  # Enable or disable archives by year/month
 URL_SLUG_FORMAT="Year/Month/Day/slug"  # Format for post URLs
 RSS_ITEM_LIMIT=15 # Number of items to include in the RSS feed.
 RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". If set to "true", the full post content will be included in the RSS feed description instead of the excerpt. Useful for readers that consume entire posts via RSS.
 INDEX_SHOW_FULL_CONTENT="false" # Options: "true", "false". If set to "true", the full post content will be displayed on the homepage and paginated index pages instead of just the description/excerpt.
 ENABLE_TAG_RSS=true # Options: "true", "false". If set to "true" (default), an additional RSS feed will be generated for each tag at `output/tags/<tag-slug>/rss.xml`.
+
+# Precompression options
+PRECOMPRESS_ASSETS="false" # Generate .gz siblings for changed text assets
+# PRECOMPRESS_GZIP_LEVEL=9
+# PRECOMPRESS_MAX_JOBS=0
+# PRECOMPRESS_VERBOSE=false
+
+# RAM-mode tuning (optional)
+# RAM_MODE_MAX_JOBS=6
+# RAM_MODE_VERBOSE=false
+# RAM_RSS_PREFILL_MIN_HITS=2
+# RAM_RSS_PREFILL_MAX_POSTS=24
 
 # Related Posts configuration
 ENABLE_RELATED_POSTS=true # Options: "true", "false". If set to "true" (default), related posts based on shared tags will be shown at the end of each post.
@@ -1284,4 +1321,3 @@ This project is licensed under the BSD 3-Clause License - see the LICENSE file f
 - **Themes**: Explore the available themes in the `themes` directory.
 - **Backup & Restore**: Use `./bssg.sh backup` and `./bssg.sh restore` to manage content backups. 
 - **Development Blog**: Stay up-to-date with the latest release notes, development progress, and announcements on the official BSSG Dev Blog: [https://blog.bssg.dragas.net](https://blog.bssg.dragas.net)
-

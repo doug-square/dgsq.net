@@ -175,12 +175,33 @@ _process_raw_file_index() {
 }
 
 # Optimized file index building - orchestrates raw build and processing
+_build_file_index_from_ram() {
+    while IFS= read -r file; do
+        [[ -z "$file" ]] && continue
+        local metadata
+        metadata=$(extract_metadata "$file") || continue
+        local filename
+        filename=$(basename "$file")
+        echo "$file|$filename|$metadata"
+    done < <(ram_mode_list_src_files) | sort -t '|' -k 4,4r -k 1,1
+}
+
 optimized_build_file_index() {
     echo -e "${YELLOW}Building file index...${NC}"
     
     local file_index="${CACHE_DIR:-.bssg_cache}/file_index.txt"
     local index_marker="${CACHE_DIR:-.bssg_cache}/index_marker"
     local frontmatter_changes_marker="${CACHE_DIR:-.bssg_cache}/frontmatter_changes_marker"
+
+    if [ "${BSSG_RAM_MODE:-false}" = true ] && declare -F ram_mode_list_src_files > /dev/null; then
+        local file_index_data
+        file_index_data=$(_build_file_index_from_ram)
+        ram_mode_set_dataset "file_index" "$file_index_data"
+        ram_mode_clear_dataset "file_index_prev"
+        ram_mode_set_dataset "frontmatter_changes_marker" "1"
+        echo -e "${GREEN}File index built from RAM preload with $(ram_mode_dataset_line_count "file_index") complete entries!${NC}"
+        return 0
+    fi
     
     # Check if rebuild is needed
     if [ "${FORCE_REBUILD:-false}" = false ] && [ -f "$file_index" ] && [ -f "$index_marker" ]; then
@@ -293,6 +314,44 @@ build_tags_index() {
     local tags_index_file="${CACHE_DIR:-.bssg_cache}/tags_index.txt"
     local frontmatter_changes_marker="${CACHE_DIR:-.bssg_cache}/frontmatter_changes_marker"
 
+    if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+        local file_index_data tags_index_data
+        file_index_data=$(ram_mode_get_dataset "file_index")
+        if [ -z "$file_index_data" ]; then
+            ram_mode_set_dataset "tags_index" ""
+            ram_mode_clear_dataset "has_tags"
+            echo -e "${GREEN}Tags index built!${NC}"
+            return 0
+        fi
+
+        tags_index_data=$(printf '%s\n' "$file_index_data" | awk -F'|' -v OFS='|' '
+            {
+                if (length($6) > 0) {
+                    split($6, tags_array, ",");
+                    for (i in tags_array) {
+                        tag = tags_array[i];
+                        gsub(/^[[:space:]]+|[[:space:]]+$/, "", tag);
+                        if (length(tag) == 0) continue;
+
+                        tag_slug = tolower(tag);
+                        gsub(/[^a-z0-9]+/, "-", tag_slug);
+                        gsub(/^-+|-+$/, "", tag_slug);
+                        if (length(tag_slug) == 0) tag_slug = "-";
+
+                        print tag, tag_slug, $3, $4, $5, $2, $7, $8, $9, $10, $11, $12;
+                    }
+                }
+            }')
+        ram_mode_set_dataset "tags_index" "$tags_index_data"
+        if [ -n "$tags_index_data" ]; then
+            ram_mode_set_dataset "has_tags" "1"
+        else
+            ram_mode_clear_dataset "has_tags"
+        fi
+        echo -e "${GREEN}Tags index built!${NC}"
+        return 0
+    fi
+
     # --- Optimized Rebuild Check --- START ---
     local rebuild_needed=false
     local reason=""
@@ -376,6 +435,39 @@ build_authors_index() {
     local file_index="${CACHE_DIR:-.bssg_cache}/file_index.txt"
     local authors_index_file="${CACHE_DIR:-.bssg_cache}/authors_index.txt"
 
+    if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+        local file_index_data authors_index_data
+        file_index_data=$(ram_mode_get_dataset "file_index")
+        if [ -z "$file_index_data" ]; then
+            ram_mode_set_dataset "authors_index" ""
+            ram_mode_clear_dataset "has_authors"
+            echo -e "${GREEN}Authors index built!${NC}"
+            return 0
+        fi
+
+        authors_index_data=$(printf '%s\n' "$file_index_data" | awk -F'|' -v OFS='|' '
+            {
+                author_name = $11;
+                author_email = $12;
+                if (length(author_name) == 0) next;
+
+                author_slug = tolower(author_name);
+                gsub(/[^a-z0-9]+/, "-", author_slug);
+                gsub(/^-+|-+$/, "", author_slug);
+                if (length(author_slug) == 0) author_slug = "anonymous";
+
+                print author_name, author_slug, author_email, $3, $4, $5, $2, $7, $8, $9, $10;
+            }')
+        ram_mode_set_dataset "authors_index" "$authors_index_data"
+        if [ -n "$authors_index_data" ]; then
+            ram_mode_set_dataset "has_authors" "1"
+        else
+            ram_mode_clear_dataset "has_authors"
+        fi
+        echo -e "${GREEN}Authors index built!${NC}"
+        return 0
+    fi
+
     # Check if rebuild is needed: missing cache or input/dependencies changed
     local rebuild_needed=false
     if [ ! -f "$authors_index_file" ]; then
@@ -442,6 +534,18 @@ identify_affected_authors() {
 
     export AFFECTED_AUTHORS=""
     export AUTHORS_INDEX_NEEDS_REBUILD="false"
+
+    if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+        local authors_index_data
+        authors_index_data=$(ram_mode_get_dataset "authors_index")
+        if [ -n "$authors_index_data" ]; then
+            AFFECTED_AUTHORS=$(printf '%s\n' "$authors_index_data" | awk -F'|' 'NF { print $1 }' | sort -u | tr '\n' ' ')
+            AUTHORS_INDEX_NEEDS_REBUILD="true"
+        fi
+        export AFFECTED_AUTHORS
+        export AUTHORS_INDEX_NEEDS_REBUILD
+        return 0
+    fi
 
     # If previous index doesn't exist, all authors in the current index are affected,
     # and the main index needs rebuilding.
@@ -518,6 +622,43 @@ build_archive_index() {
     
     local file_index="${CACHE_DIR:-.bssg_cache}/file_index.txt"
     local archive_index_file="${CACHE_DIR:-.bssg_cache}/archive_index.txt"
+
+    if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+        local file_index_data archive_index_data=""
+        file_index_data=$(ram_mode_get_dataset "file_index")
+        if [ -z "$file_index_data" ]; then
+            ram_mode_set_dataset "archive_index" ""
+            echo -e "${GREEN}Archive index built!${NC}"
+            return 0
+        fi
+
+        local line file filename title date lastmod tags slug image image_caption description author_name author_email
+        while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            IFS='|' read -r file filename title date lastmod tags slug image image_caption description author_name author_email <<< "$line"
+            [ -z "$date" ] && continue
+
+            local year month month_name
+            if [[ "$date" =~ ^([0-9]{4})[-/]([0-9]{1,2})[-/]([0-9]{1,2}) ]]; then
+                year="${BASH_REMATCH[1]}"
+                month=$(printf "%02d" "$((10#${BASH_REMATCH[2]}))")
+            else
+                continue
+            fi
+
+            local month_name_var="MSG_MONTH_${month}"
+            month_name="${!month_name_var}"
+            if [[ -z "$month_name" ]]; then
+                month_name="$month"
+            fi
+
+            archive_index_data+="$year|$month|$month_name|$title|$date|$lastmod|$filename.html|$slug|$image|$image_caption|$description|$author_name|$author_email"$'\n'
+        done <<< "$file_index_data"
+
+        ram_mode_set_dataset "archive_index" "$archive_index_data"
+        echo -e "${GREEN}Archive index built!${NC}"
+        return 0
+    fi
 
     # Check if rebuild is needed: missing cache or input/dependencies changed
     local rebuild_needed=false
@@ -603,6 +744,18 @@ identify_affected_archive_months() {
 
     export AFFECTED_ARCHIVE_MONTHS=""
     export ARCHIVE_INDEX_NEEDS_REBUILD="false"
+
+    if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+        local archive_index_data
+        archive_index_data=$(ram_mode_get_dataset "archive_index")
+        if [ -n "$archive_index_data" ]; then
+            AFFECTED_ARCHIVE_MONTHS=$(printf '%s\n' "$archive_index_data" | awk -F'|' 'NF { print $1 "|" $2 }' | sort -u | tr '\n' ' ')
+            ARCHIVE_INDEX_NEEDS_REBUILD="true"
+        fi
+        export AFFECTED_ARCHIVE_MONTHS
+        export ARCHIVE_INDEX_NEEDS_REBUILD
+        return 0
+    fi
 
     # If previous index doesn't exist, all months in the current index are affected,
     # and the main index needs rebuilding.

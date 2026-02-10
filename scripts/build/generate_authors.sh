@@ -13,8 +13,204 @@ source "$(dirname "$0")/cache.sh" || { echo >&2 "Error: Failed to source cache.s
 # shellcheck source=generate_feeds.sh disable=SC1091
 source "$(dirname "$0")/generate_feeds.sh" || { echo >&2 "Error: Failed to source generate_feeds.sh from generate_authors.sh"; exit 1; }
 
+_generate_author_pages_ram() {
+    echo -e "${YELLOW}Processing author pages${NC}${ENABLE_AUTHOR_RSS:+" and RSS feeds"}...${NC}"
+
+    local authors_index_data
+    authors_index_data=$(ram_mode_get_dataset "authors_index")
+    local main_authors_index_output="$OUTPUT_DIR/authors/index.html"
+
+    mkdir -p "$OUTPUT_DIR/authors"
+
+    if [ -z "$authors_index_data" ]; then
+        echo -e "${YELLOW}No authors found in RAM index. Skipping author page generation.${NC}"
+        return 0
+    fi
+
+    declare -A author_posts_by_slug=()
+    declare -A author_name_by_slug=()
+    declare -A author_email_by_slug=()
+    local line author author_slug author_email
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        IFS='|' read -r author author_slug author_email _ <<< "$line"
+        [ -z "$author" ] && continue
+        [ -z "$author_slug" ] && continue
+        if [[ -z "${author_name_by_slug[$author_slug]+_}" ]]; then
+            author_name_by_slug["$author_slug"]="$author"
+            author_email_by_slug["$author_slug"]="$author_email"
+        fi
+        author_posts_by_slug["$author_slug"]+="$line"$'\n'
+    done <<< "$authors_index_data"
+
+    local author_slug_key
+    for author_slug_key in $(printf '%s\n' "${!author_name_by_slug[@]}" | sort); do
+        author="${author_name_by_slug[$author_slug_key]}"
+        local author_data="${author_posts_by_slug[$author_slug_key]}"
+        local author_page_html_file="$OUTPUT_DIR/authors/$author_slug_key/index.html"
+        local author_rss_file="$OUTPUT_DIR/authors/$author_slug_key/${RSS_FILENAME:-rss.xml}"
+        local author_page_rel_url="authors/${author_slug_key}/"
+        local author_rss_rel_url="/authors/${author_slug_key}/${RSS_FILENAME:-rss.xml}"
+        local post_count
+        post_count=$(printf '%s\n' "$author_data" | awk 'NF { c++ } END { print c+0 }')
+
+        mkdir -p "$(dirname "$author_page_html_file")"
+
+        local author_page_content=""
+        author_page_content+="<h1>${MSG_POSTS_BY:-Posts by} $author</h1>"$'\n'
+        if [ "${ENABLE_AUTHOR_RSS:-false}" = true ]; then
+            author_page_content+="<p><a href=\"$author_rss_rel_url\">${MSG_RSS_FEED:-RSS Feed}</a></p>"$'\n'
+        fi
+        author_page_content+="<div class=\"posts-list\">"$'\n'
+
+        while IFS='|' read -r author_name_inner author_slug_inner author_email_inner post_title post_date post_lastmod post_filename post_slug post_image post_image_caption post_description; do
+            [ -z "$post_title" ] && continue
+
+            local post_url
+            if [ -n "$post_date" ] && [[ "$post_date" =~ ^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2}) ]]; then
+                local year month day url_path
+                year="${BASH_REMATCH[1]}"
+                month=$(printf "%02d" "$((10#${BASH_REMATCH[2]}))")
+                day=$(printf "%02d" "$((10#${BASH_REMATCH[3]}))")
+                url_path="${URL_SLUG_FORMAT:-Year/Month/Day/slug}"
+                url_path="${url_path//Year/$year}"
+                url_path="${url_path//Month/$month}"
+                url_path="${url_path//Day/$day}"
+                url_path="${url_path//slug/$post_slug}"
+                post_url="/$(echo "$url_path" | sed 's|^/||; s|/*$|/|')"
+            else
+                post_url="/$(echo "$post_slug" | sed 's|^/||; s|/*$|/|')"
+            fi
+            post_url="${BASE_URL}${post_url}"
+            local formatted_date
+            formatted_date=$(format_date "$post_date")
+
+            author_page_content+="<article>"$'\n'
+            author_page_content+="  <h2><a href=\"$post_url\">$post_title</a></h2>"$'\n'
+            author_page_content+="  <div class=\"meta\">"$'\n'
+            author_page_content+="    <time datetime=\"$post_date\">$formatted_date</time>"$'\n'
+            author_page_content+="  </div>"$'\n'
+            if [ -n "$post_description" ]; then
+                author_page_content+="  <p class=\"summary\">$post_description</p>"$'\n'
+            fi
+            if [ -n "$post_image" ]; then
+                author_page_content+="  <div class=\"author-image\">"$'\n'
+                author_page_content+="    <img src=\"$post_image\" alt=\"$post_image_caption\" loading=\"lazy\">"$'\n'
+                author_page_content+="  </div>"$'\n'
+            fi
+            author_page_content+="</article>"$'\n'
+        done < <(printf '%s\n' "$author_data" | awk 'NF' | sort -t'|' -k5,5r)
+
+        author_page_content+="</div>"$'\n'
+
+        local page_title="${MSG_POSTS_BY:-Posts by} $author"
+        local page_description="${MSG_POSTS_BY:-Posts by} $author - $post_count ${MSG_POSTS:-posts}"
+        local header_content="$HEADER_TEMPLATE"
+        local footer_content="$FOOTER_TEMPLATE"
+        header_content=${header_content//\{\{site_title\}\}/"$SITE_TITLE"}
+        header_content=${header_content//\{\{page_title\}\}/"$page_title"}
+        header_content=${header_content//\{\{site_description\}\}/"$SITE_DESCRIPTION"}
+        header_content=${header_content//\{\{og_description\}\}/"$page_description"}
+        header_content=${header_content//\{\{twitter_description\}\}/"$page_description"}
+        header_content=${header_content//\{\{og_type\}\}/"website"}
+        header_content=${header_content//\{\{page_url\}\}/"$author_page_rel_url"}
+        header_content=${header_content//\{\{site_url\}\}/"$SITE_URL"}
+        header_content=${header_content//\{\{og_image\}\}/}
+        header_content=${header_content//\{\{twitter_image\}\}/}
+        header_content=${header_content//<!-- bssg:tag_rss_link -->/}
+        if [ "${ENABLE_AUTHOR_RSS:-false}" = true ]; then
+            local author_rss_link="<link rel=\"alternate\" type=\"application/rss+xml\" title=\"$author RSS Feed\" href=\"$SITE_URL$author_rss_rel_url\">"
+            header_content=${header_content//<!-- bssg:tag_rss_link -->/$author_rss_link}
+        fi
+        local schema_json
+        schema_json="{\"@context\": \"https://schema.org\",\"@type\": \"CollectionPage\",\"name\": \"$page_title\",\"description\": \"$page_description\",\"url\": \"$SITE_URL$author_page_rel_url\",\"isPartOf\": {\"@type\": \"WebSite\",\"name\": \"$SITE_TITLE\",\"url\": \"$SITE_URL\"}}"
+        header_content=${header_content//\{\{schema_json_ld\}\}/"<script type=\"application/ld+json\">$schema_json</script>"}
+
+        local current_year
+        current_year=$(date +%Y)
+        footer_content=${footer_content//\{\{current_year\}\}/"$current_year"}
+        footer_content=${footer_content//\{\{author_name\}\}/"$AUTHOR_NAME"}
+        footer_content=${footer_content//\{\{all_rights_reserved\}\}/"${MSG_ALL_RIGHTS_RESERVED:-All rights reserved.}"}
+
+        {
+            echo "$header_content"
+            echo "$author_page_content"
+            echo "$footer_content"
+        } > "$author_page_html_file"
+
+        if [ "${ENABLE_AUTHOR_RSS:-false}" = true ]; then
+            local author_post_data
+            author_post_data=$(printf '%s\n' "$author_data" | awk 'NF' | sort -t'|' -k5,5r | awk -F'|' '{
+                author_name = $1
+                author_email = $3
+                title = $4
+                date = $5
+                lastmod = $6
+                filename = $7
+                post_slug = $8
+                image = $9
+                image_caption = $10
+                description = $11
+                printf "%s|%s|%s|%s|%s||%s|%s|%s|%s|%s|%s\n", filename, filename, title, date, lastmod, post_slug, image, image_caption, description, author_name, author_email
+            }')
+            _generate_rss_feed "$author_rss_file" "$SITE_TITLE - ${MSG_POSTS_BY:-Posts by} $author" "${MSG_POSTS_BY:-Posts by} $author" "$author_page_rel_url" "$author_rss_rel_url" "$author_post_data"
+        fi
+    done
+
+    local page_title="${MSG_ALL_AUTHORS:-All Authors}"
+    local page_description="${MSG_ALL_AUTHORS:-All Authors} - $SITE_DESCRIPTION"
+    local header_content="$HEADER_TEMPLATE"
+    local footer_content="$FOOTER_TEMPLATE"
+    local main_content=""
+    header_content=${header_content//\{\{site_title\}\}/"$SITE_TITLE"}
+    header_content=${header_content//\{\{page_title\}\}/"$page_title"}
+    header_content=${header_content//\{\{site_description\}\}/"$SITE_DESCRIPTION"}
+    header_content=${header_content//\{\{og_description\}\}/"$page_description"}
+    header_content=${header_content//\{\{twitter_description\}\}/"$page_description"}
+    header_content=${header_content//\{\{og_type\}\}/"website"}
+    header_content=${header_content//\{\{page_url\}\}/"authors/"}
+    header_content=${header_content//\{\{site_url\}\}/"$SITE_URL"}
+    header_content=${header_content//\{\{og_image\}\}/}
+    header_content=${header_content//\{\{twitter_image\}\}/}
+    header_content=${header_content//<!-- bssg:tag_rss_link -->/}
+    local schema_json
+    schema_json="{\"@context\": \"https://schema.org\",\"@type\": \"CollectionPage\",\"name\": \"$page_title\",\"description\": \"List of all authors on $SITE_TITLE\",\"url\": \"$SITE_URL/authors/\",\"isPartOf\": {\"@type\": \"WebSite\",\"name\": \"$SITE_TITLE\",\"url\": \"$SITE_URL\"}}"
+    header_content=${header_content//\{\{schema_json_ld\}\}/"<script type=\"application/ld+json\">$schema_json</script>"}
+    local current_year
+    current_year=$(date +%Y)
+    footer_content=${footer_content//\{\{current_year\}\}/"$current_year"}
+    footer_content=${footer_content//\{\{author_name\}\}/"$AUTHOR_NAME"}
+    footer_content=${footer_content//\{\{all_rights_reserved\}\}/"${MSG_ALL_RIGHTS_RESERVED:-All rights reserved.}"}
+
+    main_content+="<h1>${MSG_ALL_AUTHORS:-All Authors}</h1>"$'\n'
+    main_content+="<div class=\"tags-list\">"$'\n'
+    for author_slug_key in $(printf '%s\n' "${!author_name_by_slug[@]}" | sort); do
+        author="${author_name_by_slug[$author_slug_key]}"
+        local post_count
+        post_count=$(printf '%s\n' "${author_posts_by_slug[$author_slug_key]}" | awk 'NF { c++ } END { print c+0 }')
+        if [ "$post_count" -gt 0 ]; then
+            main_content+="    <a href=\"$BASE_URL/authors/$author_slug_key/\">$author <span class=\"tag-count\">($post_count)</span></a>"$'\n'
+        fi
+    done
+    main_content+="</div>"$'\n'
+
+    {
+        echo "$header_content"
+        echo "$main_content"
+        echo "$footer_content"
+    } > "$main_authors_index_output"
+
+    echo -e "${GREEN}Author pages processed!${NC}"
+    echo -e "${GREEN}Generated author list pages.${NC}"
+}
+
 # Generate author pages
 generate_author_pages() {
+    if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+        _generate_author_pages_ram
+        return $?
+    fi
+
     echo -e "${YELLOW}Processing author pages${NC}${ENABLE_AUTHOR_RSS:+" and RSS feeds"}...${NC}"
 
     local authors_index_file="$CACHE_DIR/authors_index.txt"

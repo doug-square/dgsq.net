@@ -13,8 +13,602 @@ source "$(dirname "$0")/cache.sh" || { echo >&2 "Error: Failed to source cache.s
 # shellcheck source=generate_feeds.sh disable=SC1091
 source "$(dirname "$0")/generate_feeds.sh" || { echo >&2 "Error: Failed to source generate_feeds.sh from generate_tags.sh"; exit 1; }
 
+declare -gA BSSG_RAM_TAG_POST_SLUGS_BY_SLUG=()
+declare -gA BSSG_RAM_TAG_POST_COUNT_BY_SLUG=()
+declare -gA BSSG_RAM_TAG_ARTICLE_HTML_BY_SLUG=()
+declare -gA BSSG_RAM_RSS_TEMPLATE_BY_SLUG=()
+declare -g BSSG_RAM_TAG_DISPLAY_DATE_FORMAT=""
+declare -g BSSG_RAM_TAG_HEADER_BASE=""
+declare -g BSSG_RAM_TAG_FOOTER_CONTENT=""
+
+_bssg_tags_now_ms() {
+    if declare -F _bssg_ram_timing_now_ms > /dev/null; then
+        _bssg_ram_timing_now_ms
+        return
+    fi
+
+    if [ -n "${EPOCHREALTIME:-}" ]; then
+        local epoch_norm sec frac ms_part
+        # Some locales expose EPOCHREALTIME with ',' instead of '.' as decimal separator.
+        epoch_norm="${EPOCHREALTIME/,/.}"
+        if [[ "$epoch_norm" =~ ^([0-9]+)([.][0-9]+)?$ ]]; then
+            sec="${BASH_REMATCH[1]}"
+            frac="${BASH_REMATCH[2]#.}"
+            frac="${frac}000"
+            ms_part="${frac:0:3}"
+            printf '%s\n' $(( 10#$sec * 1000 + 10#$ms_part ))
+            return
+        fi
+    fi
+
+    if command -v perl >/dev/null 2>&1; then
+        perl -MTime::HiRes=time -e 'printf("%.0f\n", time()*1000)'
+    else
+        printf '%s\n' $(( $(date +%s) * 1000 ))
+    fi
+}
+
+_bssg_tags_format_ms() {
+    local ms="${1:-0}"
+    printf '%d.%03ds' $((ms / 1000)) $((ms % 1000))
+}
+
+_write_tag_rss_from_cached_items_ram() {
+    local output_file="$1"
+    local feed_link_rel="$2"
+    local feed_atom_link_rel="$3"
+    local tag="$4"
+    local rss_items_xml="$5"
+
+    local feed_title="${SITE_TITLE} - ${MSG_TAG_PAGE_TITLE:-"Posts tagged with"}: $tag"
+    local feed_description="${MSG_POSTS_TAGGED_WITH:-"Posts tagged with"}: $tag"
+    local rss_date_fmt="%a, %d %b %Y %H:%M:%S %z"
+
+    local escaped_feed_title escaped_feed_description feed_link feed_atom_link channel_last_build_date
+    escaped_feed_title=$(html_escape "$feed_title")
+    escaped_feed_description=$(html_escape "$feed_description")
+    feed_link=$(fix_url "$feed_link_rel")
+    feed_atom_link=$(fix_url "$feed_atom_link_rel")
+    channel_last_build_date=$(format_date "now" "$rss_date_fmt")
+
+    exec 4> "$output_file" || return 1
+    printf '%s\n' \
+        '<?xml version="1.0" encoding="UTF-8" ?>' \
+        '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">' \
+        '<channel>' \
+        "    <title>${escaped_feed_title}</title>" \
+        "    <link>${feed_link}</link>" \
+        "    <description>${escaped_feed_description}</description>" \
+        "    <language>${SITE_LANG:-en}</language>" \
+        "    <lastBuildDate>${channel_last_build_date}</lastBuildDate>" \
+        "    <atom:link href=\"${feed_atom_link}\" rel=\"self\" type=\"application/rss+xml\" />" >&4
+
+    if [ -n "$rss_items_xml" ]; then
+        printf '%s' "$rss_items_xml" >&4
+    fi
+
+    printf '%s\n' '</channel>' '</rss>' >&4
+    exec 4>&-
+
+    if [ "${BSSG_RAM_MODE:-false}" != true ] || [ "${RAM_MODE_VERBOSE:-false}" = true ]; then
+        echo -e "${GREEN}RSS feed generated at $output_file${NC}"
+    fi
+}
+
+_process_single_tag_page_ram() {
+    local tag_url="$1"
+    local tag="$2"
+    local tag_page_html_file="$OUTPUT_DIR/tags/$tag_url/index.html"
+    local tag_rss_file="$OUTPUT_DIR/tags/$tag_url/${RSS_FILENAME:-rss.xml}"
+    local tag_page_rel_url="/tags/${tag_url}/"
+    local tag_rss_rel_url="/tags/${tag_url}/${RSS_FILENAME:-rss.xml}"
+    mkdir -p "$(dirname "$tag_page_html_file")"
+
+    local header_content="$BSSG_RAM_TAG_HEADER_BASE"
+    header_content=${header_content//\{\{page_title\}\}/"${MSG_TAG_PAGE_TITLE:-"Posts tagged with"}: $tag"}
+    header_content=${header_content//\{\{page_url\}\}/"$tag_page_rel_url"}
+    if [ "${ENABLE_TAG_RSS:-false}" = true ]; then
+        header_content=${header_content//<!-- bssg:tag_rss_link -->/<link rel="alternate" type="application/rss+xml" title="${SITE_TITLE} - Posts tagged with ${tag}" href="${SITE_URL}${tag_rss_rel_url}">}
+    else
+        header_content=${header_content//<!-- bssg:tag_rss_link -->/}
+    fi
+    local schema_json_ld
+    schema_json_ld=$(cat <<EOF
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "Posts tagged with: $tag",
+  "description": "Posts with tag: $tag",
+  "url": "$SITE_URL${tag_page_rel_url}",
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "$SITE_TITLE",
+    "url": "$SITE_URL"
+  }
+}
+</script>
+EOF
+)
+    header_content=${header_content//\{\{schema_json_ld\}\}/"$schema_json_ld"}
+    local footer_content="$BSSG_RAM_TAG_FOOTER_CONTENT"
+
+    exec 3> "$tag_page_html_file"
+    printf '%s\n' "$header_content" >&3
+    printf '<h1>%s: %s</h1>\n' "${MSG_TAG_PAGE_TITLE:-Posts tagged with}" "$tag" >&3
+    printf '<div class="posts-list">\n' >&3
+
+    local rss_item_limit=${RSS_ITEM_LIMIT:-15}
+    local rss_count=0
+    local cached_rss_items=""
+    local rss_all_items_cached=true
+    local -a selected_rss_templates=()
+    local tag_post_slugs=""
+    if [[ -n "${BSSG_RAM_TAG_POST_SLUGS_BY_SLUG[$tag_url]+_}" ]]; then
+        tag_post_slugs="${BSSG_RAM_TAG_POST_SLUGS_BY_SLUG[$tag_url]}"
+    fi
+
+    local slug cached_article_html rss_template
+    while IFS= read -r slug; do
+        [ -z "$slug" ] && continue
+        cached_article_html="${BSSG_RAM_TAG_ARTICLE_HTML_BY_SLUG[$slug]}"
+        if [ -n "$cached_article_html" ]; then
+            printf '%s' "$cached_article_html" >&3
+        fi
+        if [ "${ENABLE_TAG_RSS:-false}" = true ] && [ "$rss_count" -lt "$rss_item_limit" ]; then
+            rss_template="${BSSG_RAM_RSS_TEMPLATE_BY_SLUG[$slug]}"
+            if [ -n "$rss_template" ]; then
+                selected_rss_templates+=("$rss_template")
+                if $rss_all_items_cached; then
+                    local rss_file rss_filename rss_title rss_date rss_lastmod rss_tags rss_slug rss_image rss_image_caption rss_description rss_author_name rss_author_email
+                    IFS='|' read -r rss_file rss_filename rss_title rss_date rss_lastmod rss_tags rss_slug rss_image rss_image_caption rss_description rss_author_name rss_author_email <<< "$rss_template"
+                    local rss_item_cache_key="${RSS_INCLUDE_FULL_CONTENT:-false}|${rss_file}|${rss_date}|${rss_lastmod}|${rss_slug}|${rss_title}"
+                    local rss_item_xml="${BSSG_RAM_RSS_ITEM_XML_CACHE[$rss_item_cache_key]-}"
+                    if [ -n "$rss_item_xml" ]; then
+                        cached_rss_items+="$rss_item_xml"
+                    else
+                        rss_all_items_cached=false
+                    fi
+                fi
+                rss_count=$((rss_count + 1))
+            fi
+        fi
+    done <<< "$tag_post_slugs"
+
+    printf '</div>\n' >&3
+    printf '<p><a href="%s/tags/">%s</a></p>\n' "$SITE_URL" "${MSG_ALL_TAGS:-All Tags}" >&3
+    printf '%s\n' "$footer_content" >&3
+    exec 3>&-
+
+    if [ "${ENABLE_TAG_RSS:-false}" = true ] && [ "${#selected_rss_templates[@]}" -gt 0 ]; then
+        if $rss_all_items_cached; then
+            _write_tag_rss_from_cached_items_ram "$tag_rss_file" "$tag_page_rel_url" "$tag_rss_rel_url" "$tag" "$cached_rss_items"
+        else
+            local tag_post_data=""
+            local rss_template_entry
+            for rss_template_entry in "${selected_rss_templates[@]}"; do
+                tag_post_data+="${rss_template_entry//%TAG%/$tag}"$'\n'
+            done
+            _generate_rss_feed "$tag_rss_file" "${SITE_TITLE} - ${MSG_TAG_PAGE_TITLE:-"Posts tagged with"}: $tag" "${MSG_POSTS_TAGGED_WITH:-"Posts tagged with"}: $tag" "$tag_page_rel_url" "$tag_rss_rel_url" "$tag_post_data"
+        fi
+    fi
+}
+
+_generate_tag_pages_ram() {
+    echo -e "${YELLOW}Processing tag pages${NC}${ENABLE_TAG_RSS:+" and RSS feeds"}...${NC}"
+    local ram_tags_timing_enabled=false
+    if [ "${RAM_MODE_VERBOSE:-false}" = true ]; then
+        ram_tags_timing_enabled=true
+    fi
+    local tags_total_start_ms=0
+    local tags_phase_start_ms=0
+    local tags_prep_ms=0
+    local tags_render_ms=0
+    local tags_index_ms=0
+    local tags_total_ms=0
+    if [ "$ram_tags_timing_enabled" = true ]; then
+        tags_total_start_ms="$(_bssg_tags_now_ms)"
+        tags_phase_start_ms="$tags_total_start_ms"
+    fi
+
+    local tags_index_data
+    tags_index_data=$(ram_mode_get_dataset "tags_index")
+    local main_tags_index_output="$OUTPUT_DIR/tags/index.html"
+
+    mkdir -p "$OUTPUT_DIR/tags"
+
+    if [ -z "$tags_index_data" ]; then
+        echo -e "${YELLOW}No tags found in RAM index. Skipping tag page generation.${NC}"
+        return 0
+    fi
+
+    BSSG_RAM_TAG_POST_SLUGS_BY_SLUG=()
+    BSSG_RAM_TAG_POST_COUNT_BY_SLUG=()
+    BSSG_RAM_TAG_ARTICLE_HTML_BY_SLUG=()
+    BSSG_RAM_RSS_TEMPLATE_BY_SLUG=()
+    declare -A tag_name_by_slug=()
+    local sorted_tag_urls=()
+    declare -A rss_prefill_slug_set=()
+    declare -A rss_prefill_slug_hits=()
+    local rss_prefill_slugs=()
+    local rss_prefill_occurrences=0
+    local rss_item_limit="${RSS_ITEM_LIMIT:-15}"
+    local rss_prefill_min_hits="${RAM_RSS_PREFILL_MIN_HITS:-2}"
+    local rss_prefill_max_posts="${RAM_RSS_PREFILL_MAX_POSTS:-24}"
+    if ! [[ "$rss_prefill_min_hits" =~ ^[0-9]+$ ]] || [ "$rss_prefill_min_hits" -lt 1 ]; then
+        rss_prefill_min_hits=1
+    fi
+    if ! [[ "$rss_prefill_max_posts" =~ ^[0-9]+$ ]]; then
+        rss_prefill_max_posts=24
+    fi
+    declare -A seen_post_slugs=()
+    local display_date_format="$DATE_FORMAT"
+    if [ "${SHOW_TIMEZONE:-false}" = false ]; then
+        display_date_format=$(echo "$display_date_format" | sed -e 's/%[zZ]//g' -e 's/[[:space:]]*$//')
+    fi
+    BSSG_RAM_TAG_DISPLAY_DATE_FORMAT="$display_date_format"
+
+    # Prime per-post caches once from file_index (one row per post), then build
+    # lightweight tag->post mappings from tags_index (many rows per post).
+    local file_index_data
+    file_index_data=$(ram_mode_get_dataset "file_index")
+
+    local can_prime_rss_metadata=false
+    local rss_date_fmt="%a, %d %b %Y %H:%M:%S %z"
+    local build_timestamp_iso=""
+    if [ "${ENABLE_TAG_RSS:-false}" = true ] && declare -F _ram_prime_rss_metadata_entry > /dev/null; then
+        can_prime_rss_metadata=true
+        build_timestamp_iso=$(format_date "now" "%Y-%m-%dT%H:%M:%S%z")
+        if [[ "$build_timestamp_iso" =~ ([+-][0-9]{2})([0-9]{2})$ ]]; then
+            build_timestamp_iso="${build_timestamp_iso::${#build_timestamp_iso}-2}:${BASH_REMATCH[2]}"
+        fi
+    fi
+
+    local file filename title date lastmod tags slug image image_caption description author_name author_email
+    while IFS='|' read -r file filename title date lastmod tags slug image image_caption description author_name author_email; do
+        [ -z "$file" ] && continue
+        [ -z "$slug" ] && continue
+        [[ -n "${seen_post_slugs[$slug]+_}" ]] && continue
+        seen_post_slugs["$slug"]=1
+
+        local post_year post_month post_day
+        if [[ "$date" =~ ^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2}) ]]; then
+            post_year="${BASH_REMATCH[1]}"
+            post_month=$(printf "%02d" "$((10#${BASH_REMATCH[2]}))")
+            post_day=$(printf "%02d" "$((10#${BASH_REMATCH[3]}))")
+        else
+            post_year=$(date +%Y); post_month=$(date +%m); post_day=$(date +%d)
+        fi
+
+        local formatted_path="${URL_SLUG_FORMAT//Year/$post_year}"
+        formatted_path="${formatted_path//Month/$post_month}"
+        formatted_path="${formatted_path//Day/$post_day}"
+        formatted_path="${formatted_path//slug/$slug}"
+        local post_link="/${formatted_path}/"
+        local formatted_date
+        formatted_date=$(format_date "$date" "$display_date_format")
+
+        local display_author_name="${author_name:-${AUTHOR_NAME:-Anonymous}}"
+        local article_html=""
+        article_html+='    <article>'$'\n'
+        article_html+="        <h3><a href=\"${SITE_URL}${post_link}\">${title}</a></h3>"$'\n'
+        article_html+="        <div class=\"meta\">${MSG_PUBLISHED_ON:-Published on} ${formatted_date} ${MSG_BY:-by} <strong>${display_author_name}</strong></div>"$'\n'
+        if [ -n "$image" ]; then
+            local image_url alt_text figcaption_content
+            image_url=$(fix_url "$image")
+            alt_text="${image_caption:-$title}"
+            figcaption_content="${image_caption:-$title}"
+            article_html+='        <figure class="featured-image tag-image">'$'\n'
+            article_html+="            <a href=\"${SITE_URL}${post_link}\">"$'\n'
+            article_html+="                <img src=\"${image_url}\" alt=\"${alt_text}\" />"$'\n'
+            article_html+='            </a>'$'\n'
+            article_html+="            <figcaption>${figcaption_content}</figcaption>"$'\n'
+            article_html+='        </figure>'$'\n'
+        fi
+        if [ -n "$description" ]; then
+            article_html+='        <div class="summary">'$'\n'
+            article_html+="            ${description}"$'\n'
+            article_html+='        </div>'$'\n'
+        fi
+        article_html+='    </article>'$'\n'
+        BSSG_RAM_TAG_ARTICLE_HTML_BY_SLUG["$slug"]="$article_html"
+        BSSG_RAM_RSS_TEMPLATE_BY_SLUG["$slug"]="${filename}|${filename}|${title}|${date}|${lastmod}|%TAG%|${slug}|${image}|${image_caption}|${description}|${author_name}|${author_email}"
+
+        if $can_prime_rss_metadata; then
+            _ram_prime_rss_metadata_entry "$date" "$lastmod" "$slug" "$rss_date_fmt" "$build_timestamp_iso" "$file" >/dev/null || true
+        fi
+    done <<< "$file_index_data"
+
+    if $can_prime_rss_metadata; then
+        BSSG_RAM_RSS_METADATA_CACHE_READY=true
+    fi
+
+    # Sort once globally by tag slug, then by publish date/lastmod descending.
+    # Aggregate per-tag rows in awk to reduce per-line bash map churn.
+    local aggregated_tags_data
+    aggregated_tags_data=$(printf '%s\n' "$tags_index_data" | awk 'NF' | LC_ALL=C sort -t'|' -k2,2 -k4,4r -k5,5r | awk -F'|' -v OFS='|' '
+        {
+            tag = $1
+            tag_slug = $2
+            post_slug = $7
+            if (tag == "" || tag_slug == "") next
+
+            if (current_tag_slug != "" && tag_slug != current_tag_slug) {
+                print current_tag_slug, current_tag_name, current_count, current_post_slugs
+                current_count = 0
+                current_post_slugs = ""
+            }
+
+            if (tag_slug != current_tag_slug) {
+                current_tag_slug = tag_slug
+                current_tag_name = tag
+            }
+
+            if (post_slug != "") {
+                if (current_post_slugs == "") {
+                    current_post_slugs = post_slug
+                } else {
+                    current_post_slugs = current_post_slugs "," post_slug
+                }
+            }
+            current_count++
+        }
+        END {
+            if (current_tag_slug != "") {
+                print current_tag_slug, current_tag_name, current_count, current_post_slugs
+            }
+        }')
+
+    local tag_slug tag_name tag_count_value tag_post_slugs_csv
+    while IFS='|' read -r tag_slug tag_name tag_count_value tag_post_slugs_csv; do
+        [ -z "$tag_slug" ] && continue
+        tag_name_by_slug["$tag_slug"]="$tag_name"
+        BSSG_RAM_TAG_POST_COUNT_BY_SLUG["$tag_slug"]="$tag_count_value"
+        local tag_post_slugs_newline=""
+        if [ -n "$tag_post_slugs_csv" ]; then
+            tag_post_slugs_newline="${tag_post_slugs_csv//,/$'\n'}"
+        fi
+        BSSG_RAM_TAG_POST_SLUGS_BY_SLUG["$tag_slug"]="$tag_post_slugs_newline"
+        sorted_tag_urls+=("$tag_slug")
+
+        if [ "${ENABLE_TAG_RSS:-false}" = true ] && [ -n "$tag_post_slugs_newline" ]; then
+            local rss_prefill_count=0
+            local rss_prefill_slug=""
+            while IFS= read -r rss_prefill_slug; do
+                [ -z "$rss_prefill_slug" ] && continue
+                rss_prefill_occurrences=$((rss_prefill_occurrences + 1))
+                rss_prefill_slug_hits["$rss_prefill_slug"]=$(( ${rss_prefill_slug_hits[$rss_prefill_slug]:-0} + 1 ))
+                if [[ -z "${rss_prefill_slug_set[$rss_prefill_slug]+_}" ]]; then
+                    rss_prefill_slug_set["$rss_prefill_slug"]=1
+                    rss_prefill_slugs+=("$rss_prefill_slug")
+                fi
+                rss_prefill_count=$((rss_prefill_count + 1))
+                if [ "$rss_prefill_count" -ge "$rss_item_limit" ]; then
+                    break
+                fi
+            done <<< "$tag_post_slugs_newline"
+        fi
+    done <<< "$aggregated_tags_data"
+
+    if [ "${ENABLE_TAG_RSS:-false}" = true ] && [ "$rss_prefill_min_hits" -gt 1 ] && [ "${#rss_prefill_slugs[@]}" -gt 0 ]; then
+        local -a rss_prefill_filtered_slugs=()
+        local rss_prefill_slug
+        for rss_prefill_slug in "${rss_prefill_slugs[@]}"; do
+            if [ "${rss_prefill_slug_hits[$rss_prefill_slug]:-0}" -ge "$rss_prefill_min_hits" ]; then
+                rss_prefill_filtered_slugs+=("$rss_prefill_slug")
+            fi
+        done
+        if [ "${#rss_prefill_filtered_slugs[@]}" -gt 0 ]; then
+            rss_prefill_slugs=("${rss_prefill_filtered_slugs[@]}")
+        fi
+    fi
+
+    local rss_prefill_pool_count="${#rss_prefill_slugs[@]}"
+    if [ "${ENABLE_TAG_RSS:-false}" = true ] && [ "$rss_prefill_max_posts" -gt 0 ] && [ "${#rss_prefill_slugs[@]}" -gt "$rss_prefill_max_posts" ]; then
+        local -a rss_prefill_ranked_lines=()
+        local rss_prefill_slug
+        for rss_prefill_slug in "${rss_prefill_slugs[@]}"; do
+            rss_prefill_ranked_lines+=("${rss_prefill_slug_hits[$rss_prefill_slug]:-0}|$rss_prefill_slug")
+        done
+
+        local -a rss_prefill_capped_slugs=()
+        local rss_prefill_rank_line
+        while IFS= read -r rss_prefill_rank_line; do
+            [ -z "$rss_prefill_rank_line" ] && continue
+            rss_prefill_capped_slugs+=("${rss_prefill_rank_line#*|}")
+        done < <(
+            printf '%s\n' "${rss_prefill_ranked_lines[@]}" \
+            | LC_ALL=C sort -t'|' -k1,1nr -k2,2 \
+            | head -n "$rss_prefill_max_posts"
+        )
+
+        if [ "${#rss_prefill_capped_slugs[@]}" -gt 0 ]; then
+            rss_prefill_slugs=("${rss_prefill_capped_slugs[@]}")
+        fi
+    fi
+
+    local footer_base="$FOOTER_TEMPLATE"
+    footer_base=${footer_base//\{\{current_year\}\}/$(date +%Y)}
+    footer_base=${footer_base//\{\{author_name\}\}/"$AUTHOR_NAME"}
+    BSSG_RAM_TAG_FOOTER_CONTENT="$footer_base"
+
+    local header_base="$HEADER_TEMPLATE"
+    header_base=${header_base//\{\{site_title\}\}/"$SITE_TITLE"}
+    header_base=${header_base//\{\{site_description\}\}/"$SITE_DESCRIPTION"}
+    header_base=${header_base//\{\{og_description\}\}/"$SITE_DESCRIPTION"}
+    header_base=${header_base//\{\{twitter_description\}\}/"$SITE_DESCRIPTION"}
+    header_base=${header_base//\{\{og_type\}\}/"website"}
+    header_base=${header_base//\{\{site_url\}\}/"$SITE_URL"}
+    header_base=${header_base//\{\{og_image\}\}/""}
+    header_base=${header_base//\{\{twitter_image\}\}/""}
+    BSSG_RAM_TAG_HEADER_BASE="$header_base"
+
+    local tag_count="${#sorted_tag_urls[@]}"
+    echo -e "Generating ${GREEN}$tag_count${NC} tag pages from RAM index."
+
+    if [ "${ENABLE_TAG_RSS:-false}" = true ]; then
+        if declare -F prepare_ram_rss_metadata_cache > /dev/null; then
+            prepare_ram_rss_metadata_cache
+        fi
+        if [ "${RSS_INCLUDE_FULL_CONTENT:-false}" = true ] && declare -F prepare_ram_rss_full_content_cache > /dev/null; then
+            prepare_ram_rss_full_content_cache
+        fi
+
+        # Pre-warm RAM RSS item XML cache once in parent process so worker
+        # subshells inherit it read-only and avoid rebuilding duplicate items.
+        if declare -F _generate_rss_feed > /dev/null; then
+            local rss_prefill_post_data=""
+            local rss_prefill_slug rss_template_entry
+            for rss_prefill_slug in "${rss_prefill_slugs[@]}"; do
+                rss_template_entry="${BSSG_RAM_RSS_TEMPLATE_BY_SLUG[$rss_prefill_slug]}"
+                [ -z "$rss_template_entry" ] && continue
+                rss_prefill_post_data+="${rss_template_entry//%TAG%/__prefill__}"$'\n'
+            done
+            if [ -n "$rss_prefill_post_data" ]; then
+                if [ "${RAM_MODE_VERBOSE:-false}" = true ]; then
+                    local max_posts_label="unlimited"
+                    if [ "$rss_prefill_max_posts" -gt 0 ]; then
+                        max_posts_label="$rss_prefill_max_posts"
+                    fi
+                    echo -e "DEBUG: Pre-warming RAM RSS item cache for ${#rss_prefill_slugs[@]} posts (${rss_prefill_occurrences} tag-RSS slots, min hits: ${rss_prefill_min_hits}, max posts: ${max_posts_label}, pool: ${rss_prefill_pool_count})."
+                fi
+                _generate_rss_feed "/dev/null" "__prefill__" "__prefill__" "/" "/rss.xml" "$rss_prefill_post_data" >/dev/null || true
+            fi
+        fi
+    fi
+
+    if [ "$ram_tags_timing_enabled" = true ]; then
+        local now_ms
+        now_ms="$(_bssg_tags_now_ms)"
+        tags_prep_ms=$((now_ms - tags_phase_start_ms))
+        tags_phase_start_ms="$now_ms"
+    fi
+
+    local tag_url
+    local cores
+    cores=$(get_parallel_jobs)
+    if [ "$cores" -gt "$tag_count" ]; then
+        cores="$tag_count"
+    fi
+
+    if [ "$tag_count" -gt 1 ] && [ "$cores" -gt 1 ]; then
+        local worker_pids=()
+        local worker_idx
+        for ((worker_idx = 0; worker_idx < cores; worker_idx++)); do
+            (
+                local idx local_tag_url local_tag
+                for ((idx = worker_idx; idx < tag_count; idx += cores)); do
+                    local_tag_url="${sorted_tag_urls[$idx]}"
+                    local_tag="${tag_name_by_slug[$local_tag_url]}"
+                    _process_single_tag_page_ram "$local_tag_url" "$local_tag"
+                done
+            ) &
+            worker_pids+=("$!")
+        done
+
+        local pid
+        local worker_failed=false
+        for pid in "${worker_pids[@]}"; do
+            if ! wait "$pid"; then
+                worker_failed=true
+            fi
+        done
+        if $worker_failed; then
+            echo -e "${RED}Parallel RAM-mode tag processing failed.${NC}"
+            exit 1
+        fi
+    else
+        for tag_url in "${sorted_tag_urls[@]}"; do
+            tag="${tag_name_by_slug[$tag_url]}"
+            _process_single_tag_page_ram "$tag_url" "$tag"
+        done
+    fi
+
+    if [ "$ram_tags_timing_enabled" = true ]; then
+        local now_ms
+        now_ms="$(_bssg_tags_now_ms)"
+        tags_render_ms=$((now_ms - tags_phase_start_ms))
+        tags_phase_start_ms="$now_ms"
+    fi
+
+    local header_content="$HEADER_TEMPLATE"
+    local footer_content="$FOOTER_TEMPLATE"
+    header_content=${header_content//\{\{site_title\}\}/"$SITE_TITLE"}
+    header_content=${header_content//\{\{page_title\}\}/"${MSG_ALL_TAGS:-"All Tags"}"}
+    header_content=${header_content//\{\{site_description\}\}/"$SITE_DESCRIPTION"}
+    header_content=${header_content//\{\{og_description\}\}/"$SITE_DESCRIPTION"}
+    header_content=${header_content//\{\{twitter_description\}\}/"$SITE_DESCRIPTION"}
+    header_content=${header_content//\{\{og_type\}\}/"website"}
+    header_content=${header_content//\{\{page_url\}\}/"/tags/"}
+    header_content=${header_content//\{\{site_url\}\}/"$SITE_URL"}
+    header_content=${header_content//<!-- bssg:tag_rss_link -->/}
+    local tags_schema_json
+    tags_schema_json=$(cat <<EOF
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "${MSG_ALL_TAGS:-"All Tags"}",
+  "description": "List of all tags on $SITE_TITLE",
+  "url": "$SITE_URL/tags/",
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "$SITE_TITLE",
+    "url": "$SITE_URL"
+  }
+}
+</script>
+EOF
+)
+    header_content=${header_content//\{\{schema_json_ld\}\}/"$tags_schema_json"}
+    header_content=${header_content//\{\{og_image\}\}/""}
+    header_content=${header_content//\{\{twitter_image\}\}/""}
+    footer_content=${footer_content//\{\{current_year\}\}/$(date +%Y)}
+    footer_content=${footer_content//\{\{author_name\}\}/"$AUTHOR_NAME"}
+
+    exec 5> "$main_tags_index_output"
+    printf '%s\n' "$header_content" >&5
+    printf '<h1>%s</h1>\n' "${MSG_ALL_TAGS:-All Tags}" >&5
+    printf '<div class="tags-list">\n' >&5
+    for tag_url in "${sorted_tag_urls[@]}"; do
+        tag="${tag_name_by_slug[$tag_url]}"
+        local post_count="${BSSG_RAM_TAG_POST_COUNT_BY_SLUG[$tag_url]:-0}"
+        printf '    <a href="%s/tags/%s/">%s <span class="tag-count">(%s)</span></a>\n' "$SITE_URL" "$tag_url" "$tag" "$post_count" >&5
+    done
+    printf '</div>\n' >&5
+    printf '%s\n' "$footer_content" >&5
+    exec 5>&-
+
+    if [ "$ram_tags_timing_enabled" = true ]; then
+        local now_ms
+        now_ms="$(_bssg_tags_now_ms)"
+        tags_index_ms=$((now_ms - tags_phase_start_ms))
+        tags_total_ms=$((now_ms - tags_total_start_ms))
+        echo -e "${BLUE}RAM tags sub-timing:${NC}"
+        echo -e "  Prepare maps/cache: $(_bssg_tags_format_ms "$tags_prep_ms")"
+        echo -e "  Tag pages+RSS:      $(_bssg_tags_format_ms "$tags_render_ms")"
+        echo -e "  tags/index.html:    $(_bssg_tags_format_ms "$tags_index_ms")"
+        echo -e "  Total tags stage:   $(_bssg_tags_format_ms "$tags_total_ms")"
+    fi
+
+    BSSG_RAM_TAG_POST_SLUGS_BY_SLUG=()
+    BSSG_RAM_TAG_POST_COUNT_BY_SLUG=()
+    BSSG_RAM_TAG_ARTICLE_HTML_BY_SLUG=()
+    BSSG_RAM_RSS_TEMPLATE_BY_SLUG=()
+    BSSG_RAM_TAG_HEADER_BASE=""
+    BSSG_RAM_TAG_FOOTER_CONTENT=""
+    BSSG_RAM_TAG_DISPLAY_DATE_FORMAT=""
+
+    echo -e "${GREEN}Tag pages processed!${NC}"
+}
+
 # Generate tag pages
 generate_tag_pages() {
+    if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+        _generate_tag_pages_ram
+        return $?
+    fi
+
     echo -e "${YELLOW}Processing tag pages${NC}${ENABLE_TAG_RSS:+" and RSS feeds"}...${NC}"
 
     local tags_index_file="$CACHE_DIR/tags_index.txt"
@@ -493,9 +1087,8 @@ EOF
         # Use parallel 
         if [ "${HAS_PARALLEL:-false}" = true ] ; then
             echo -e "${GREEN}Using GNU parallel to process tag pages${NC}${ENABLE_TAG_RSS:+/feeds}"
-            local cores=1
-            if command -v nproc > /dev/null 2>&1; then cores=$(nproc);
-            elif command -v sysctl > /dev/null 2>&1; then cores=$(sysctl -n hw.ncpu 2>/dev/null || echo 1); fi
+            local cores
+            cores=$(get_parallel_jobs)
             local jobs=$cores # Use all cores for tags by default if parallel
 
             # Export necessary functions and variables

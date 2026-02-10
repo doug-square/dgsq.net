@@ -14,6 +14,312 @@ source "$(dirname "$0")/cache.sh" || { echo >&2 "Error: Failed to source cache.s
 # Helper Functions for Archive Generation
 # ==============================================================================
 
+_generate_ram_year_archive_page() {
+    local year="$1"
+    [ -z "$year" ] && return 0
+
+    local year_index_page="$OUTPUT_DIR/archives/$year/index.html"
+    mkdir -p "$(dirname "$year_index_page")"
+
+    local year_header="$HEADER_TEMPLATE"
+    local year_footer="$FOOTER_TEMPLATE"
+    local year_page_title="${MSG_ARCHIVES_FOR:-"Archives for"} $year"
+    local year_archive_rel_url="/archives/$year/"
+    year_header=${year_header//\{\{site_title\}\}/"$SITE_TITLE"}
+    year_header=${year_header//\{\{page_title\}\}/"$year_page_title"}
+    year_header=${year_header//\{\{site_description\}\}/"$SITE_DESCRIPTION"}
+    year_header=${year_header//\{\{og_description\}\}/"$SITE_DESCRIPTION"}
+    year_header=${year_header//\{\{twitter_description\}\}/"$SITE_DESCRIPTION"}
+    year_header=${year_header//\{\{og_type\}\}/"website"}
+    year_header=${year_header//\{\{page_url\}\}/"$year_archive_rel_url"}
+    year_header=${year_header//\{\{site_url\}\}/"$SITE_URL"}
+    year_header=${year_header//\{\{og_image\}\}/""}
+    year_header=${year_header//\{\{twitter_image\}\}/""}
+    local year_schema_json
+    year_schema_json='<script type="application/ld+json">{"@context": "https://schema.org","@type": "CollectionPage","name": "'"$year_page_title"'","description": "Archive of posts from '"$year"'","url": "'"$SITE_URL$year_archive_rel_url"'","isPartOf": {"@type": "WebSite","name": "'"$SITE_TITLE"'","url": "'"$SITE_URL"'"}}</script>'
+    year_header=${year_header//\{\{schema_json_ld\}\}/"$year_schema_json"}
+    year_footer=${year_footer//\{\{current_year\}\}/$(date +%Y)}
+    year_footer=${year_footer//\{\{author_name\}\}/"$AUTHOR_NAME"}
+
+    {
+        echo "$year_header"
+        echo "<h1>$year_page_title</h1>"
+        echo "<ul class=\"month-list\">"
+        local month_key
+        for month_key in $(printf '%s\n' "${!month_posts[@]}" | awk -F'|' -v y="$year" '$1 == y { print $0 }' | sort -t'|' -k2,2nr); do
+            local month_num="${month_key#*|}"
+            local month_name="${month_name_map[$month_key]}"
+            local month_post_count
+            month_post_count=$(printf '%s\n' "${month_posts[$month_key]}" | awk 'NF { c++ } END { print c+0 }')
+            local month_idx_formatted
+            month_idx_formatted=$(printf "%02d" "$((10#$month_num))")
+            local month_var_name="MSG_MONTH_${month_idx_formatted}"
+            local current_month_name="${!month_var_name:-$month_name}"
+            local month_url
+            month_url=$(fix_url "/archives/$year/$month_idx_formatted/")
+            echo "<li><a href=\"$month_url\">$current_month_name ($month_post_count)</a></li>"
+        done
+        echo "</ul>"
+        echo "$year_footer"
+    } > "$year_index_page"
+}
+
+_generate_ram_month_archive_page() {
+    local month_key="$1"
+    [ -z "$month_key" ] && return 0
+
+    local year="${month_key%|*}"
+    local month_num="${month_key#*|}"
+    local month_idx_formatted
+    month_idx_formatted=$(printf "%02d" "$((10#$month_num))")
+    local month_index_page="$OUTPUT_DIR/archives/$year/$month_idx_formatted/index.html"
+    mkdir -p "$(dirname "$month_index_page")"
+
+    local month_name_var="MSG_MONTH_${month_idx_formatted}"
+    local month_name="${!month_name_var:-${month_name_map[$month_key]}}"
+    [ -z "$month_name" ] && month_name="Month $month_idx_formatted"
+
+    local month_header="$HEADER_TEMPLATE"
+    local month_footer="$FOOTER_TEMPLATE"
+    local month_page_title="${MSG_ARCHIVES_FOR:-"Archives for"} $month_name $year"
+    local month_archive_rel_url="/archives/$year/$month_idx_formatted/"
+    month_header=${month_header//\{\{site_title\}\}/"$SITE_TITLE"}
+    month_header=${month_header//\{\{page_title\}\}/"$month_page_title"}
+    month_header=${month_header//\{\{site_description\}\}/"$SITE_DESCRIPTION"}
+    month_header=${month_header//\{\{og_description\}\}/"$SITE_DESCRIPTION"}
+    month_header=${month_header//\{\{twitter_description\}\}/"$SITE_DESCRIPTION"}
+    month_header=${month_header//\{\{og_type\}\}/"website"}
+    month_header=${month_header//\{\{page_url\}\}/"$month_archive_rel_url"}
+    month_header=${month_header//\{\{site_url\}\}/"$SITE_URL"}
+    month_header=${month_header//\{\{og_image\}\}/""}
+    month_header=${month_header//\{\{twitter_image\}\}/""}
+    local month_schema_json
+    month_schema_json='<script type="application/ld+json">{"@context": "https://schema.org","@type": "CollectionPage","name": "'"$month_page_title"'","description": "Archive of posts from '"$month_name $year"'","url": "'"$SITE_URL$month_archive_rel_url"'","isPartOf": {"@type": "WebSite","name": "'"$SITE_TITLE"'","url": "'"$SITE_URL"'"}}</script>'
+    month_header=${month_header//\{\{schema_json_ld\}\}/"$month_schema_json"}
+    month_footer=${month_footer//\{\{current_year\}\}/$(date +%Y)}
+    month_footer=${month_footer//\{\{author_name\}\}/"$AUTHOR_NAME"}
+
+    {
+        echo "$month_header"
+        echo "<h1>$month_page_title</h1>"
+        echo "<div class=\"posts-list\">"
+        while IFS='|' read -r _ _ _ title date lastmod filename slug image image_caption description author_name author_email; do
+            [ -z "$title" ] && continue
+            local post_year post_month post_day
+            if [[ "$date" =~ ^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2}) ]]; then
+                post_year="${BASH_REMATCH[1]}"
+                post_month=$(printf "%02d" "$((10#${BASH_REMATCH[2]}))")
+                post_day=$(printf "%02d" "$((10#${BASH_REMATCH[3]}))")
+            else
+                post_year=$(date +%Y); post_month=$(date +%m); post_day=$(date +%d)
+            fi
+            local url_path="${URL_SLUG_FORMAT:-Year/Month/Day/slug}"
+            url_path="${url_path//Year/$post_year}"
+            url_path="${url_path//Month/$post_month}"
+            url_path="${url_path//Day/$post_day}"
+            url_path="${url_path//slug/$slug}"
+            local post_url="/$(echo "$url_path" | sed 's|^/||; s|/*$|/|')"
+            post_url="${SITE_URL}${post_url}"
+
+            local display_date_format="$DATE_FORMAT"
+            if [ "${SHOW_TIMEZONE:-false}" = false ]; then
+                display_date_format=$(echo "$display_date_format" | sed -e 's/%[zZ]//g' -e 's/[[:space:]]*$//')
+            fi
+            local formatted_date
+            formatted_date=$(format_date "$date" "$display_date_format")
+            local display_author_name="${author_name:-${AUTHOR_NAME:-Anonymous}}"
+
+            cat << EOF
+    <article>
+        <h3><a href="${post_url}">$title</a></h3>
+        <div class="meta">${MSG_PUBLISHED_ON:-\"Published on\"} $formatted_date ${MSG_BY:-\"by\"} <strong>$display_author_name</strong></div>
+EOF
+            if [ -n "$image" ]; then
+                local image_url
+                image_url=$(fix_url "$image")
+                local alt_text="${image_caption:-$title}"
+                local figcaption_content="${image_caption:-$title}"
+                cat << EOF
+        <figure class="featured-image tag-image">
+            <a href="${post_url}">
+                <img src="$image_url" alt="$alt_text" />
+            </a>
+            <figcaption>$figcaption_content</figcaption>
+        </figure>
+EOF
+            fi
+            if [ -n "$description" ]; then
+                cat << EOF
+        <div class="summary">
+            $description
+        </div>
+EOF
+            fi
+            cat << EOF
+    </article>
+EOF
+        done < <(printf '%s\n' "${month_posts[$month_key]}" | awk 'NF' | sort -t'|' -k5,5r)
+        echo "</div>"
+        echo "$month_footer"
+    } > "$month_index_page"
+}
+
+_generate_archive_pages_ram() {
+    echo -e "${YELLOW}Processing archive pages...${NC}"
+
+    local archive_index_data
+    archive_index_data=$(ram_mode_get_dataset "archive_index")
+    if [ -z "$archive_index_data" ]; then
+        echo -e "${YELLOW}Warning: No archive index data in RAM. Skipping archive generation.${NC}"
+        return 0
+    fi
+
+    declare -A month_posts=()
+    declare -A month_name_map=()
+    declare -A year_map=()
+
+    local line
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        local year month month_name
+        IFS='|' read -r year month month_name _ <<< "$line"
+        [ -z "$year" ] && continue
+        [ -z "$month" ] && continue
+        local month_key="${year}|${month}"
+        month_posts["$month_key"]+="$line"$'\n'
+        month_name_map["$month_key"]="$month_name"
+        year_map["$year"]=1
+    done <<< "$archive_index_data"
+
+    local header_content="$HEADER_TEMPLATE"
+    local footer_content="$FOOTER_TEMPLATE"
+    header_content=${header_content//\{\{site_title\}\}/"$SITE_TITLE"}
+    header_content=${header_content//\{\{page_title\}\}/"${MSG_ARCHIVES:-"Archives"}"}
+    header_content=${header_content//\{\{site_description\}\}/"$SITE_DESCRIPTION"}
+    header_content=${header_content//\{\{og_description\}\}/"$SITE_DESCRIPTION"}
+    header_content=${header_content//\{\{twitter_description\}\}/"$SITE_DESCRIPTION"}
+    header_content=${header_content//\{\{og_type\}\}/"website"}
+    header_content=${header_content//\{\{page_url\}\}/"archives/"}
+    header_content=${header_content//\{\{site_url\}\}/"$SITE_URL"}
+    header_content=${header_content//\{\{og_image\}\}/""}
+    header_content=${header_content//\{\{twitter_image\}\}/""}
+    local schema_json_ld
+    schema_json_ld='<script type="application/ld+json">{"@context": "https://schema.org","@type": "CollectionPage","name": "Archives","description": "'"$SITE_DESCRIPTION"'","url": "'"$SITE_URL"'/archives/","isPartOf": {"@type": "WebSite","name": "'"$SITE_TITLE"'","url": "'"$SITE_URL"'"}}</script>'
+    header_content=${header_content//\{\{schema_json_ld\}\}/"$schema_json_ld"}
+    footer_content=${footer_content//\{\{current_year\}\}/$(date +%Y)}
+    footer_content=${footer_content//\{\{author_name\}\}/"$AUTHOR_NAME"}
+
+    local archives_index_page="$OUTPUT_DIR/archives/index.html"
+    mkdir -p "$(dirname "$archives_index_page")"
+    {
+        echo "$header_content"
+        echo "<h1>${MSG_ARCHIVES:-"Archives"}</h1>"
+        echo "<div class=\"archives-list year-list\">"
+
+        local year
+        for year in $(printf '%s\n' "${!year_map[@]}" | sort -nr); do
+            [ -z "$year" ] && continue
+            local year_url
+            year_url=$(fix_url "/archives/$year/")
+            echo "    <h2><a href=\"$year_url\">$year</a></h2>"
+            echo "    <ul class=\"month-list-detailed\">"
+
+            local month_key
+            for month_key in $(printf '%s\n' "${!month_posts[@]}" | awk -F'|' -v y="$year" '$1 == y { print $0 }' | sort -t'|' -k2,2nr); do
+                local month_num="${month_key#*|}"
+                local month_name="${month_name_map[$month_key]}"
+                local month_idx_formatted
+                month_idx_formatted=$(printf "%02d" "$((10#$month_num))")
+                local month_var_name="MSG_MONTH_${month_idx_formatted}"
+                local current_month_name="${!month_var_name:-$month_name}"
+                local month_url
+                month_url=$(fix_url "/archives/$year/$month_idx_formatted/")
+                local month_post_count
+                month_post_count=$(printf '%s\n' "${month_posts[$month_key]}" | awk 'NF { c++ } END { print c+0 }')
+
+                echo "        <li>"
+                echo "            <a href=\"$month_url\">$current_month_name ($month_post_count)</a>"
+
+                if [ "${ARCHIVES_LIST_ALL_POSTS:-false}" = true ] && [ "$month_post_count" -gt 0 ]; then
+                    echo "            <ul class=\"post-list-condensed-inline\">"
+                    while IFS='|' read -r _ _ _ title date _ filename slug _ _ _ author_name author_email; do
+                        [ -z "$title" ] && continue
+                        local post_year post_month post_day
+                        if [[ "$date" =~ ^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2}) ]]; then
+                            post_year="${BASH_REMATCH[1]}"
+                            post_month=$(printf "%02d" "$((10#${BASH_REMATCH[2]}))")
+                            post_day=$(printf "%02d" "$((10#${BASH_REMATCH[3]}))")
+                        else
+                            post_year=$(date +%Y); post_month=$(date +%m); post_day=$(date +%d)
+                        fi
+                        local url_path="${URL_SLUG_FORMAT:-Year/Month/Day/slug}"
+                        url_path="${url_path//Year/$post_year}"
+                        url_path="${url_path//Month/$post_month}"
+                        url_path="${url_path//Day/$post_day}"
+                        url_path="${url_path//slug/$slug}"
+                        local post_url="/$(echo "$url_path" | sed 's|^/||; s|/*$|/|')"
+                        post_url=$(fix_url "$post_url")
+                        local display_date
+                        display_date=$(echo "$date" | cut -d' ' -f1)
+                        echo "                <li><a href=\"$post_url\">[$display_date] $title</a></li>"
+                    done < <(printf '%s\n' "${month_posts[$month_key]}" | awk 'NF' | sort -t'|' -k5,5r)
+                    echo "            </ul>"
+                fi
+                echo "        </li>"
+            done
+            echo "    </ul>"
+        done
+
+        echo "</div>"
+        echo "$footer_content"
+    } > "$archives_index_page"
+
+    local year_count=${#year_map[@]}
+    local month_count=${#month_posts[@]}
+    local year_jobs month_jobs max_workers
+    max_workers=$(get_parallel_jobs)
+    year_jobs="$max_workers"
+    month_jobs="$max_workers"
+    if [ "$year_jobs" -gt "$year_count" ]; then
+        year_jobs="$year_count"
+    fi
+    if [ "$month_jobs" -gt "$month_count" ]; then
+        month_jobs="$month_count"
+    fi
+
+    if [ "$year_jobs" -gt 1 ] && [ "$year_count" -gt 1 ]; then
+        echo -e "${GREEN}Using shell parallel workers for ${year_count} RAM-mode year archive pages${NC}"
+        run_parallel "$year_jobs" < <(
+            while IFS= read -r year; do
+                [ -z "$year" ] && continue
+                printf "_generate_ram_year_archive_page '%s'\n" "$year"
+            done < <(printf '%s\n' "${!year_map[@]}" | sort -nr)
+        ) || return 1
+    else
+        local year
+        for year in $(printf '%s\n' "${!year_map[@]}" | sort -nr); do
+            _generate_ram_year_archive_page "$year"
+        done
+    fi
+
+    if [ "$month_jobs" -gt 1 ] && [ "$month_count" -gt 1 ]; then
+        echo -e "${GREEN}Using shell parallel workers for ${month_count} RAM-mode monthly archive pages${NC}"
+        run_parallel "$month_jobs" < <(
+            while IFS= read -r month_key; do
+                [ -z "$month_key" ] && continue
+                printf "_generate_ram_month_archive_page '%s'\n" "$month_key"
+            done < <(printf '%s\n' "${!month_posts[@]}" | sort -t'|' -k1,1nr -k2,2nr)
+        ) || return 1
+    else
+        local month_key
+        for month_key in $(printf '%s\n' "${!month_posts[@]}" | sort -t'|' -k1,1nr -k2,2nr); do
+            _generate_ram_month_archive_page "$month_key"
+        done
+    fi
+
+    echo -e "${GREEN}Archive page processing complete.${NC}"
+}
+
 # Check if the main archive index page needs rebuilding
 _check_archive_index_rebuild_needed() {
     local archive_index_file="$CACHE_DIR/archive_index.txt"
@@ -307,7 +613,7 @@ process_single_month() {
 
     # Generate header
     local header_content="$HEADER_TEMPLATE"
-    local month_page_title="${MSG_ARCHIVES_FOR:-\"Archives for\"} $month_name $year"
+    local month_page_title="${MSG_ARCHIVES_FOR:-"Archives for"} $month_name $year"
     local month_archive_rel_url="/archives/$year/$month_num/"
     header_content=${header_content//\{\{site_title\}\}/"$SITE_TITLE"}
     header_content=${header_content//\{\{page_title\}\}/"$month_page_title"}
@@ -432,6 +738,11 @@ _process_single_month_parallel_wrapper() {
 # Main Archive Generation Orchestrator
 # ==============================================================================
 generate_archive_pages() {
+    if [ "${BSSG_RAM_MODE:-false}" = true ]; then
+        _generate_archive_pages_ram
+        return $?
+    fi
+
     echo -e "${YELLOW}Processing archive pages...${NC}"
 
     local archive_index_file="$CACHE_DIR/archive_index.txt"
