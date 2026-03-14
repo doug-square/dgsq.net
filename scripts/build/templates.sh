@@ -141,6 +141,8 @@ preload_templates() {
         fi
 
         for file in "${page_files[@]}"; do
+            [[ -z "$file" ]] && continue
+
             # Skip if file is hidden
             if [[ $(basename "$file") == .* ]]; then
                 continue

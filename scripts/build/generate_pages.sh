@@ -223,13 +223,16 @@ process_all_pages() {
             {
                 local file quoted_file
                 for file in "${page_files[@]}"; do
+                    [[ -z "$file" ]] && continue
                     printf -v quoted_file '%q' "$file"
                     echo "process_single_page_file $quoted_file"
                 done
             } | run_parallel "$cores"
         else
             echo -e "${YELLOW}Using sequential processing for RAM-mode pages${NC}"
-            process_single_page_file "${page_files[0]}"
+            if [[ -n "${page_files[0]}" ]]; then
+                process_single_page_file "${page_files[0]}"
+            fi
         fi
     # Use GNU parallel if available, otherwise fallback
     # IMPORTANT: Assumes HAS_PARALLEL is exported/available
@@ -256,6 +259,7 @@ process_all_pages() {
         echo -e "${YELLOW}Using sequential processing for pages${NC}"
         local file
         for file in "${page_files[@]}"; do
+            [[ -z "$file" ]] && continue
             process_single_page_file "$file"
         done
     fi

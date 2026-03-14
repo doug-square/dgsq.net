@@ -16,6 +16,12 @@ parse_metadata() {
     local field="$2"
     local value=""
 
+    # Ignore empty or directory inputs so callers can safely scan optional lists.
+    if [[ -z "$file" || -d "$file" ]]; then
+        echo "$value"
+        return 0
+    fi
+
     # RAM mode: parse directly from preloaded content to avoid disk/cache I/O.
     if [ "${BSSG_RAM_MODE:-false}" = true ] && declare -F ram_mode_has_file > /dev/null && ram_mode_has_file "$file"; then
         local file_content frontmatter
@@ -87,6 +93,11 @@ parse_metadata() {
 # Extract metadata from markdown file (builds cache)
 extract_metadata() {
     local file="$1"
+    if [[ -z "$file" || -d "$file" ]]; then
+        echo "ERROR_FILE_NOT_FOUND"
+        return 1
+    fi
+
     local metadata_cache_file="${CACHE_DIR:-.bssg_cache}/meta/$(basename "$file")"
     local frontmatter_changes_marker="${CACHE_DIR:-.bssg_cache}/frontmatter_changes_marker"
     local ram_mode_active=false

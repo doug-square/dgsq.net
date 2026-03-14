@@ -36,6 +36,10 @@ _ram_mode_disk_mtime() {
 
 ram_mode_resolve_key() {
     local file="$1"
+    if [[ -z "$file" ]]; then
+        return 1
+    fi
+
     if [[ -n "${BSSG_RAM_FILE_CONTENT[$file]+_}" || -n "${BSSG_RAM_FILE_MTIME[$file]+_}" ]]; then
         echo "$file"
         return 0
@@ -66,13 +70,17 @@ ram_mode_resolve_key() {
 
 ram_mode_has_file() {
     local key
-    key=$(ram_mode_resolve_key "$1")
+    if ! key=$(ram_mode_resolve_key "$1"); then
+        return 1
+    fi
     [[ -n "${BSSG_RAM_FILE_CONTENT[$key]+_}" || -n "${BSSG_RAM_FILE_MTIME[$key]+_}" ]]
 }
 
 ram_mode_get_content() {
     local key
-    key=$(ram_mode_resolve_key "$1")
+    if ! key=$(ram_mode_resolve_key "$1"); then
+        return 0
+    fi
     if [[ -n "${BSSG_RAM_FILE_CONTENT[$key]+_}" ]]; then
         printf '%s' "${BSSG_RAM_FILE_CONTENT[$key]}"
     fi
@@ -80,7 +88,10 @@ ram_mode_get_content() {
 
 ram_mode_get_mtime() {
     local key
-    key=$(ram_mode_resolve_key "$1")
+    if ! key=$(ram_mode_resolve_key "$1"); then
+        printf '0\n'
+        return 0
+    fi
     if [[ -n "${BSSG_RAM_FILE_MTIME[$key]+_}" ]]; then
         printf '%s\n' "${BSSG_RAM_FILE_MTIME[$key]}"
     else
@@ -89,10 +100,16 @@ ram_mode_get_mtime() {
 }
 
 ram_mode_list_src_files() {
+    if [[ ${#BSSG_RAM_SRC_FILES[@]} -eq 0 ]]; then
+        return 0
+    fi
     printf '%s\n' "${BSSG_RAM_SRC_FILES[@]}"
 }
 
 ram_mode_list_page_files() {
+    if [[ ${#BSSG_RAM_PAGE_FILES[@]} -eq 0 ]]; then
+        return 0
+    fi
     printf '%s\n' "${BSSG_RAM_PAGE_FILES[@]}"
 }
 
