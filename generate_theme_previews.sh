@@ -27,6 +27,8 @@ NC='\033[0m' # No Color
 
 # Default SITE_URL from config.sh if no other is specified by script's --site-url
 SITE_URL_BASE="http://localhost"
+FULL_BUILD_MODE=false
+SITE_URL_TOKEN="__BSSG_THEME_SITE_URL__"
 
 # --- Helper Functions ---
 info() {
@@ -64,6 +66,7 @@ Options:
   -h, --help                 Display this help message and exit
   --site-url URL             Set the base SITE_URL for theme previews
                              (overrides config files)
+  --full-build               Build each theme independently (slower fallback mode)
 
 Configuration:
   The script will use the SITE_URL from the following sources in order of precedence:
@@ -76,6 +79,11 @@ Output:
   Theme previews will be generated in the '$EXAMPLE_ROOT_DIR_DYNAMIC' directory,
   with each theme in its own subdirectory. An index.html file will be
   created to navigate between themes.
+
+Performance:
+  By default, this script builds the site once and then clones it per theme,
+  replacing css/style.css and SITE_URL references. This is significantly faster.
+  Use --full-build to force one full BSSG build per theme.
 EOF
     exit 0
 }
@@ -96,6 +104,10 @@ parse_args() {
                 else
                     error "--site-url requires a value for the base URL of previews"
                 fi
+                ;;
+            --full-build)
+                FULL_BUILD_MODE=true
+                shift
                 ;;
             *)
                 warn "Unknown option: $1 (ignored)"
@@ -276,6 +288,25 @@ find_themes() {
 }
 
 build_previews() {
+    prepare_example_directory
+
+    if [ "$FULL_BUILD_MODE" = true ]; then
+        info "Using full-build mode (one BSSG build per theme)."
+        build_previews_full
+        return
+    fi
+
+    if has_theme_specific_templates; then
+        warn "Theme-specific templates detected under templates/<theme>/. Falling back to full per-theme builds."
+        build_previews_full
+        return
+    fi
+
+    info "Using fast preview mode: single build + clone + theme CSS swap."
+    build_previews_fast
+}
+
+prepare_example_directory() {
     info "Clearing existing example directory: '$EXAMPLE_ROOT_DIR_DYNAMIC'"
     mkdir -p "$EXAMPLE_ROOT_DIR_DYNAMIC"
     # More robustly clear contents. Using find is safer for unusual filenames.
@@ -289,7 +320,9 @@ build_previews() {
     # A safer alternative if `find` is available:
     # find "$EXAMPLE_ROOT_DIR_DYNAMIC" -mindepth 1 -delete
     success "Example directory cleared and ready."
+}
 
+build_previews_full() {
     info "Starting theme preview builds..."
     info "Previews will use content from the BSSG site configured by your standard config.sh/config.sh.local files."
 
@@ -313,6 +346,89 @@ build_previews() {
     done
 
     success "All theme previews built."
+}
+
+has_theme_specific_templates() {
+    local template_root="./templates"
+    local theme
+    for theme in "${themes[@]}"; do
+        if [ -d "$template_root/$theme" ]; then
+            if [ -f "$template_root/$theme/header.html" ] || [ -f "$template_root/$theme/footer.html" ]; then
+                return 0
+            fi
+        fi
+    done
+    return 1
+}
+
+replace_site_url_token_in_output() {
+    local output_dir="$1"
+    local replacement_url="$2"
+    local token="$3"
+    local escaped_replacement tmp_file file
+
+    escaped_replacement=$(printf '%s' "$replacement_url" | sed -e 's/\\/\\\\/g' -e 's/&/\\&/g' -e 's/|/\\|/g')
+
+    while IFS= read -r -d '' file; do
+        if LC_ALL=C grep -Fq "$token" "$file"; then
+            tmp_file="${file}.tmp.$$"
+            sed "s|${token}|${escaped_replacement}|g" "$file" > "$tmp_file"
+            mv "$tmp_file" "$file"
+        fi
+    done < <(find "$output_dir" -type f \( -name "*.html" -o -name "*.xml" -o -name "*.txt" -o -name "*.css" -o -name "*.json" -o -name "*.js" \) -print0)
+}
+
+clone_base_site_to_theme() {
+    local base_output_path="$1"
+    local theme_output_path="$2"
+
+    mkdir -p "$theme_output_path"
+    if command -v rsync >/dev/null 2>&1; then
+        rsync -a --delete --exclude='.DS_Store' "${base_output_path}/" "${theme_output_path}/"
+    else
+        cp -Rp "${base_output_path}/." "$theme_output_path/"
+    fi
+}
+
+build_previews_fast() {
+    local base_theme="default"
+    local base_output_path="${EXAMPLE_ROOT_DIR_DYNAMIC}/.base-preview"
+    local theme theme_site_url theme_output_path
+
+    if [ ! -f "${THEMES_DIR}/${base_theme}/style.css" ]; then
+        base_theme="${themes[0]}"
+    fi
+
+    info "Building base preview once with theme '$base_theme' and SITE_URL token '$SITE_URL_TOKEN'..."
+    if ! "$BSSG_MAIN_SCRIPT" build -f --theme "$base_theme" --site-url "$SITE_URL_TOKEN" --output "$base_output_path"; then
+        error "Base build failed in fast preview mode."
+    fi
+
+    for theme in "${themes[@]}"; do
+        theme_site_url="${SITE_URL_BASE%/}/${theme}"
+        theme_output_path="${EXAMPLE_ROOT_DIR_DYNAMIC}/${theme}"
+
+        info "Preparing fast preview for theme '$theme'"
+        info "Theme Site URL: $theme_site_url"
+        info "Theme Output Path: $theme_output_path"
+
+        clone_base_site_to_theme "$base_output_path" "$theme_output_path"
+
+        if [ ! -f "${THEMES_DIR}/${theme}/style.css" ]; then
+            error "style.css not found for theme '$theme' in '${THEMES_DIR}/${theme}'."
+        fi
+        cp "${THEMES_DIR}/${theme}/style.css" "${theme_output_path}/css/style.css"
+
+        replace_site_url_token_in_output "$theme_output_path" "$theme_site_url" "$SITE_URL_TOKEN"
+
+        # If precompressed assets were generated in base build, they are now stale after token replacement.
+        find "$theme_output_path" -type f -name "*.gz" -delete 2>/dev/null || true
+
+        success "Fast preview for theme '$theme' prepared successfully."
+    done
+
+    rm -rf "$base_output_path"
+    success "All fast theme previews built."
 }
 
 create_index_page() {

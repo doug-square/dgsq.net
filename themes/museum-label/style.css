@@ -1,0 +1,447 @@
+/*
+ * Museum Label Theme for BSSG
+ * Gallery-inspired typography: serif reading text with restrained sans metadata.
+ */
+
+:root {
+    --bg-color: #fbfaf8;
+    --paper-color: #ffffff;
+    --text-color: #1d1d1b;
+    --muted-text: #5a5a56;
+    --heading-color: #111110;
+    --link-color: #314f68;
+    --link-hover: #1f3446;
+    --border-color: #d9d4cb;
+    --accent-color: #8d7754;
+    --tag-bg: #f4efe5;
+    --tag-text: #54452e;
+    --quote-border: #b6aa95;
+    --code-bg: #f5f5f3;
+    --shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+    --radius: 6px;
+    --content-width: 860px;
+    --font-body: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --font-heading: Baskerville, "Times New Roman", Times, serif;
+    --font-ui: "Gill Sans", "Avenir Next", "Trebuchet MS", Arial, sans-serif;
+    --font-mono: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 18px;
+}
+
+body {
+    margin: 0;
+    color: var(--text-color);
+    background-color: var(--bg-color);
+    background-image: linear-gradient(180deg, #fffdf9 0%, #f7f4ee 100%);
+    font-family: var(--font-body);
+    line-height: 1.7;
+}
+
+::selection {
+    background-color: #e7dbc4;
+    color: #1a1a18;
+}
+
+.container {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: 2.25rem 1.4rem 3rem;
+}
+
+header {
+    border-top: 2px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.35rem 0 1.15rem;
+    margin-bottom: 2.1rem;
+}
+
+.site-title,
+header h1 {
+    margin: 0;
+    color: var(--heading-color);
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 4.2vw, 2.9rem);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.site-title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+header p {
+    margin: 0.45rem 0 0;
+    color: var(--muted-text);
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+}
+
+nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem 1rem;
+    margin-top: 1rem;
+}
+
+nav a {
+    color: var(--muted-text);
+    text-decoration: none;
+    font-family: var(--font-ui);
+    font-size: 0.74rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 0.1rem;
+}
+
+nav a:hover,
+nav a:focus {
+    color: var(--heading-color);
+    border-bottom-color: var(--heading-color);
+}
+
+main {
+    min-height: 62vh;
+}
+
+article {
+    margin-bottom: 1.8rem;
+}
+
+article.post,
+article.page,
+.posts-list article {
+    background: var(--paper-color);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    padding: 1.45rem 1.25rem 1.2rem;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--heading-color);
+    font-family: var(--font-heading);
+    line-height: 1.3;
+    margin: 1.35rem 0 0.85rem;
+}
+
+h1 { font-size: clamp(1.8rem, 3.8vw, 2.45rem); }
+h2 { font-size: clamp(1.45rem, 3vw, 1.85rem); }
+h3 { font-size: clamp(1.2rem, 2.2vw, 1.45rem); }
+
+p,
+ul,
+ol {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+a {
+    color: var(--link-color);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.15em;
+}
+
+a:hover,
+a:focus {
+    color: var(--link-hover);
+}
+
+.page-meta {
+    margin-bottom: 0.9rem;
+}
+
+.meta {
+    margin: 0;
+    color: var(--muted-text);
+    font-family: var(--font-ui);
+    font-size: 0.73rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.reading-time {
+    margin-top: 0.35rem;
+}
+
+.summary {
+    margin-top: 0.85rem;
+    color: #3d3d39;
+}
+
+.post-content {
+    margin-top: 0.8rem;
+}
+
+.featured-image,
+.index-image,
+.tag-image,
+.archive-image,
+.author-image {
+    margin: 1.1rem 0;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+}
+
+.image-caption,
+figcaption {
+    margin-top: 0.45rem;
+    color: var(--muted-text);
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+blockquote {
+    margin: 1.2rem 0;
+    border-left: 3px solid var(--quote-border);
+    background: #faf7f1;
+    padding: 0.75rem 0.95rem;
+}
+
+pre,
+code {
+    font-family: var(--font-mono);
+    font-size: 0.87rem;
+}
+
+code {
+    background: var(--code-bg);
+    padding: 0.1rem 0.3rem;
+    border-radius: 2px;
+}
+
+pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 0.9rem;
+    overflow-x: auto;
+}
+
+pre code {
+    padding: 0;
+    background: none;
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 1.1rem;
+}
+
+.tags a,
+.tags-list a {
+    display: inline-block;
+    color: var(--tag-text);
+    background: var(--tag-bg);
+    border: 1px solid #d8cfbe;
+    border-radius: 999px;
+    padding: 0.2rem 0.56rem;
+    text-decoration: none;
+    font-family: var(--font-ui);
+    font-size: 0.73rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.tags a:hover,
+.tags a:focus,
+.tags-list a:hover,
+.tags-list a:focus {
+    background: #e8dcc7;
+}
+
+.tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tag-count {
+    color: var(--muted-text);
+}
+
+.posts-list article + article {
+    margin-top: 1rem;
+}
+
+.posts-list h2,
+.posts-list h3 {
+    margin-top: 0;
+}
+
+.pagination {
+    margin: 1.6rem 0 0.6rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.pagination a {
+    display: inline-block;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 0.3rem 0.75rem;
+    text-decoration: none;
+    color: var(--heading-color);
+    font-family: var(--font-ui);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.pagination a:hover,
+.pagination a:focus {
+    background: #f1ece2;
+}
+
+.page-info {
+    color: var(--muted-text);
+    font-family: var(--font-ui);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.related-posts {
+    margin-top: 1.8rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.related-posts h3 {
+    margin-top: 0;
+    font-size: 1.1rem;
+}
+
+.related-posts-list {
+    display: grid;
+    gap: 0.7rem;
+}
+
+.related-post {
+    border-left: 3px solid var(--accent-color);
+    background: var(--tag-bg);
+    padding: 0.65rem 0.75rem;
+}
+
+.related-post h4 {
+    margin: 0 0 0.3rem;
+}
+
+.related-post p {
+    margin: 0;
+    color: #4a4a44;
+    font-size: 0.95rem;
+}
+
+footer {
+    margin-top: 2.2rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+    color: var(--muted-text);
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+footer p {
+    margin: 0.4rem 0;
+}
+
+footer a {
+    color: var(--muted-text);
+}
+
+footer a:hover,
+footer a:focus {
+    color: var(--heading-color);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+th,
+td {
+    border: 1px solid var(--border-color);
+    padding: 0.45rem 0.6rem;
+}
+
+th {
+    font-family: var(--font-ui);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid var(--border-color);
+    margin: 1.4rem 0;
+}
+
+@media (max-width: 760px) {
+    html {
+        font-size: 17px;
+    }
+
+    .container {
+        padding: 1.4rem 0.9rem 2.3rem;
+    }
+
+    article.post,
+    article.page,
+    .posts-list article {
+        padding: 1.1rem 0.95rem;
+    }
+
+    nav {
+        gap: 0.45rem 0.7rem;
+    }
+
+    nav a,
+    .meta,
+    .page-info,
+    .pagination a {
+        letter-spacing: 0.06em;
+    }
+}

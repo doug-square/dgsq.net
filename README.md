@@ -894,6 +894,7 @@ BSSG includes a variety of themes to customize the look of your site. Themes are
 - `dark` - Dark mode theme
 - `flat` - Microsoft Metro/Modern UI inspired flat design
 - `glassmorphism` - Modern frosted glass effect with blue/teal gradient
+- `liquid-glass` - Fluid translucent surfaces with refractive highlights and layered depth
 - `material` - Material Design inspired theme
 - `art-deco` - Inspired by 1920s-30s Art Deco style with geometric patterns, elegant fonts, and gold/black/silver/jewel color palettes
 - `bauhaus` - Inspired by the Bauhaus school, focusing on functionality, primary geometric shapes, primary colors plus black and white, and clean sans-serif typography
@@ -918,9 +919,12 @@ BSSG includes a variety of themes to customize the look of your site. Themes are
 
 #### Operating System Themes
 - `beos` - BeOS inspired theme
+- `freebsd` - FreeBSD-inspired theme with the iconic red/black visual language and orb motif
 - `macclassic` - Classic Mac OS inspired theme
 - `macos9` - Mac OS 9 inspired theme
+- `netbsd` - NetBSD-inspired theme with a navy/orange flag aesthetic and engineering-focused layout
 - `nextstep` - NeXTSTEP inspired theme
+- `openbsd` - OpenBSD-inspired yellow/black Puffy-style theme with bold security-flavored styling
 - `osx` - macOS inspired theme
 - `win311` - Windows 3.11 inspired theme
 - `win95` - Windows 95 inspired theme
@@ -938,6 +942,9 @@ BSSG includes a variety of themes to customize the look of your site. Themes are
 - `docs` - A clean, structured theme ideal for technical documentation with excellent code formatting and clear navigation
 - `longform` - Optimized for reading long articles with highly readable typography, contained text width, and minimal distractions
 - `reader-mode` - Simulates browser reader mode with almost total emphasis on text, sepia background, very readable serif font, and minimal graphic elements
+- `mynotes` - A warm, intimate, text-first journal theme designed for meditative long-form reading
+- `museum-label` - Museum catalog style with refined serif typography, restrained metadata, and clean archival cards
+- `field-journal` - Warm paper-inspired writing theme with natural tones and notebook-style presentation
 - `thoughtful` -  A warm, accessible, and performant theme for personal reflection blogs and thoughtful writing
 - `text-only` - A step beyond minimalism using browser defaults with clean base typography for readability and lightning-fast loading
 
@@ -945,6 +952,7 @@ BSSG includes a variety of themes to customize the look of your site. Themes are
 - `brutalist` - Raw, minimalist concrete-inspired design
 - `newspaper` - Classic newspaper layout
 - `diary` - Personal diary/journal style
+- `microfiche` - Monochrome archival projection aesthetic with scanline and microfilm-inspired styling
 - `random` - Selects a random theme (from the available themes) for each build
 
 To use a theme, specify it in your config file:

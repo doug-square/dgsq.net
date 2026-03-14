@@ -1,0 +1,517 @@
+/*
+ * FreeBSD Theme for BSSG
+ * Recognizable FreeBSD-inspired look using two reds + black and the orb motif.
+ */
+
+:root {
+    --freebsd-red-1: #c61f2b;
+    --freebsd-red-2: #9b1a22;
+    --freebsd-black: #101112;
+    --freebsd-charcoal: #1a1d1f;
+    --paper: #fcfcfc;
+    --paper-2: #f4f5f6;
+    --text: #1d1f22;
+    --muted: #5a6169;
+    --border: #d5d9de;
+    --link: #a3151f;
+    --link-hover: #7f0f18;
+    --tag-bg: #f8e7e9;
+    --tag-text: #7f141d;
+    --quote-bg: #f6f7f8;
+    --code-bg: #f2f4f6;
+    --radius: 8px;
+    --shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+    --content-width: 920px;
+    --font-body: "Roboto", "Helvetica Neue", Arial, sans-serif;
+    --font-heading: "Montserrat", "Arial Narrow", "Trebuchet MS", sans-serif;
+    --font-mono: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 17px;
+}
+
+body {
+    margin: 0;
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.7;
+    background:
+        radial-gradient(circle at 80% 10%, rgba(198, 31, 43, 0.22) 0, transparent 32%),
+        linear-gradient(180deg, #1b1d20 0%, #0f1011 100%);
+}
+
+::selection {
+    background: #f0c8cc;
+    color: #1a1a1a;
+}
+
+.container {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: 0 1.25rem 2.7rem;
+    background: linear-gradient(180deg, #ffffff 0%, var(--paper) 100%);
+    border-left: 1px solid #3c4146;
+    border-right: 1px solid #3c4146;
+    box-shadow: var(--shadow);
+    min-height: 100vh;
+}
+
+header {
+    margin: 0 -1.25rem 2rem;
+    padding: 1.1rem 1.25rem 1rem;
+    background:
+        linear-gradient(135deg, rgba(198, 31, 43, 0.12) 0 14%, transparent 15%),
+        linear-gradient(180deg, #fefefe 0%, #ebedf0 100%);
+    border-top: 6px solid var(--freebsd-red-1);
+    border-bottom: 1px solid #c8cfd6;
+    position: relative;
+}
+
+header::before {
+    content: "FreeBSD: The Power To Serve";
+    position: absolute;
+    top: 12px;
+    right: 18px;
+    background: linear-gradient(180deg, #c42935 0%, #981b24 100%);
+    color: #fff;
+    border: 1px solid #7f141d;
+    border-radius: 4px;
+    padding: 0.16rem 0.56rem;
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.22);
+}
+
+header::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--freebsd-red-1), transparent);
+}
+
+.site-title,
+header h1 {
+    margin: 0;
+    color: var(--freebsd-black);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: clamp(1.9rem, 3.8vw, 2.75rem);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    line-height: 1.2;
+}
+
+.site-title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.site-title a:hover,
+.site-title a:focus {
+    color: var(--freebsd-red-2);
+}
+
+header p {
+    margin: 0.42rem 0 0;
+    color: #4f5660;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+}
+
+nav {
+    margin-top: 0.95rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+nav a {
+    display: inline-block;
+    color: #eef1f4;
+    background: linear-gradient(180deg, #2c3035 0%, #1c1f23 100%);
+    border: 1px solid #4b5158;
+    border-bottom-color: #7a8796;
+    border-radius: 5px;
+    padding: 0.26rem 0.6rem;
+    text-decoration: none;
+    font-size: 0.73rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    transition: transform 0.16s ease, background-color 0.16s ease;
+}
+
+nav a:hover,
+nav a:focus {
+    background: linear-gradient(180deg, #b12430 0%, #8f1b24 100%);
+    border-color: #7f1a23;
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+main {
+    min-height: 62vh;
+}
+
+article {
+    margin-bottom: 1.45rem;
+}
+
+article.post,
+article.page,
+.posts-list article {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--freebsd-red-1);
+    border-radius: var(--radius);
+    padding: 1.2rem 1rem 1rem;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: #141619;
+    font-family: var(--font-heading);
+    margin: 1.1rem 0 0.7rem;
+    line-height: 1.3;
+    letter-spacing: 0.01em;
+}
+
+h1 { font-size: clamp(1.75rem, 3.2vw, 2.25rem); }
+h2 { font-size: clamp(1.4rem, 2.6vw, 1.8rem); }
+h3 { font-size: clamp(1.16rem, 2vw, 1.42rem); }
+
+p,
+ul,
+ol {
+    margin-top: 0;
+    margin-bottom: 0.95rem;
+}
+
+a {
+    color: var(--link);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.15em;
+}
+
+a:hover,
+a:focus {
+    color: var(--link-hover);
+}
+
+.page-meta {
+    margin-bottom: 0.75rem;
+}
+
+.meta {
+    margin: 0;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.reading-time {
+    margin-top: 0.26rem;
+}
+
+.summary {
+    margin-top: 0.75rem;
+    color: #3c4249;
+}
+
+.post-content {
+    margin-top: 0.65rem;
+}
+
+.featured-image,
+.index-image,
+.tag-image,
+.archive-image,
+.author-image {
+    margin: 0.95rem 0;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 4px;
+    border: 1px solid #b9c1ca;
+}
+
+.image-caption,
+figcaption {
+    margin-top: 0.35rem;
+    color: #626a73;
+    font-size: 0.78rem;
+    font-style: italic;
+}
+
+blockquote {
+    margin: 1rem 0;
+    padding: 0.7rem 0.85rem;
+    border-left: 4px solid var(--freebsd-red-1);
+    background: var(--quote-bg);
+    color: #2e343b;
+}
+
+pre,
+code {
+    font-family: var(--font-mono);
+    font-size: 0.84rem;
+}
+
+code {
+    background: var(--code-bg);
+    border: 1px solid #d8dde3;
+    padding: 0.08rem 0.28rem;
+    border-radius: 3px;
+}
+
+pre {
+    background: var(--code-bg);
+    border: 1px solid #d3d9df;
+    border-radius: 6px;
+    padding: 0.8rem;
+    overflow-x: auto;
+}
+
+pre code {
+    background: none;
+    border: 0;
+    padding: 0;
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid #d0d6dd;
+    margin: 1.15rem 0;
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.9rem;
+}
+
+.tags a,
+.tags-list a {
+    display: inline-block;
+    text-decoration: none;
+    color: var(--tag-text);
+    background: var(--tag-bg);
+    border: 1px solid #debec2;
+    border-radius: 999px;
+    padding: 0.18rem 0.52rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.tags a:hover,
+.tags a:focus,
+.tags-list a:hover,
+.tags-list a:focus {
+    background: #f2d4d8;
+}
+
+.tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.tag-count {
+    color: #6e5d60;
+}
+
+.posts-list article + article {
+    margin-top: 0.85rem;
+}
+
+.posts-list h2,
+.posts-list h3 {
+    margin-top: 0;
+}
+
+.pagination {
+    margin-top: 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.pagination a {
+    display: inline-block;
+    background: #f0f3f6;
+    color: #1f252c;
+    border: 1px solid #c5cdd5;
+    border-radius: 5px;
+    text-decoration: none;
+    padding: 0.22rem 0.62rem;
+    font-family: var(--font-mono);
+    font-size: 0.73rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.pagination a:hover,
+.pagination a:focus {
+    color: #fff;
+    background: linear-gradient(180deg, #ba2733 0%, #931b25 100%);
+    border-color: #801820;
+}
+
+.page-info {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.73rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.related-posts {
+    margin-top: 1.35rem;
+    padding-top: 0.85rem;
+    border-top: 1px dashed #bcc5ce;
+}
+
+.related-posts h3 {
+    margin-top: 0;
+    font-size: 1.05rem;
+    color: #1f252b;
+}
+
+.related-posts-list {
+    display: grid;
+    gap: 0.62rem;
+}
+
+.related-post {
+    border: 1px solid #cfd6dd;
+    border-left: 4px solid var(--freebsd-red-1);
+    background: #f8fafc;
+    border-radius: 5px;
+    padding: 0.55rem 0.66rem;
+}
+
+.related-post h4 {
+    margin: 0 0 0.22rem;
+    font-size: 0.95rem;
+}
+
+.related-post p {
+    margin: 0;
+    color: #4b525a;
+    font-size: 0.9rem;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.92rem 0;
+}
+
+th,
+td {
+    border: 1px solid #d2d9e0;
+    padding: 0.4rem 0.52rem;
+}
+
+th {
+    background: #e9edf2;
+    font-family: var(--font-mono);
+    font-size: 0.73rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+footer {
+    margin-top: 1.85rem;
+    padding: 0.9rem 0 0.1rem;
+    border-top: 2px solid #d1d7de;
+    color: #525861;
+    font-family: var(--font-mono);
+    font-size: 0.71rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+footer p {
+    margin: 0.33rem 0;
+}
+
+footer a {
+    color: var(--link);
+}
+
+footer a:hover,
+footer a:focus {
+    color: var(--link-hover);
+}
+
+@media (max-width: 840px) {
+    .container {
+        padding: 0 0.82rem 2rem;
+    }
+
+    header {
+        margin: 0 -0.82rem 1.5rem;
+        padding: 0.92rem 0.82rem 0.82rem;
+    }
+
+    nav {
+        padding-right: 0;
+    }
+
+    header::before {
+        top: 10px;
+        right: 10px;
+        padding: 0.12rem 0.42rem;
+        font-size: 0.5rem;
+        letter-spacing: 0;
+    }
+
+    article.post,
+    article.page,
+    .posts-list article {
+        padding: 0.95rem 0.8rem 0.82rem;
+    }
+
+    nav a,
+    .meta,
+    .page-info,
+    .pagination a {
+        letter-spacing: 0.02em;
+    }
+}

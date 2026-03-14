@@ -1,0 +1,531 @@
+/*
+ * OpenBSD Theme for BSSG
+ * Puffy-inspired yellow/black visual language with bold outlines.
+ */
+
+:root {
+    --obsd-yellow: #d7c06f;
+    --obsd-yellow-deep: #b79a4a;
+    --obsd-black: #121212;
+    --obsd-ink: #212121;
+    --obsd-paper: #f8f4e7;
+    --obsd-paper-2: #efe6c9;
+    --text: #1f2326;
+    --muted: #5f6468;
+    --border: #2a2a2a;
+    --link: #0d4f9e;
+    --link-hover: #08396f;
+    --tag-bg: #e9ddb5;
+    --tag-text: #2b2b2b;
+    --quote-bg: #f1e8cb;
+    --code-bg: #ece1bd;
+    --radius: 9px;
+    --shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+    --content-width: 900px;
+    --font-body: "Verdana", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-heading: "Trebuchet MS", "Verdana", "Segoe UI", sans-serif;
+    --font-mono: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 17px;
+}
+
+body {
+    margin: 0;
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.7;
+    background:
+        radial-gradient(circle at 2px 2px, rgba(18, 18, 18, 0.12) 1px, transparent 1px),
+        linear-gradient(180deg, #eee5c8 0%, var(--obsd-yellow) 52%, #c5af66 100%);
+    background-size: 12px 12px, 100% 100%;
+}
+
+::selection {
+    background: #101010;
+    color: #f5edc9;
+}
+
+.container {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: 0 1rem 2.5rem;
+    background: linear-gradient(180deg, #fbf8ef 0%, var(--obsd-paper) 100%);
+    border-left: 3px solid var(--obsd-black);
+    border-right: 3px solid var(--obsd-black);
+    box-shadow: var(--shadow);
+    min-height: 100vh;
+}
+
+header {
+    margin: 0 -1rem 1.8rem;
+    padding: 1rem 1rem 0.92rem;
+    background:
+        repeating-linear-gradient(
+            -45deg,
+            #2c2c2c 0 8px,
+            #202020 8px 16px
+        );
+    color: #fff5ce;
+    border-top: 8px solid #000;
+    border-bottom: 4px solid #000;
+    position: relative;
+    overflow: hidden;
+}
+
+header::before {
+    content: "OpenBSD: Secure By Default";
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    background: linear-gradient(180deg, #e9d896 0%, #c8ad5f 100%);
+    color: #141414;
+    border: 2px solid #000;
+    border-radius: 6px;
+    padding: 0.16rem 0.54rem;
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.28);
+}
+
+header::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #e7d189, transparent);
+}
+
+.site-title,
+header h1 {
+    margin: 0;
+    color: #f2e4b8;
+    font-family: var(--font-heading);
+    font-size: clamp(1.9rem, 3.7vw, 2.6rem);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    line-height: 1.2;
+    text-shadow:
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000,
+        1px 1px 0 #000;
+}
+
+.site-title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.site-title a:hover,
+.site-title a:focus {
+    color: #fff;
+}
+
+header p {
+    margin: 0.4rem 0 0;
+    color: #e4d093;
+    font-family: var(--font-mono);
+    font-size: 0.73rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+nav {
+    margin-top: 0.88rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.44rem;
+}
+
+nav a {
+    display: inline-block;
+    color: #1a1a1a;
+    background: linear-gradient(180deg, #e8d790 0%, #bfa357 100%);
+    border: 2px solid #000;
+    border-radius: 999px;
+    padding: 0.2rem 0.58rem;
+    text-decoration: none;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+}
+
+nav a:hover,
+nav a:focus {
+    background: linear-gradient(180deg, #f2e5ba 0%, #cbb06a 100%);
+    transform: translateY(-1px);
+}
+
+main {
+    min-height: 62vh;
+}
+
+article {
+    margin-bottom: 1.35rem;
+}
+
+article.post,
+article.page,
+.posts-list article {
+    background: var(--obsd-paper);
+    border: 2px solid var(--obsd-black);
+    border-radius: var(--radius);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.22);
+    padding: 1.06rem 0.95rem 0.9rem;
+    position: relative;
+}
+
+article.post::before,
+article.page::before,
+.posts-list article::before {
+    content: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: #111;
+    font-family: var(--font-heading);
+    margin: 1rem 0 0.64rem;
+    line-height: 1.3;
+}
+
+h1 { font-size: clamp(1.7rem, 3vw, 2.22rem); }
+h2 { font-size: clamp(1.36rem, 2.4vw, 1.76rem); }
+h3 { font-size: clamp(1.12rem, 1.9vw, 1.34rem); }
+
+p,
+ul,
+ol {
+    margin-top: 0;
+    margin-bottom: 0.9rem;
+}
+
+a {
+    color: var(--link);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.13em;
+}
+
+a:hover,
+a:focus {
+    color: var(--link-hover);
+}
+
+.page-meta {
+    margin-bottom: 0.72rem;
+}
+
+.meta {
+    margin: 0;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.reading-time {
+    margin-top: 0.22rem;
+}
+
+.summary {
+    margin-top: 0.68rem;
+    color: #434a50;
+}
+
+.post-content {
+    margin-top: 0.62rem;
+}
+
+.featured-image,
+.index-image,
+.tag-image,
+.archive-image,
+.author-image {
+    margin: 0.9rem 0;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    border: 2px solid #111;
+    border-radius: 6px;
+}
+
+.image-caption,
+figcaption {
+    margin-top: 0.32rem;
+    color: #5f676e;
+    font-size: 0.77rem;
+    font-style: italic;
+}
+
+blockquote {
+    margin: 0.95rem 0;
+    padding: 0.65rem 0.8rem;
+    border-left: 5px solid #111;
+    background: var(--quote-bg);
+    color: #2e3438;
+}
+
+pre,
+code {
+    font-family: var(--font-mono);
+    font-size: 0.83rem;
+}
+
+code {
+    background: var(--code-bg);
+    border: 1px solid #b89d55;
+    border-radius: 3px;
+    padding: 0.08rem 0.24rem;
+}
+
+pre {
+    background: var(--code-bg);
+    border: 2px solid #111;
+    border-radius: 6px;
+    padding: 0.75rem;
+    overflow-x: auto;
+}
+
+pre code {
+    background: none;
+    border: 0;
+    padding: 0;
+}
+
+hr {
+    border: 0;
+    border-top: 2px dashed #3b3b3b;
+    margin: 1.08rem 0;
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.34rem;
+    margin-top: 0.82rem;
+}
+
+.tags a,
+.tags-list a {
+    display: inline-block;
+    text-decoration: none;
+    color: var(--tag-text);
+    background: var(--tag-bg);
+    border: 2px solid #111;
+    border-radius: 999px;
+    padding: 0.16rem 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+}
+
+.tags a:hover,
+.tags a:focus,
+.tags-list a:hover,
+.tags-list a:focus {
+    background: #e4d091;
+}
+
+.tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.tag-count {
+    color: #3f3f3f;
+}
+
+.posts-list article + article {
+    margin-top: 0.78rem;
+}
+
+.posts-list h2,
+.posts-list h3 {
+    margin-top: 0;
+}
+
+.pagination {
+    margin-top: 1.12rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.42rem;
+}
+
+.pagination a {
+    display: inline-block;
+    color: #131313;
+    text-decoration: none;
+    border: 2px solid #000;
+    border-radius: 999px;
+    padding: 0.2rem 0.56rem;
+    background: linear-gradient(180deg, #e8d994 0%, #c2a85e 100%);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 700;
+}
+
+.pagination a:hover,
+.pagination a:focus {
+    background: linear-gradient(180deg, #f1e4bc 0%, #cfb471 100%);
+}
+
+.page-info {
+    color: #52595f;
+    font-family: var(--font-mono);
+    font-size: 0.71rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.related-posts {
+    margin-top: 1.2rem;
+    padding-top: 0.74rem;
+    border-top: 2px dashed #222;
+}
+
+.related-posts h3 {
+    margin-top: 0;
+    font-size: 1.02rem;
+}
+
+.related-posts-list {
+    display: grid;
+    gap: 0.56rem;
+}
+
+.related-post {
+    border: 2px solid #111;
+    border-left-width: 6px;
+    border-radius: 6px;
+    background: #f3ead1;
+    padding: 0.5rem 0.62rem;
+}
+
+.related-post h4 {
+    margin: 0 0 0.18rem;
+    font-size: 0.93rem;
+}
+
+.related-post p {
+    margin: 0;
+    color: #474e53;
+    font-size: 0.89rem;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.88rem 0;
+}
+
+th,
+td {
+    border: 2px solid #111;
+    padding: 0.36rem 0.48rem;
+}
+
+th {
+    background: #ddca88;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+footer {
+    margin-top: 1.72rem;
+    padding: 0.82rem 0 0.1rem;
+    border-top: 3px solid #111;
+    color: #4f565c;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    position: relative;
+}
+
+footer p {
+    margin: 0.31rem 0;
+}
+
+footer a {
+    color: var(--link);
+}
+
+footer a:hover,
+footer a:focus {
+    color: var(--link-hover);
+}
+
+@media (max-width: 840px) {
+    .container {
+        padding: 0 0.78rem 1.95rem;
+    }
+
+    header {
+        margin: 0 -0.78rem 1.42rem;
+        padding: 0.85rem 0.78rem 0.74rem;
+    }
+
+    header::before {
+        right: 10px;
+        top: 10px;
+        padding: 0.12rem 0.42rem;
+        font-size: 0.5rem;
+        letter-spacing: 0;
+    }
+
+    nav {
+        padding-right: 0;
+    }
+
+    article.post,
+    article.page,
+    .posts-list article {
+        padding: 0.92rem 0.78rem 0.76rem;
+    }
+
+    nav a,
+    .meta,
+    .page-info,
+    .pagination a {
+        letter-spacing: 0.02em;
+    }
+}
