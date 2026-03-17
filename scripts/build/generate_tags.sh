@@ -441,6 +441,7 @@ _generate_tag_pages_ram() {
     header_base=${header_base//\{\{site_url\}\}/"$SITE_URL"}
     header_base=${header_base//\{\{og_image\}\}/""}
     header_base=${header_base//\{\{twitter_image\}\}/""}
+    header_base=${header_base//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
     BSSG_RAM_TAG_HEADER_BASE="$header_base"
 
     local tag_count="${#sorted_tag_urls[@]}"
@@ -563,6 +564,7 @@ EOF
     header_content=${header_content//\{\{schema_json_ld\}\}/"$tags_schema_json"}
     header_content=${header_content//\{\{og_image\}\}/""}
     header_content=${header_content//\{\{twitter_image\}\}/""}
+    header_content=${header_content//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
     footer_content=${footer_content//\{\{current_year\}\}/$(date +%Y)}
     footer_content=${footer_content//\{\{author_name\}\}/"$AUTHOR_NAME"}
 
@@ -879,6 +881,7 @@ EOF
                 # Remove image placeholders
                 header_content=${header_content//\{\{og_image\}\}/""}
                 header_content=${header_content//\{\{twitter_image\}\}/""}
+                header_content=${header_content//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
 
                 # Replace placeholders in the footer
                 footer_content=${footer_content//\{\{current_year\}\}/$(date +%Y)}
@@ -1215,6 +1218,7 @@ EOF
         header_content=${header_content//\{\{schema_json_ld\}\}/"$schema_json_ld"}
         header_content=${header_content//\{\{og_image\}\}/""}
         header_content=${header_content//\{\{twitter_image\}\}/""}
+        header_content=${header_content//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
 
         # Replace placeholders in the footer
         footer_content=${footer_content//\{\{current_year\}\}/$(date +%Y)}

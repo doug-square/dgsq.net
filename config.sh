@@ -39,6 +39,19 @@ SITE_DESCRIPTION="A complete SSG - written in bash"
 SITE_URL="http://localhost:8000"
 AUTHOR_NAME="Anonymous" 
 AUTHOR_EMAIL="anonymous@example.com"
+REL_ME_URL="" # Optional fediverse profile URL for <link rel="me"> verification, e.g. "https://mastodon.example/@john"
+# Optional additional rel="me" verification links. BSSG emits all unique values from
+# REL_ME_URL and REL_ME_URLS.
+# REL_ME_URLS=(
+#   "https://mastodon.example/@john"
+#   "https://another-fedi.example/@john"
+# )
+FEDIVERSE_CREATOR="" # Optional default fediverse:creator value for posts, e.g. "@you@example.social"
+# Optional per-author overrides matched against author_name exactly.
+# declare -A AUTHOR_FEDIVERSE_CREATORS=(
+#   ["Jane Smith"]="@jane@example.social"
+#   ["John Doe"]="@john@example.com"
+# )
 
 # Content configuration
 DATE_FORMAT="%Y-%m-%d %H:%M:%S %z"

@@ -24,6 +24,11 @@ SITE_DESCRIPTION="${SITE_DESCRIPTION:-A personal journal and introspective newsp
 SITE_URL="${SITE_URL:-http://localhost}"
 AUTHOR_NAME="${AUTHOR_NAME:-Anonymous}"
 AUTHOR_EMAIL="${AUTHOR_EMAIL:-anonymous@example.com}"
+REL_ME_URL="${REL_ME_URL:-}"
+REL_ME_URLS_SERIALIZED="${REL_ME_URLS_SERIALIZED:-}"
+FEDIVERSE_CREATOR="${FEDIVERSE_CREATOR:-}"
+AUTHOR_FEDIVERSE_CREATORS_SERIALIZED="${AUTHOR_FEDIVERSE_CREATORS_SERIALIZED:-}"
+SITE_FEDIVERSE_CREATOR_META_TAG="${SITE_FEDIVERSE_CREATOR_META_TAG:-}"
 DATE_FORMAT="${DATE_FORMAT:-%Y-%m-%d %H:%M:%S}"
 TIMEZONE="${TIMEZONE:-local}"
 SHOW_TIMEZONE="${SHOW_TIMEZONE:-false}"
@@ -218,6 +223,68 @@ done
 # --- Expand Tilde in Path Variables --- END ---
 
 
+# --- Derived Configuration --- START ---
+serialize_author_fediverse_creators() {
+    local serialized=""
+    local author_name
+
+    if ! declare -p AUTHOR_FEDIVERSE_CREATORS >/dev/null 2>&1; then
+        printf '%s' "$serialized"
+        return 0
+    fi
+
+    if [[ "$(declare -p AUTHOR_FEDIVERSE_CREATORS 2>/dev/null)" != "declare -A"* ]]; then
+        print_warning "AUTHOR_FEDIVERSE_CREATORS is set but is not an associative array. Ignoring it."
+        printf '%s' "$serialized"
+        return 0
+    fi
+
+    while IFS= read -r author_name; do
+        serialized+="${author_name}"$'\t'"${AUTHOR_FEDIVERSE_CREATORS[$author_name]}"$'\n'
+    done < <(printf '%s\n' "${!AUTHOR_FEDIVERSE_CREATORS[@]}" | LC_ALL=C sort)
+
+    printf '%s' "$serialized"
+}
+
+serialize_rel_me_urls() {
+    local serialized=""
+    local rel_me_url=""
+
+    rel_me_url=$(printf '%s' "$REL_ME_URL" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    if [ -n "$rel_me_url" ]; then
+        serialized+="${rel_me_url}"$'\n'
+    fi
+
+    if declare -p REL_ME_URLS >/dev/null 2>&1; then
+        local rel_me_decl
+        rel_me_decl="$(declare -p REL_ME_URLS 2>/dev/null)"
+        if [[ "$rel_me_decl" == "declare -a"* ]]; then
+            local rel_me_entry
+            for rel_me_entry in "${REL_ME_URLS[@]}"; do
+                rel_me_entry=$(printf '%s' "$rel_me_entry" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                if [ -n "$rel_me_entry" ]; then
+                    serialized+="${rel_me_entry}"$'\n'
+                fi
+            done
+        else
+            print_warning "REL_ME_URLS is set but is not a standard array. Ignoring it."
+        fi
+    fi
+
+    if [ -z "$serialized" ]; then
+        printf '%s' ""
+        return 0
+    fi
+
+    printf '%s' "$serialized" | awk 'NF && !seen[$0]++'
+}
+
+REL_ME_URLS_SERIALIZED="$(serialize_rel_me_urls)"
+AUTHOR_FEDIVERSE_CREATORS_SERIALIZED="$(serialize_author_fediverse_creators)"
+SITE_FEDIVERSE_CREATOR_META_TAG="$(build_fediverse_creator_meta_tag "${AUTHOR_NAME:-Anonymous}" "")"
+# --- Derived Configuration --- END ---
+
+
 # --- Export All Variables --- START ---
 
 # Define the list of configuration variables relevant for hashing/exporting
@@ -225,7 +292,8 @@ done
 # and that should trigger a cache rebuild if changed.
 BSSG_CONFIG_VARS_ARRAY=(
     CONFIG_FILE SRC_DIR OUTPUT_DIR TEMPLATES_DIR THEMES_DIR STATIC_DIR THEME
-    SITE_TITLE SITE_DESCRIPTION SITE_URL AUTHOR_NAME AUTHOR_EMAIL
+    SITE_TITLE SITE_DESCRIPTION SITE_URL AUTHOR_NAME AUTHOR_EMAIL REL_ME_URL REL_ME_URLS_SERIALIZED
+    FEDIVERSE_CREATOR AUTHOR_FEDIVERSE_CREATORS_SERIALIZED SITE_FEDIVERSE_CREATOR_META_TAG
     DATE_FORMAT TIMEZONE SHOW_TIMEZONE POSTS_PER_PAGE RSS_ITEM_LIMIT RSS_INCLUDE_FULL_CONTENT RSS_FILENAME
     INDEX_SHOW_FULL_CONTENT
     CLEAN_OUTPUT FORCE_REBUILD BUILD_MODE SITE_LANG LOCALE_DIR PAGES_DIR MARKDOWN_PROCESSOR
@@ -260,6 +328,11 @@ export SITE_DESCRIPTION
 export SITE_URL
 export AUTHOR_NAME
 export AUTHOR_EMAIL
+export REL_ME_URL
+export REL_ME_URLS_SERIALIZED
+export FEDIVERSE_CREATOR
+export AUTHOR_FEDIVERSE_CREATORS_SERIALIZED
+export SITE_FEDIVERSE_CREATOR_META_TAG
 export DATE_FORMAT
 export TIMEZONE
 export SHOW_TIMEZONE

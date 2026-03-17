@@ -119,10 +119,19 @@ convert_markdown() {
     # This is materially faster than line-by-line bash parsing on large markdown files.
     local content=""
     local source_stream=""
+    local fediverse_creator_override=""
     if $ram_mode_active; then
         source_stream=$(ram_mode_get_content "$input_file")
     else
         source_stream=$(cat "$input_file")
+    fi
+    if [[ "$input_file" == *.html ]]; then
+        fediverse_creator_override=$(printf '%s\n' "$source_stream" | grep -m 1 -o 'name="fediverse_creator" content="[^"]*"' 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+        if [ -z "$fediverse_creator_override" ]; then
+            fediverse_creator_override=$(printf '%s\n' "$source_stream" | grep -m 1 -o 'name="fediverse:creator" content="[^"]*"' 2>/dev/null | sed 's/.*content="\([^"]*\)".*/\1/')
+        fi
+    else
+        fediverse_creator_override=$(parse_metadata "$input_file" "fediverse_creator")
     fi
     content=$(printf '%s' "$source_stream" | awk '
         NR == 1 {
@@ -242,6 +251,18 @@ convert_markdown() {
     meta_desc=$(echo "${description:-$SITE_DESCRIPTION}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     header_content=${header_content//\{\{og_description\}\}/"$meta_desc"}
     header_content=${header_content//\{\{twitter_description\}\}/"$meta_desc"}
+    local display_author_name="${author_name:-${AUTHOR_NAME:-Anonymous}}"
+    local fediverse_creator_meta_tag=""
+    fediverse_creator_meta_tag=$(build_fediverse_creator_meta_tag "$display_author_name" "$fediverse_creator_override")
+    if [[ "$header_content" == *"{{fediverse_creator_meta}}"* ]]; then
+        header_content=${header_content//\{\{fediverse_creator_meta\}\}/"$fediverse_creator_meta_tag"}
+    elif [ -n "$fediverse_creator_meta_tag" ]; then
+        if [[ "$header_content" == *"</head>"* ]]; then
+            header_content=${header_content/<\/head>/$'\n'"$fediverse_creator_meta_tag"$'\n''</head>'}
+        else
+            header_content+=$'\n'"$fediverse_creator_meta_tag"
+        fi
+    fi
 
     # Generate Schema.org JSON-LD for articles
     local schema_json_ld=""
@@ -319,7 +340,6 @@ convert_markdown() {
     local formatted_lastmod=$(format_date "$lastmod" "$display_date_format")
     local post_meta_reading_time
     post_meta_reading_time=$(printf "${MSG_READING_TIME_TEMPLATE:-%d min read}" "$reading_time")
-    local display_author_name="${author_name:-${AUTHOR_NAME:-Anonymous}}"
     local post_meta="<div class=\"page-meta\">"
     post_meta+="<p class=\"meta\">"
     post_meta+="${MSG_PUBLISHED_ON:-Published on}: <time datetime=\"$date\">$formatted_date</time> ${MSG_BY:-by} <strong>$display_author_name</strong>"
@@ -797,10 +817,12 @@ process_all_markdown_files() {
         # Export dependencies of convert_markdown and its helpers
         export -f file_needs_rebuild get_file_mtime common_rebuild_check config_has_changed # Still needed by convert_markdown *internally* for now
         export -f calculate_reading_time generate_slug format_date fix_url parse_metadata extract_metadata convert_markdown_to_html
+        export -f trim_whitespace resolve_fediverse_creator build_fediverse_creator_meta_tag
         export -f format_iso8601_post_date
         export -f portable_md5sum # Used by cache funcs
         export CACHE_DIR FORCE_REBUILD OUTPUT_DIR SITE_URL URL_SLUG_FORMAT HEADER_TEMPLATE FOOTER_TEMPLATE
         export SITE_TITLE SITE_DESCRIPTION AUTHOR_NAME MARKDOWN_PROCESSOR MARKDOWN_PL_PATH DATE_FORMAT TIMEZONE SHOW_TIMEZONE
+        export FEDIVERSE_CREATOR AUTHOR_FEDIVERSE_CREATORS_SERIALIZED
         export MSG_PUBLISHED_ON MSG_UPDATED_ON MSG_READING_TIME_TEMPLATE # Export needed locale messages
         export CONFIG_HASH_FILE BSSG_CONFIG_CHANGED_STATUS # Export status for common_rebuild_check
         export ENABLE_RELATED_POSTS RELATED_POSTS_COUNT # Export related posts configuration

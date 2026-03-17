@@ -1136,6 +1136,12 @@
                     <div class="form-help">Author email for this post (optional)</div>
                 </div>
 
+                <div class="form-group">
+                    <label class="form-label" for="fediverseCreator">Fediverse Creator</label>
+                    <input type="text" id="fediverseCreator" class="form-input" placeholder="@you@example.social">
+                    <div class="form-help">Optional override for the fediverse:creator meta tag</div>
+                </div>
+
                 <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid var(--border);">
                 
                 <h3 style="font-size: 1rem; margin-bottom: 1rem; color: var(--text-secondary);">Settings</h3>
@@ -1328,6 +1334,7 @@
                 imageCaption: '',
                 authorName: '',
                 authorEmail: '',
+                fediverseCreator: '',
                 content: ''
             },
             isDirty: false,
@@ -1357,6 +1364,7 @@
             imageCaption: document.getElementById('imageCaption'),
             authorName: document.getElementById('authorName'),
             authorEmail: document.getElementById('authorEmail'),
+            fediverseCreator: document.getElementById('fediverseCreator'),
             markdownEditor: document.getElementById('markdownEditor'),
             previewContent: document.getElementById('previewContent'),
             wordCount: document.getElementById('wordCount'),
@@ -1518,6 +1526,10 @@
             
             if (post.authorEmail) {
                 frontmatter += `author_email: ${post.authorEmail}\n`;
+            }
+
+            if (post.fediverseCreator) {
+                frontmatter += `fediverse_creator: ${post.fediverseCreator}\n`;
             }
             
             frontmatter += '---\n\n';
@@ -1818,6 +1830,7 @@
                 imageCaption: '',
                 authorName: '',
                 authorEmail: '',
+                fediverseCreator: '',
                 content: ''
             };
             state.currentArticleId = null;
@@ -2025,6 +2038,7 @@
             state.currentPost.imageCaption = elements.imageCaption.value;
             state.currentPost.authorName = elements.authorName.value;
             state.currentPost.authorEmail = elements.authorEmail.value;
+            state.currentPost.fediverseCreator = elements.fediverseCreator.value;
             state.currentPost.content = elements.markdownEditor.value;
         }
 
@@ -2038,6 +2052,7 @@
             elements.imageCaption.value = state.currentPost.imageCaption || '';
             elements.authorName.value = state.currentPost.authorName || '';
             elements.authorEmail.value = state.currentPost.authorEmail || '';
+            elements.fediverseCreator.value = state.currentPost.fediverseCreator || '';
             elements.markdownEditor.value = state.currentPost.content || '';
             
             // Update tags
@@ -2276,6 +2291,7 @@
                     imageCaption: parsed.image_caption || '',
                     authorName: parsed.author_name || '',
                     authorEmail: parsed.author_email || '',
+                    fediverseCreator: parsed.fediverse_creator || '',
                     content: markdownContent.trim()
                 };
                 
@@ -2499,6 +2515,11 @@
 
             elements.authorEmail.addEventListener('input', (e) => {
                 state.currentPost.authorEmail = e.target.value;
+                markDirty();
+            });
+
+            elements.fediverseCreator.addEventListener('input', (e) => {
+                state.currentPost.fediverseCreator = e.target.value;
                 markDirty();
             });
 

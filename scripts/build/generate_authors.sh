@@ -117,6 +117,7 @@ _generate_author_pages_ram() {
         header_content=${header_content//\{\{site_url\}\}/"$SITE_URL"}
         header_content=${header_content//\{\{og_image\}\}/}
         header_content=${header_content//\{\{twitter_image\}\}/}
+        header_content=${header_content//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
         header_content=${header_content//<!-- bssg:tag_rss_link -->/}
         if [ "${ENABLE_AUTHOR_RSS:-false}" = true ]; then
             local author_rss_link="<link rel=\"alternate\" type=\"application/rss+xml\" title=\"$author RSS Feed\" href=\"$SITE_URL$author_rss_rel_url\">"
@@ -172,6 +173,7 @@ _generate_author_pages_ram() {
     header_content=${header_content//\{\{site_url\}\}/"$SITE_URL"}
     header_content=${header_content//\{\{og_image\}\}/}
     header_content=${header_content//\{\{twitter_image\}\}/}
+    header_content=${header_content//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
     header_content=${header_content//<!-- bssg:tag_rss_link -->/}
     local schema_json
     schema_json="{\"@context\": \"https://schema.org\",\"@type\": \"CollectionPage\",\"name\": \"$page_title\",\"description\": \"List of all authors on $SITE_TITLE\",\"url\": \"$SITE_URL/authors/\",\"isPartOf\": {\"@type\": \"WebSite\",\"name\": \"$SITE_TITLE\",\"url\": \"$SITE_URL\"}}"
@@ -496,6 +498,7 @@ generate_author_pages() {
                 # Remove unprocessed image placeholders
                 header_content=${header_content//\{\{og_image\}\}/}
                 header_content=${header_content//\{\{twitter_image\}\}/}
+                header_content=${header_content//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
 
                 # Remove the placeholder for the tag-specific RSS feed link
                 header_content=${header_content//<!-- bssg:tag_rss_link -->/}
@@ -636,6 +639,7 @@ generate_author_pages() {
         # Remove unprocessed image placeholders
         header_content=${header_content//\{\{og_image\}\}/}
         header_content=${header_content//\{\{twitter_image\}\}/}
+        header_content=${header_content//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
 
         # Remove the placeholder for the tag-specific RSS feed link in the main authors index
         header_content=${header_content//<!-- bssg:tag_rss_link -->/}

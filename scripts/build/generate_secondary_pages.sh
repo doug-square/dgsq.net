@@ -117,6 +117,7 @@ EOF
     # Remove image placeholders
     header_content=${header_content//\{\{og_image\}\}/""}
     header_content=${header_content//\{\{twitter_image\}\}/""}
+    header_content=${header_content//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
 
     # Replace placeholders in the footer
     footer_content=${footer_content//\{\{current_year\}\}/$(date +%Y)}

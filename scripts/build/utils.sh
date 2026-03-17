@@ -450,6 +450,48 @@ html_escape() {
     fi
 }
 
+trim_whitespace() {
+    printf '%s' "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
+}
+
+resolve_fediverse_creator() {
+    local author_name="$1"
+    local post_fediverse_creator="$2"
+    local resolved_creator=""
+
+    resolved_creator=$(trim_whitespace "$post_fediverse_creator")
+    if [ -n "$resolved_creator" ]; then
+        printf '%s' "$resolved_creator"
+        return 0
+    fi
+
+    if [ -n "$author_name" ] && [ -n "${AUTHOR_FEDIVERSE_CREATORS_SERIALIZED:-}" ]; then
+        local configured_author configured_creator
+        while IFS=$'\t' read -r configured_author configured_creator; do
+            [ "$configured_author" = "$author_name" ] || continue
+            resolved_creator=$(trim_whitespace "$configured_creator")
+            if [ -n "$resolved_creator" ]; then
+                printf '%s' "$resolved_creator"
+                return 0
+            fi
+        done <<< "${AUTHOR_FEDIVERSE_CREATORS_SERIALIZED}"
+    fi
+
+    trim_whitespace "${FEDIVERSE_CREATOR:-}"
+}
+
+build_fediverse_creator_meta_tag() {
+    local fediverse_creator
+    fediverse_creator=$(resolve_fediverse_creator "$1" "$2")
+
+    if [ -z "$fediverse_creator" ]; then
+        printf '%s' ""
+        return 0
+    fi
+
+    printf '<meta name="fediverse:creator" content="%s">' "$(html_escape "$fediverse_creator")"
+}
+
 # Export the functions
 export -f format_date_from_timestamp
 export -f generate_slug
@@ -461,6 +503,9 @@ export -f get_parallel_jobs
 export -f run_parallel
 export -f calculate_reading_time
 export -f html_escape
+export -f trim_whitespace
+export -f resolve_fediverse_creator
+export -f build_fediverse_creator_meta_tag
 # Export the new print functions
 export -f print_error
 export -f print_warning

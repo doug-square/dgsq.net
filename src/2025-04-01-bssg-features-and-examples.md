@@ -6,6 +6,7 @@ slug: bssg-features-examples
 description: A detailed overview of BSSG's key features with practical examples showing how to get the most out of this Bash Static Site Generator.
 image: https://picsum.photos/537/354
 image_caption: Sample, random pic from picsum
+fediverse_creator: @author@example.social
 ---
 
 BSSG (Bash Static Site Generator) offers a powerful yet simple approach to creating static websites. This post demonstrates some of its key features with practical examples.
@@ -23,6 +24,7 @@ slug: custom-url-slug
 image: /path/to/featured-image.jpg
 image_caption: A caption for your featured image
 description: A brief summary of your post for previews and SEO
+fediverse_creator: @author@example.social
 ---
 ```
 
@@ -123,6 +125,7 @@ When you build your BSSG site, it generates clean HTML with excellent accessibil
   <meta property="og:title" content="Post Title">
   <meta property="og:description" content="Post description">
   <meta property="og:url" content="https://example.com/post-slug">
+  <meta name="fediverse:creator" content="@author@example.social">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>

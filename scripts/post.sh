@@ -224,6 +224,7 @@ EOM
     <meta name="slug" content="$slug">
     <meta name="author_name" content="">
     <meta name="author_email" content="">
+    <meta name="fediverse_creator" content="">
 </head>
 <body>
     <h1>$title</h1>
@@ -249,6 +250,7 @@ image_caption:
 description:
 author_name:
 author_email:
+fediverse_creator:
 ---
 
 $initial_content
@@ -475,6 +477,7 @@ else
     <meta name="slug" content="$POST_SLUG">
     <meta name="author_name" content="">
     <meta name="author_email" content="">
+    <meta name="fediverse_creator" content="">
 </head>
 <body>
     <h1>$POST_TITLE</h1>
@@ -496,6 +499,7 @@ image_caption:
 description:
 author_name:
 author_email:
+fediverse_creator:
 ---
 
 $POST_CONTENT

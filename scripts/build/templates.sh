@@ -320,6 +320,24 @@ preload_templates() {
     HEADER_TEMPLATE=$(echo "$HEADER_TEMPLATE" | sed "s|{{[[:space:]]*rss_filename[[:space:]]*}}|${RSS_FILENAME:-rss.xml}|g")
     # --- Add RSS Filename Placeholder --- END ---
 
+    # --- Handle rel="me" Verification Link --- START ---
+    local rel_me_tags=""
+    if [ -n "${REL_ME_URLS_SERIALIZED:-}" ]; then
+        local rel_me_link_url rel_me_href
+        while IFS= read -r rel_me_link_url; do
+            [ -n "$rel_me_link_url" ] || continue
+            rel_me_href=$(html_escape "$rel_me_link_url")
+            rel_me_tags+="<link rel=\"me\" href=\"${rel_me_href}\">"$'\n'
+        done <<< "$REL_ME_URLS_SERIALIZED"
+        rel_me_tags="${rel_me_tags%$'\n'}"
+        print_info "Adding rel=\"me\" verification links from REL_ME_URL/REL_ME_URLS."
+    else
+        print_info "No REL_ME_URL or REL_ME_URLS specified, skipping rel=\"me\" links."
+    fi
+    HEADER_TEMPLATE=$(echo "$HEADER_TEMPLATE" | sed "s|{{[[:space:]]*rel_me_link[[:space:]]*}}|__BSSG_REL_ME_LINK__|g")
+    HEADER_TEMPLATE=${HEADER_TEMPLATE//__BSSG_REL_ME_LINK__/$rel_me_tags}
+    # --- Handle rel="me" Verification Link --- END ---
+
     # --- Handle Custom CSS --- START ---
     local custom_css_tag=""
     if [ -n "$CUSTOM_CSS" ]; then

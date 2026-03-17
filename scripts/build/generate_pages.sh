@@ -125,6 +125,7 @@ convert_page() {
     # Handle image placeholders (remove for pages as they don't have featured images)
     header_content=${header_content//\{\{og_image\}\}/}
     header_content=${header_content//\{\{twitter_image\}\}/}
+    header_content=${header_content//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
 
     # Assemble the final HTML
     local final_html="${header_content}"

@@ -35,6 +35,7 @@ _generate_ram_year_archive_page() {
     year_header=${year_header//\{\{site_url\}\}/"$SITE_URL"}
     year_header=${year_header//\{\{og_image\}\}/""}
     year_header=${year_header//\{\{twitter_image\}\}/""}
+    year_header=${year_header//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
     local year_schema_json
     year_schema_json='<script type="application/ld+json">{"@context": "https://schema.org","@type": "CollectionPage","name": "'"$year_page_title"'","description": "Archive of posts from '"$year"'","url": "'"$SITE_URL$year_archive_rel_url"'","isPartOf": {"@type": "WebSite","name": "'"$SITE_TITLE"'","url": "'"$SITE_URL"'"}}</script>'
     year_header=${year_header//\{\{schema_json_ld\}\}/"$year_schema_json"}
@@ -93,6 +94,7 @@ _generate_ram_month_archive_page() {
     month_header=${month_header//\{\{site_url\}\}/"$SITE_URL"}
     month_header=${month_header//\{\{og_image\}\}/""}
     month_header=${month_header//\{\{twitter_image\}\}/""}
+    month_header=${month_header//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
     local month_schema_json
     month_schema_json='<script type="application/ld+json">{"@context": "https://schema.org","@type": "CollectionPage","name": "'"$month_page_title"'","description": "Archive of posts from '"$month_name $year"'","url": "'"$SITE_URL$month_archive_rel_url"'","isPartOf": {"@type": "WebSite","name": "'"$SITE_TITLE"'","url": "'"$SITE_URL"'"}}</script>'
     month_header=${month_header//\{\{schema_json_ld\}\}/"$month_schema_json"}
@@ -203,6 +205,7 @@ _generate_archive_pages_ram() {
     header_content=${header_content//\{\{site_url\}\}/"$SITE_URL"}
     header_content=${header_content//\{\{og_image\}\}/""}
     header_content=${header_content//\{\{twitter_image\}\}/""}
+    header_content=${header_content//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
     local schema_json_ld
     schema_json_ld='<script type="application/ld+json">{"@context": "https://schema.org","@type": "CollectionPage","name": "Archives","description": "'"$SITE_DESCRIPTION"'","url": "'"$SITE_URL"'/archives/","isPartOf": {"@type": "WebSite","name": "'"$SITE_TITLE"'","url": "'"$SITE_URL"'"}}</script>'
     header_content=${header_content//\{\{schema_json_ld\}\}/"$schema_json_ld"}
@@ -403,6 +406,7 @@ _generate_main_archive_index() {
     header_content=${header_content//\{\{site_url\}\}/"$SITE_URL"}
     header_content=${header_content//\{\{og_image\}\}/""}
     header_content=${header_content//\{\{twitter_image\}\}/""}
+    header_content=${header_content//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
     # Add schema
     local schema_json_ld='<script type="application/ld+json">{"@context": "https://schema.org","@type": "CollectionPage","name": "Archives","description": "'"$SITE_DESCRIPTION"'","url": "'"$SITE_URL"'/archives/","isPartOf": {"@type": "WebSite","name": "'"$SITE_TITLE"'","url": "'"$SITE_URL"'"}}</script>'
     header_content=${header_content//\{\{schema_json_ld\}\}/"$schema_json_ld"}
@@ -537,6 +541,7 @@ _generate_year_index() {
     header_content=${header_content//\{\{site_url\}\}/"$SITE_URL"}
     header_content=${header_content//\{\{og_image\}\}/""}
     header_content=${header_content//\{\{twitter_image\}\}/""}
+    header_content=${header_content//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
     # Add schema
     local schema_json_ld='<script type="application/ld+json">{"@context": "https://schema.org","@type": "CollectionPage","name": "'"$year_page_title"'","description": "Archive of posts from '"$year"'","url": "'"$SITE_URL$year_archive_rel_url"'","isPartOf": {"@type": "WebSite","name": "'"$SITE_TITLE"'","url": "'"$SITE_URL"'"}}</script>'
     header_content=${header_content//\{\{schema_json_ld\}\}/"$schema_json_ld"}
@@ -625,6 +630,7 @@ process_single_month() {
     header_content=${header_content//\{\{site_url\}\}/"$SITE_URL"}
     header_content=${header_content//\{\{og_image\}\}/""}
     header_content=${header_content//\{\{twitter_image\}\}/""}
+    header_content=${header_content//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
     # Add schema
     local schema_json_ld='<script type="application/ld+json">{"@context": "https://schema.org","@type": "CollectionPage","name": "'"$month_page_title"'","description": "Archive of posts from '"$month_name $year"'","url": "'"$SITE_URL$month_archive_rel_url"'","isPartOf": {"@type": "WebSite","name": "'"$SITE_TITLE"'","url": "'"$SITE_URL"'"}}</script>'
     header_content=${header_content//\{\{schema_json_ld\}\}/"$schema_json_ld"}

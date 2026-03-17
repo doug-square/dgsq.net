@@ -103,6 +103,7 @@ EOF
         page_header=${page_header//\{\{twitter_description\}\}/"$SITE_DESCRIPTION"}
         page_header=${page_header//\{\{og_image\}\}/""}
         page_header=${page_header//\{\{twitter_image\}\}/""}
+        page_header=${page_header//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
 
         local page_footer="$FOOTER_TEMPLATE"
         page_footer=${page_footer//\{\{current_year\}\}/$(date +%Y)}
@@ -432,6 +433,7 @@ EOF
         page_header=${page_header//\{\{twitter_description\}\}/"$SITE_DESCRIPTION"}
         page_header=${page_header//\{\{og_image\}\}/""}
         page_header=${page_header//\{\{twitter_image\}\}/""}
+        page_header=${page_header//\{\{fediverse_creator_meta\}\}/"${SITE_FEDIVERSE_CREATOR_META_TAG}"}
         
         # Replace placeholders in the footer
         local page_footer="$FOOTER_TEMPLATE"

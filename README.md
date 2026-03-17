@@ -541,6 +541,7 @@ image_caption: Optional caption for the image
 description: A brief summary of your post that will appear in listings, social media shares, and RSS feeds.
 author_name: John Doe # Optional: Override default site author
 author_email: john@example.com # Optional: Override default site author email
+fediverse_creator: @john@example.social # Optional: Override the fediverse:creator meta tag for this post
 ---
 
 Content goes here...
@@ -584,6 +585,7 @@ BSSG supports multiple authors through optional frontmatter fields that can over
 
 - `author_name`: The name of the post author (optional)
 - `author_email`: The email address of the post author (optional)
+- `fediverse_creator`: Explicit override for the post's `<meta name="fediverse:creator">` tag (optional)
 
 #### Fallback Behavior
 
@@ -634,6 +636,41 @@ Author information is displayed and used in:
 - **Schema.org Metadata**: JSON-LD structured data for search engines
 - **Archive Pages**: Author information in post listings
 
+### Fediverse Creator Tag
+
+BSSG can emit Mastodon's `fediverse:creator` metadata across generated pages so link previews can show and follow the author more easily.
+
+#### Fallback Order
+
+BSSG resolves the creator tag in this order:
+
+1. `fediverse_creator` in the post frontmatter
+2. `AUTHOR_FEDIVERSE_CREATORS["Author Name"]` from config, matched against `author_name`
+3. `FEDIVERSE_CREATOR` from config
+
+If none of those are set, no `fediverse:creator` meta tag is emitted.
+
+For non-post pages such as the homepage, tags, archives, authors, and static pages, BSSG uses the resolved site-level/default creator. Individual posts can still override that value with `fediverse_creator` in frontmatter.
+
+#### Configuration
+
+Add a site-wide default in `config.sh.local`:
+
+```bash
+FEDIVERSE_CREATOR="@you@example.social"
+```
+
+For multi-author sites, you can optionally add exact-match per-author overrides:
+
+```bash
+declare -A AUTHOR_FEDIVERSE_CREATORS=(
+  ["Jane Smith"]="@jane@example.social"
+  ["John Doe"]="@john@example.com"
+)
+```
+
+If you customize `templates/header.html`, keep `{{fediverse_creator_meta}}` inside `<head>`. The bundled template already includes it, and BSSG also falls back to injecting the tag before `</head>` for older custom headers.
+
 #### Examples
 
 **Post with custom author:**
@@ -668,6 +705,34 @@ This feature is particularly useful for:
 - Posts where you want to credit a specific contributor
 - Maintaining author attribution when migrating content from other platforms
 - Creating author-focused content organization alongside tags and archives
+
+### Fediverse Profile Verification
+
+BSSG can also emit one or more site-wide `<link rel="me">` tags in the document `<head>`, which is useful for Mastodon and compatible fediverse profile verification.
+
+Add this to `config.sh.local` for a single profile:
+
+```bash
+REL_ME_URL="https://mastodon.example.com/@john"
+```
+
+Or use multiple links:
+
+```bash
+REL_ME_URLS=(
+  "https://mastodon.example.com/@john"
+  "https://another-fedi.example/@john"
+)
+```
+
+The default header.html now includes a `{{rel_me_link}}` placeholder, which expands to one or more tags such as:
+
+```html
+<link rel="me" href="https://mastodon.example.com/@john">
+<link rel="me" href="https://another-fedi.example/@john">
+```
+
+If both `REL_ME_URL` and `REL_ME_URLS` are set, BSSG emits all unique URLs from both. If neither is set, BSSG omits the tags.
 
 ## Customization
 
@@ -725,6 +790,12 @@ SITE_DESCRIPTION="A complete SSG - written in bash"
 SITE_URL="http://localhost:8000"
 AUTHOR_NAME="Anonymous" 
 AUTHOR_EMAIL="anonymous@example.com"
+REL_ME_URL="" # Optional fediverse profile URL for <link rel="me"> verification
+# REL_ME_URLS=(
+#   "https://mastodon.example.com/@john"
+#   "https://another-fedi.example/@john"
+# )
+FEDIVERSE_CREATOR="" # Optional default fediverse:creator value for posts
 
 # Content configuration
 DATE_FORMAT="%Y-%m-%d %H:%M:%S %z"
@@ -741,6 +812,11 @@ ENABLE_AUTHOR_RSS=false # Enable or disable author-specific RSS feeds (default: 
 SHOW_AUTHORS_MENU_THRESHOLD=2 # Minimum authors to show menu (default: 2)
 URL_SLUG_FORMAT="Year/Month/Day/slug" # Format for post URLs. Available: Year, Month, Day, slug
 ENABLE_TAG_RSS=true # Enable or disable tag-specific RSS feed generation (default: true)
+
+# Optional exact-match per-author fediverse overrides
+# declare -A AUTHOR_FEDIVERSE_CREATORS=(
+#   ["Jane Smith"]="@jane@example.social"
+# )
 
 # Archive Page Configuration
 ARCHIVES_LIST_ALL_POSTS="false" # Options: "true", "false". If true, list all posts on the main archive page.
