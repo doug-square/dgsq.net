@@ -283,6 +283,7 @@ h2 {
     color: #444;
 }
 
+.posts-list h2,
 h3 {
     font-size: var(--text-xl);
     color: #555;

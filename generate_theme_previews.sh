@@ -11,9 +11,13 @@ set -euo pipefail
 # Ensure BSSG_MAIN_SCRIPT points to the main bssg.sh in the project root
 # Ensure this script (generate_theme_previews.sh) is run from the project root.
 readonly BSSG_MAIN_SCRIPT="./bssg.sh"
-readonly THEMES_DIR="./themes"
+THEMES_DIR="./themes"
+TEMPLATES_DIR="./templates"
 CONFIG_FILE="config.sh" # For reading default SITE_URL if not overridden
 LOCAL_CONFIG_FILE="config.sh.local" # For reading default SITE_URL if not overridden
+CMD_LINE_CONFIG_FILE=""
+FINAL_CONFIG_OVERRIDE=""
+site_url_from_cli=""
 
 # Global variable for the dynamic example root directory
 EXAMPLE_ROOT_DIR_DYNAMIC="./example" # Default value, will be updated
@@ -64,16 +68,22 @@ Generate preview sites for all available BSSG themes.
 
 Options:
   -h, --help                 Display this help message and exit
+  --config PATH              Use a custom BSSG configuration file
   --site-url URL             Set the base SITE_URL for theme previews
                              (overrides config files)
   --full-build               Build each theme independently (slower fallback mode)
 
 Configuration:
+  BSSG configuration is selected in this order:
+  1. Command line argument (--config)
+  2. BSSG_LCONF environment variable
+  3. Local config file ($LOCAL_CONFIG_FILE)
+  4. Main config file ($CONFIG_FILE)
+
   The script will use the SITE_URL from the following sources in order of precedence:
   1. Command line argument (--site-url)
-  2. Local config file ($LOCAL_CONFIG_FILE)
-  3. Main config file ($CONFIG_FILE)
-  4. Default value (http://localhost)
+  2. Selected BSSG configuration
+  3. Default value (http://localhost)
 
 Output:
   Theme previews will be generated in the '$EXAMPLE_ROOT_DIR_DYNAMIC' directory,
@@ -90,12 +100,18 @@ EOF
 
 # --- Parse Command Line Arguments (for this script) ---
 parse_args() {
-    site_url_from_cli="" # Made global for load_config
-
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -h|--help)
                 print_help
+                ;;
+            --config)
+                if [[ -n "${2:-}" && "$2" != -* ]]; then
+                    CMD_LINE_CONFIG_FILE="$2"
+                    shift 2
+                else
+                    error "--config requires a path to a BSSG configuration file"
+                fi
                 ;;
             --site-url)
                 if [[ -n "${2:-}" ]]; then
@@ -117,41 +133,50 @@ parse_args() {
     done
 }
 
+resolve_config_override() {
+    if [ -n "$CMD_LINE_CONFIG_FILE" ]; then
+        FINAL_CONFIG_OVERRIDE="$CMD_LINE_CONFIG_FILE"
+        info "Using configuration file specified via --config: $FINAL_CONFIG_OVERRIDE"
+    elif [ -v BSSG_LCONF ] && [ -n "${BSSG_LCONF}" ]; then
+        FINAL_CONFIG_OVERRIDE="$BSSG_LCONF"
+        info "Using configuration file specified via BSSG_LCONF: $FINAL_CONFIG_OVERRIDE"
+    fi
+}
+
+load_effective_bssg_configuration() {
+    local project_root_abs config_dump
+    local config_separator=$'\037'
+
+    project_root_abs=$(pwd -P)
+    config_dump=$(
+        export BSSG_SCRIPT_DIR="$project_root_abs"
+        bash -c '
+            source "$BSSG_SCRIPT_DIR/scripts/build/config_loader.sh" "$1" >/dev/null 2>&1
+            printf "%s\037%s\037%s\037%s" "$SITE_URL" "$OUTPUT_DIR" "$THEMES_DIR" "$TEMPLATES_DIR"
+        ' bash "$FINAL_CONFIG_OVERRIDE"
+    ) || {
+        if [ -n "$FINAL_CONFIG_OVERRIDE" ]; then
+            error "Failed to load BSSG configuration from '$FINAL_CONFIG_OVERRIDE'."
+        fi
+        error "Failed to load the default BSSG configuration."
+    }
+
+    IFS="$config_separator" read -r SITE_URL OUTPUT_DIR THEMES_DIR TEMPLATES_DIR <<< "$config_dump"
+}
+
 # --- Load Configuration (for this script's SITE_URL_BASE) ---
 load_config() {
     info "Loading base SITE_URL configuration for previews..."
-    
-    if [ -f "$CONFIG_FILE" ]; then
-        # Portable way to extract SITE_URL="value"
-        local main_conf_site_url
-        main_conf_site_url=$(awk -F'"' '/^SITE_URL=/ {print $2; exit}' "$CONFIG_FILE")
-        if [ -n "$main_conf_site_url" ]; then
-            SITE_URL_BASE="$main_conf_site_url"
-            info "Using SITE_URL_BASE='$SITE_URL_BASE' from $CONFIG_FILE as default"
-        fi
-    else
-        warn "Main configuration file '$CONFIG_FILE' not found, using default SITE_URL_BASE='$SITE_URL_BASE'."
-    fi
-    
-    if [ -f "$LOCAL_CONFIG_FILE" ]; then
-        local local_conf_site_url
-        # Check if SITE_URL is actually defined in the local config
-        if grep -q "^SITE_URL=" "$LOCAL_CONFIG_FILE" 2>/dev/null; then
-            local_conf_site_url=$(awk -F'"' '/^SITE_URL=/ {print $2; exit}' "$LOCAL_CONFIG_FILE")
-            if [ -n "$local_conf_site_url" ]; then
-                SITE_URL_BASE="$local_conf_site_url"
-                info "Overridden SITE_URL_BASE='$SITE_URL_BASE' from $LOCAL_CONFIG_FILE"
-            else
-                warn "Found $LOCAL_CONFIG_FILE but failed to extract SITE_URL, using current SITE_URL_BASE='$SITE_URL_BASE'"
-            fi
-        fi
-    fi
-    
+
+    load_effective_bssg_configuration
+    SITE_URL_BASE="$SITE_URL"
+    info "Using SITE_URL_BASE='$SITE_URL_BASE' from the effective BSSG configuration"
+
     if [ -n "$site_url_from_cli" ]; then
         SITE_URL_BASE="$site_url_from_cli"
         info "Using SITE_URL_BASE='$SITE_URL_BASE' from command line argument for previews"
     fi
-    
+
     success "Configuration loaded. Using SITE_URL_BASE='$SITE_URL_BASE' for theme previews."
 }
 
@@ -287,6 +312,21 @@ find_themes() {
     info "Found ${#themes[@]} themes: ${themes[*]}"
 }
 
+run_bssg_build() {
+    local -a cmd=("$BSSG_MAIN_SCRIPT")
+    local formatted_cmd
+
+    if [ -n "$FINAL_CONFIG_OVERRIDE" ]; then
+        cmd+=(--config "$FINAL_CONFIG_OVERRIDE")
+    fi
+
+    cmd+=(build "$@")
+    formatted_cmd=$(printf '%q ' "${cmd[@]}")
+    info "Executing: ${formatted_cmd% }"
+
+    "${cmd[@]}"
+}
+
 build_previews() {
     prepare_example_directory
 
@@ -324,7 +364,11 @@ prepare_example_directory() {
 
 build_previews_full() {
     info "Starting theme preview builds..."
-    info "Previews will use content from the BSSG site configured by your standard config.sh/config.sh.local files."
+    if [ -n "$FINAL_CONFIG_OVERRIDE" ]; then
+        info "Previews will use content from the BSSG site configured by '$FINAL_CONFIG_OVERRIDE'."
+    else
+        info "Previews will use content from the BSSG site configured by your standard config.sh/config.sh.local files."
+    fi
 
     for theme in "${themes[@]}"; do
         info "Building preview for theme: '$theme'"
@@ -337,9 +381,7 @@ build_previews_full() {
 
         mkdir -p "$theme_output_path"
 
-        info "Executing: $BSSG_MAIN_SCRIPT build -f --theme \"$theme\" --site-url \"$theme_site_url\" --output \"$theme_output_path\""
-        
-        if ! "$BSSG_MAIN_SCRIPT" build -f --theme "$theme" --site-url "$theme_site_url" --output "$theme_output_path"; then
+        if ! run_bssg_build -f --theme "$theme" --site-url "$theme_site_url" --output "$theme_output_path"; then
             error "Build failed for theme '$theme'. Check output above."
         fi
         success "Preview for theme '$theme' built successfully in '$theme_output_path'"
@@ -349,7 +391,7 @@ build_previews_full() {
 }
 
 has_theme_specific_templates() {
-    local template_root="./templates"
+    local template_root="$TEMPLATES_DIR"
     local theme
     for theme in "${themes[@]}"; do
         if [ -d "$template_root/$theme" ]; then
@@ -400,7 +442,7 @@ build_previews_fast() {
     fi
 
     info "Building base preview once with theme '$base_theme' and SITE_URL token '$SITE_URL_TOKEN'..."
-    if ! "$BSSG_MAIN_SCRIPT" build -f --theme "$base_theme" --site-url "$SITE_URL_TOKEN" --output "$base_output_path"; then
+    if ! run_bssg_build -f --theme "$base_theme" --site-url "$SITE_URL_TOKEN" --output "$base_output_path"; then
         error "Base build failed in fast preview mode."
     fi
 
@@ -572,22 +614,17 @@ determine_example_root_dir() {
     # Portable way to get absolute path of current directory
     project_root_abs=$( (cd . && pwd -P) || { error "Could not determine project root."; exit 1; } )
 
-
-    local effective_output_dir
-    effective_output_dir=$(export BSSG_SCRIPT_DIR="$project_root_abs"; \
-                           bash -c 'source "$BSSG_SCRIPT_DIR/scripts/build/config_loader.sh" "" &>/dev/null; echo "$OUTPUT_DIR"')
-
-    if [ -z "$effective_output_dir" ]; then
+    if [ -z "${OUTPUT_DIR:-}" ]; then
         warn "Could not determine effective OUTPUT_DIR from BSSG configuration. Defaulting EXAMPLE_ROOT_DIR_DYNAMIC to '$EXAMPLE_ROOT_DIR_DYNAMIC'."
         return
     fi
-    info "Effective OUTPUT_DIR from BSSG configuration: '$effective_output_dir'"
+    info "Effective OUTPUT_DIR from BSSG configuration: '$OUTPUT_DIR'"
 
     local effective_output_dir_abs_unnormalized
-    if [[ "$effective_output_dir" == /* ]]; then 
-        effective_output_dir_abs_unnormalized="$effective_output_dir"
+    if [[ "$OUTPUT_DIR" == /* ]]; then 
+        effective_output_dir_abs_unnormalized="$OUTPUT_DIR"
     else 
-        effective_output_dir_abs_unnormalized="$project_root_abs/$effective_output_dir"
+        effective_output_dir_abs_unnormalized="$project_root_abs/$OUTPUT_DIR"
     fi
     
     # Normalize the path using our helper (handles ., .., and non-existent paths)
@@ -605,7 +642,7 @@ determine_example_root_dir() {
     fi
 
 
-    if [[ "$site_root_candidate" != "$project_root_abs" && "$effective_output_dir" == /* ]]; then
+    if [[ "$site_root_candidate" != "$project_root_abs" && "$OUTPUT_DIR" == /* ]]; then
         info "Detected external site configuration. Previews will be generated in '$site_root_candidate/example'."
         EXAMPLE_ROOT_DIR_DYNAMIC="$site_root_candidate/example"
     else
@@ -622,6 +659,7 @@ main() {
     declare -a themes
 
     parse_args "$@"
+    resolve_config_override
     load_config 
     check_dependencies
     determine_example_root_dir 

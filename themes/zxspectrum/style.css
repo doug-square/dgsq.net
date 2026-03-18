@@ -268,9 +268,14 @@ h2::before {
     color: var(--bright-yellow);
 }
 
+.posts-list h2,
 h3 {
     font-size: var(--font-size-md);
     color: var(--bright-green);
+}
+
+.posts-list h2::before {
+    content: none;
 }
 
 p {

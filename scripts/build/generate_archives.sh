@@ -133,7 +133,7 @@ _generate_ram_month_archive_page() {
 
             cat << EOF
     <article>
-        <h3><a href="${post_url}">$title</a></h3>
+        <h2><a href="${post_url}">$title</a></h2>
         <div class="meta">${MSG_PUBLISHED_ON:-\"Published on\"} $formatted_date ${MSG_BY:-\"by\"} <strong>$display_author_name</strong></div>
 EOF
             if [ -n "$image" ]; then
@@ -201,7 +201,7 @@ _generate_archive_pages_ram() {
     header_content=${header_content//\{\{og_description\}\}/"$SITE_DESCRIPTION"}
     header_content=${header_content//\{\{twitter_description\}\}/"$SITE_DESCRIPTION"}
     header_content=${header_content//\{\{og_type\}\}/"website"}
-    header_content=${header_content//\{\{page_url\}\}/"archives/"}
+    header_content=${header_content//\{\{page_url\}\}/"/archives/"}
     header_content=${header_content//\{\{site_url\}\}/"$SITE_URL"}
     header_content=${header_content//\{\{og_image\}\}/""}
     header_content=${header_content//\{\{twitter_image\}\}/""}
@@ -402,7 +402,7 @@ _generate_main_archive_index() {
     header_content=${header_content//\{\{og_description\}\}/"$SITE_DESCRIPTION"}
     header_content=${header_content//\{\{twitter_description\}\}/"$SITE_DESCRIPTION"}
     header_content=${header_content//\{\{og_type\}\}/"website"}
-    header_content=${header_content//\{\{page_url\}\}/"archives/"} # Relative URL for header placeholder
+    header_content=${header_content//\{\{page_url\}\}/"/archives/"} # Relative URL for header placeholder
     header_content=${header_content//\{\{site_url\}\}/"$SITE_URL"}
     header_content=${header_content//\{\{og_image\}\}/""}
     header_content=${header_content//\{\{twitter_image\}\}/""}
@@ -685,7 +685,7 @@ process_single_month() {
             # Use cat heredoc for multi-line article structure
             cat << EOF
     <article>
-        <h3><a href="${post_url}">$title</a></h3>
+        <h2><a href="${post_url}">$title</a></h2>
         <div class="meta">${MSG_PUBLISHED_ON:-\"Published on\"} $formatted_date ${MSG_BY:-\"by\"} <strong>$display_author_name</strong></div>
 EOF
 

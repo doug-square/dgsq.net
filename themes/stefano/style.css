@@ -522,21 +522,21 @@ footer {
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
 }
 
-.posts-list h3 {
+.posts-list h2 {
     margin-top: 0;
     margin-bottom: var(--spacing-xs);
 }
 
-.posts-list h3 a {
+.posts-list h2 a {
     color: var(--header-color);
 }
 
-.posts-list h3 a:hover {
+.posts-list h2 a:hover {
     color: var(--accent);
 }
 
 /* ACCESSIBILITY: Focus states for post list links */
-.posts-list h3 a:focus {
+.posts-list h2 a:focus {
     outline: 2px solid var(--link-color);
     outline-offset: 2px;
     color: var(--accent);

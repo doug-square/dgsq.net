@@ -742,18 +742,18 @@ hr::before {
     padding-bottom: 1.5rem;
 }
 
-.posts-list h2, .posts-list h3 {
+.posts-list h2 {
     margin-top: 0;
     margin-bottom: 0.5rem;
 }
 
-.posts-list h2 a, .posts-list h3 a {
+.posts-list h2 a {
     outline: 2px solid transparent;
     outline-offset: 2px;
     border-radius: 2px;
 }
 
-.posts-list h2 a:focus, .posts-list h3 a:focus {
+.posts-list h2 a:focus {
     outline-color: var(--link-color);
 }
 

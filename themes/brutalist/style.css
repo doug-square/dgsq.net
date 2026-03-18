@@ -266,6 +266,7 @@ h2 {
     letter-spacing: -1px;
 }
 
+.posts-list h2,
 h3 {
     font-size: 1.5rem;
 }
@@ -667,6 +668,7 @@ footer a:focus {
         font-size: 1.8rem;
     }
     
+    .posts-list h2,
     h3 {
         font-size: 1.5rem;
     }
@@ -741,6 +743,7 @@ footer a:focus {
         font-size: 1.6rem;
     }
     
+    .posts-list h2,
     h3 {
         font-size: 1.4rem;
     }
@@ -795,6 +798,7 @@ footer a:focus {
         font-size: 1.5rem;
     }
     
+    .posts-list h2,
     h3 {
         font-size: 1.3rem;
     }

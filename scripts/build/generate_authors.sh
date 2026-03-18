@@ -49,7 +49,7 @@ _generate_author_pages_ram() {
         local author_data="${author_posts_by_slug[$author_slug_key]}"
         local author_page_html_file="$OUTPUT_DIR/authors/$author_slug_key/index.html"
         local author_rss_file="$OUTPUT_DIR/authors/$author_slug_key/${RSS_FILENAME:-rss.xml}"
-        local author_page_rel_url="authors/${author_slug_key}/"
+        local author_page_rel_url="/authors/${author_slug_key}/"
         local author_rss_rel_url="/authors/${author_slug_key}/${RSS_FILENAME:-rss.xml}"
         local post_count
         post_count=$(printf '%s\n' "$author_data" | awk 'NF { c++ } END { print c+0 }')
@@ -169,7 +169,7 @@ _generate_author_pages_ram() {
     header_content=${header_content//\{\{og_description\}\}/"$page_description"}
     header_content=${header_content//\{\{twitter_description\}\}/"$page_description"}
     header_content=${header_content//\{\{og_type\}\}/"website"}
-    header_content=${header_content//\{\{page_url\}\}/"authors/"}
+    header_content=${header_content//\{\{page_url\}\}/"/authors/"}
     header_content=${header_content//\{\{site_url\}\}/"$SITE_URL"}
     header_content=${header_content//\{\{og_image\}\}/}
     header_content=${header_content//\{\{twitter_image\}\}/}
@@ -364,7 +364,7 @@ generate_author_pages() {
         if [ -n "$author" ]; then
             local author_page_html_file="$OUTPUT_DIR/authors/$author_slug/index.html"
             local author_rss_file="$OUTPUT_DIR/authors/$author_slug/${RSS_FILENAME:-rss.xml}"
-            local author_page_rel_url="authors/${author_slug}/"
+            local author_page_rel_url="/authors/${author_slug}/"
             local author_rss_rel_url="/authors/${author_slug}/${RSS_FILENAME:-rss.xml}"
             local rebuild_html=false
             local rebuild_rss=false
@@ -620,7 +620,7 @@ generate_author_pages() {
         # Generate full HTML page for main authors index
         local page_title="${MSG_ALL_AUTHORS:-All Authors}"
         local page_description="${MSG_ALL_AUTHORS:-All Authors} - $SITE_DESCRIPTION"
-        local authors_index_rel_url="authors/"
+        local authors_index_rel_url="/authors/"
         
         # Process templates with placeholder replacement (following tags generator pattern)
         local header_content="$HEADER_TEMPLATE"

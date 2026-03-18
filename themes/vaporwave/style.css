@@ -364,6 +364,7 @@ h2 {
     text-shadow: 0 0 5px var(--neon-blue);
 }
 
+.posts-list h2,
 h3 {
     font-size: var(--text-xl);
     color: var(--neon-pink);
@@ -704,6 +705,7 @@ footer a:hover {
         font-size: var(--text-xl);
     }
     
+    .posts-list h2,
     h3 {
         font-size: var(--text-lg);
     }
@@ -743,6 +745,7 @@ footer a:hover {
         font-size: var(--text-lg);
     }
     
+    .posts-list h2,
     h3 {
         font-size: var(--text-md);
     }

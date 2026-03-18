@@ -698,13 +698,13 @@ footer::before {
     color: var(--command-prompt);
 }
 
-.posts-list h3 {
+.posts-list h2 {
     margin-top: var(--spacing-xs);
     margin-bottom: var(--spacing-xs);
     text-transform: none;
 }
 
-.posts-list h3::before {
+.posts-list h2::before {
     content: "";
 }
 

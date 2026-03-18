@@ -290,8 +290,7 @@ h3 { font-size: clamp(1.18rem, 1.8vw, 1.4rem); }
 
 article.post > h1,
 article.page > h1,
-.posts-list h2,
-.posts-list h3 {
+.posts-list h2 {
     margin-top: 0;
 }
 

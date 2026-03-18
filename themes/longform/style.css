@@ -562,17 +562,17 @@ main > h1 {
     border-bottom: none;
 }
 
-.posts-list h3 {
+.posts-list h2 {
     margin-top: 0;
     font-size: 1.8rem;
 }
 
-.posts-list h3 a {
+.posts-list h2 a {
     color: var(--heading-color);
     text-decoration: none;
 }
 
-.posts-list h3 a:hover {
+.posts-list h2 a:hover {
     color: var(--link-color);
 }
 

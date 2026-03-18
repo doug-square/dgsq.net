@@ -43,7 +43,7 @@ _generate_index_ram() {
             page_header=${page_header//\{\{site_title\}\}/"$SITE_TITLE"}
             page_header=${page_header//\{\{page_title\}\}/"${MSG_HOME:-"Home"}"}
             page_header=${page_header//\{\{og_type\}\}/"website"}
-            page_header=${page_header//\{\{page_url\}\}/""}
+            page_header=${page_header//\{\{page_url\}\}/"/"}
             page_header=${page_header//\{\{site_url\}\}/"$SITE_URL"}
             local home_schema
             home_schema=$(cat <<EOF
@@ -192,7 +192,7 @@ EOF
 
                 cat >> "$output_file" <<EOF
     <article>
-        <h3><a href="$(fix_url "$post_link")">$title</a></h3>
+        <h2><a href="$(fix_url "$post_link")">$title</a></h2>
         <div class="meta">${MSG_PUBLISHED_ON:-"Published on"} $formatted_date${author_name:+" ${MSG_BY:-"by"} ${author_name:-$AUTHOR_NAME}"}</div>
 EOF
 
@@ -365,7 +365,7 @@ generate_index() {
             # For the homepage
             page_header=${page_header//\{\{page_title\}\}/"${MSG_HOME:-"Home"}"}
             page_header=${page_header//\{\{og_type\}\}/"website"}
-            page_header=${page_header//\{\{page_url\}\}/""}
+            page_header=${page_header//\{\{page_url\}\}/"/"}
             page_header=${page_header//\{\{site_url\}\}/"$SITE_URL"}
             
             # Create WebSite schema for homepage
@@ -506,7 +506,7 @@ EOF
                     local post_link="/$formatted_path/"
                     cat >> "$output_file" << EOF
             <article>
-                <h3><a href="$(fix_url "$post_link")">$title</a></h3>
+                <h2><a href="$(fix_url "$post_link")">$title</a></h2>
                 <div class="meta">${MSG_PUBLISHED_ON:-"Published on"} $formatted_date${author_name:+" ${MSG_BY:-"by"} ${author_name:-$AUTHOR_NAME}"}</div>
 EOF
                     if [ -n "$image" ]; then

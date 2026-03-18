@@ -632,16 +632,16 @@ footer a:focus {
     box-shadow: var(--floating-shadow);
 }
 
-.posts-list h3 {
+.posts-list h2 {
     margin-top: 0;
     margin-bottom: var(--spacing-xs);
 }
 
-.posts-list h3 a {
+.posts-list h2 a {
     color: var(--header-color);
 }
 
-.posts-list h3 a:hover, .posts-list h3 a:active {
+.posts-list h2 a:hover, .posts-list h2 a:active {
     color: var(--accent-color);
 }
 

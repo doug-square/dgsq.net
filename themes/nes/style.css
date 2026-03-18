@@ -607,23 +607,23 @@ blockquote p:last-child {
     transform: scale(1.01);
 }
 
-.posts-list h3 {
+.posts-list h2 {
     margin-top: 0;
     font-size: 1.1rem;
     margin-bottom: var(--spacing-sm);
 }
 
-.posts-list h3 a {
+.posts-list h2 a {
     color: var(--nes-light-blue);
     text-decoration: none;
 }
 
-.posts-list h3 a:hover {
+.posts-list h2 a:hover {
     color: var(--nes-light-yellow);
 }
 
 /* ACCESSIBILITY: Focus states for post list links */
-.posts-list h3 a:focus {
+.posts-list h2 a:focus {
     outline: 2px solid var(--nes-light-yellow);
     outline-offset: 2px;
     color: var(--nes-light-yellow);

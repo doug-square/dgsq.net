@@ -481,12 +481,12 @@ hr {
     margin-bottom: 2rem;
 }
 
-.posts-list h2, .posts-list h3 {
+.posts-list h2 {
     margin-top: 0;
     margin-bottom: 0.5rem;
 }
 
-.posts-list h2::before, .posts-list h3::before {
+.posts-list h2::before {
     content: ">";
     margin-right: 0.5rem;
     color: var(--link-color);

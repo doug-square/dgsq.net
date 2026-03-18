@@ -642,16 +642,14 @@ figcaption {
     margin-bottom: var(--spacing-xs);
 }
 
-.posts-list h2,
-.posts-list h3 {
+.posts-list h2 {
     margin-top: 0;
     font-size: var(--text-md);
     padding-left: 1.5em; /* Increased to prevent overlap */
     position: relative;
 }
 
-.posts-list h2::before,
-.posts-list h3::before {
+.posts-list h2::before {
     position: absolute;
     left: 0;
     top: 0;

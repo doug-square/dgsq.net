@@ -252,6 +252,7 @@ h2 {
     font-size: 1.6rem;
 }
 
+.posts-list h2,
 h3 {
     font-size: 1.4rem;
 }
@@ -717,6 +718,7 @@ tr:nth-child(even) {
         font-size: 1.4rem;
     }
     
+    .posts-list h2,
     h3 {
         font-size: 1.2rem;
     }

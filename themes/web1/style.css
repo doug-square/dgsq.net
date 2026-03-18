@@ -352,6 +352,7 @@ h2 {
     text-shadow: 1px 1px 1px #ff00ff;
 }
 
+.posts-list h2,
 h3 {
     font-size: var(--text-xl);
     color: #00cc00;

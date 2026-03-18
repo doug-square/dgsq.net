@@ -345,6 +345,7 @@ h2 {
     margin-top: var(--spacing-xl);
 }
 
+.posts-list h2,
 h3 {
     font-size: 1.3rem;
     color: var(--mario-pipe-green);

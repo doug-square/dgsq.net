@@ -328,6 +328,7 @@ h2 {
     }
 }
 
+.posts-list h2,
 h3 {
     font-size: var(--text-lg);
     color: var(--accent-blue);
@@ -778,6 +779,7 @@ hr {
         font-size: var(--text-lg);
     }
     
+    .posts-list h2,
     h3 {
         font-size: var(--text-md);
     }

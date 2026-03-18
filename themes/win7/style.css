@@ -355,6 +355,7 @@ h2 {
     color: #1a73e8;
 }
 
+.posts-list h2,
 h3 {
     font-size: var(--text-xl);
 }

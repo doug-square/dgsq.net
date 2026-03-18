@@ -529,7 +529,7 @@ footer::after {
     margin-bottom: var(--spacing-lg);
 }
 
-.posts-list h3 {
+.posts-list h2 {
     margin-top: var(--spacing-xs);
     font-size: 1.6rem;
     text-transform: uppercase;
@@ -538,18 +538,18 @@ footer::after {
     text-align: center;
 }
 
-.posts-list h3 a {
+.posts-list h2 a {
     color: var(--header-color);
     text-decoration: none;
     transition: color 0.2s;
 }
 
-.posts-list h3 a:hover {
+.posts-list h2 a:hover {
     color: var(--link-color);
 }
 
 /* ACCESSIBILITY: Focus states for post list links */
-.posts-list h3 a:focus {
+.posts-list h2 a:focus {
     outline: 2px solid var(--link-color);
     outline-offset: 2px;
     color: var(--link-color);

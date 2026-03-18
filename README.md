@@ -1061,11 +1061,22 @@ You can also specify a custom SITE_URL for the previews:
 ./generate_theme_previews.sh --site-url "https://example.com/blog"
 ```
 
-The script will use the SITE_URL from the following sources in order of precedence:
-1. Command line argument (--site-url)
-2. Local config file (config.sh.local)
-3. Main config file (config.sh)
-4. Default value (http://localhost)
+You can also point the preview generator at a site-specific config file, just like `bssg.sh build`:
+
+```bash
+./generate_theme_previews.sh --config /path/to/site/config.sh.local
+```
+
+BSSG configuration is resolved in this order:
+1. Command line argument (`--config`)
+2. `BSSG_LCONF` environment variable
+3. Local config file (`config.sh.local`)
+4. Main config file (`config.sh`)
+
+The preview `SITE_URL` is then chosen from:
+1. Command line argument (`--site-url`)
+2. The selected BSSG configuration
+3. Default value (`http://localhost`)
 
 Each theme preview will be accessible at `SITE_URL/theme` (e.g., `https://example.com/blog/dark`).
 

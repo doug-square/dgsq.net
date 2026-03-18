@@ -315,11 +315,13 @@ h2::before {
     color: var(--accent-1);
 }
 
+.posts-list h2,
 h3 {
     font-size: 1.3rem;
     color: var(--link-hover);
 }
 
+.posts-list h2::before,
 h3::before {
     content: "> ";
     color: var(--accent-1);
@@ -920,6 +922,7 @@ hr::before {
         font-size: 1.4rem;
     }
     
+    .posts-list h2,
     h3 {
         font-size: 1.2rem;
     }
@@ -975,6 +978,7 @@ hr::before {
         font-size: 1.2rem;
     }
     
+    .posts-list h2,
     h3 {
         font-size: 1.1rem;
     }

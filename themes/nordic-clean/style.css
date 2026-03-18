@@ -544,7 +544,7 @@ footer a:focus {
     padding-bottom: 0;
 }
 
-.posts-list h3 {
+.posts-list h2 {
     margin-top: 0;
     font-size: 1.8rem;
     margin-bottom: var(--spacing-sm);

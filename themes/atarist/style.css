@@ -244,6 +244,7 @@ h2 {
     font-size: 1.4rem;
 }
 
+.posts-list h2,
 h3 {
     font-size: 1.2rem;
 }
@@ -593,6 +594,7 @@ footer a:focus {
         font-size: 1.2rem;
     }
     
+    .posts-list h2,
     h3 {
         font-size: 1.1rem;
     }

@@ -291,7 +291,7 @@ _generate_tag_pages_ram() {
         local display_author_name="${author_name:-${AUTHOR_NAME:-Anonymous}}"
         local article_html=""
         article_html+='    <article>'$'\n'
-        article_html+="        <h3><a href=\"${SITE_URL}${post_link}\">${title}</a></h3>"$'\n'
+        article_html+="        <h2><a href=\"${SITE_URL}${post_link}\">${title}</a></h2>"$'\n'
         article_html+="        <div class=\"meta\">${MSG_PUBLISHED_ON:-Published on} ${formatted_date} ${MSG_BY:-by} <strong>${display_author_name}</strong></div>"$'\n'
         if [ -n "$image" ]; then
             local image_url alt_text figcaption_content
@@ -939,7 +939,7 @@ EOF
 
                         cat >> "$tag_page_html_file" << EOF
     <article>
-        <h3><a href="${SITE_URL}${post_link}">$title</a></h3>
+        <h2><a href="${SITE_URL}${post_link}">$title</a></h2>
         <div class="meta">${MSG_PUBLISHED_ON:-"Published on"} $formatted_date ${MSG_BY:-"by"} <strong>$display_author_name</strong></div>
 EOF
 

@@ -87,7 +87,7 @@ generate_pages_index() {
     header_content=${header_content//\{\{og_type\}\}/"website"}
 
     # Set proper URL in og:url
-    header_content=${header_content//\{\{page_url\}\}/"pages.html"}
+    header_content=${header_content//\{\{page_url\}\}/"/pages.html"}
     header_content=${header_content//\{\{site_url\}\}/"$SITE_URL"}
 
     # Generate CollectionPage schema
@@ -135,7 +135,7 @@ EOF
         IFS='|' read -r title url _ <<< "$page" # Ignore date for menu
         cat >> "$pages_index" << EOF
     <article>
-        <h3><a href="$url">$title</a></h3>
+        <h2><a href="$url">$title</a></h2>
     </article>
 EOF
     done

@@ -513,7 +513,7 @@ footer {
     margin-bottom: var(--spacing-md);
 }
 
-.posts-list h3 {
+.posts-list h2 {
     margin-top: 0;
     margin-bottom: var(--spacing-xs);
     color: var(--highlight-color);

@@ -399,7 +399,7 @@ a:hover {
     border-bottom: 1px solid var(--border-color);
 }
 
-.posts-list h3 {
+.posts-list h2 {
     margin-top: var(--spacing-lg);
     margin-bottom: var(--spacing-sm);
 }

@@ -336,8 +336,13 @@ h2::after {
   background: linear-gradient(to right, var(--accent-primary), transparent);
 }
 
+.posts-list h2,
 h3 {
   font-size: 1.5rem;
+}
+
+.posts-list h2::after {
+  content: none;
 }
 
 h4 {
@@ -822,6 +827,7 @@ article {
     font-size: 1.6rem;
   }
   
+  .posts-list h2,
   h3 {
     font-size: 1.3rem;
   }
@@ -878,6 +884,7 @@ article {
     font-size: 1.5rem;
   }
   
+  .posts-list h2,
   h3 {
     font-size: 1.25rem;
   }
@@ -1007,6 +1014,7 @@ article {
     font-size: 1.4rem;
   }
   
+  .posts-list h2,
   h3 {
     font-size: 1.2rem;
   }

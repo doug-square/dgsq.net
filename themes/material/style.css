@@ -312,6 +312,7 @@ nav a.active::after {
         font-size: 1.75rem;
     }
     
+    .posts-list h2,
     h3 {
         font-size: 1.35rem;
     }
@@ -351,6 +352,7 @@ nav a.active::after {
         font-size: 1.5rem;
     }
     
+    .posts-list h2,
     h3 {
         font-size: 1.25rem;
     }
@@ -426,6 +428,7 @@ nav a.active::after {
         font-size: 1.35rem;
     }
     
+    .posts-list h2,
     h3 {
         font-size: 1.15rem;
     }
@@ -502,6 +505,7 @@ nav a.active::after {
         font-size: 1.2rem;
     }
     
+    .posts-list h2,
     h3 {
         font-size: 1.05rem;
     }
@@ -583,6 +587,7 @@ h2 {
     letter-spacing: -0.01em;
 }
 
+.posts-list h2,
 h3 {
     font-size: 1.5rem;
 }
