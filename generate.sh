@@ -1,4 +1,4 @@
-#!/bin/bash    
+#!/bin/sh
 SRC="$(pwd)/src"
 OUT="$(pwd)/public"
 
