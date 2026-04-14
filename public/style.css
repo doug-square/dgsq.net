@@ -218,8 +218,8 @@ a:visited {
 @media (prefers-color-scheme: light) {
   :root {
     --accent:       #D6EDEA;
-    --background:   #FAFAFA;
-    --base:         #FFFFFF;
+    --background:   #E4E4E4;
+    --base:         #FAFAFA;
     --text:         #403D6B;
     --link:         #202EE5;
     --link-visited: #403DA5;
