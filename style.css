@@ -216,14 +216,14 @@ a:visited {
 }
 
 @media (prefers-color-scheme: light) {
-  :root { /* catppuccin latte */
-    --accent:       #8839ef; /* muave     */
-    --background:   #dce0e8; /* crust     */
-    --base:         #eff1f5; /* base      */
-    --text:         #4c4f69; /* text      */
-    --link:         #1e66f5; /* blue      */
-    --link-visited: #8839ef; /* muave     */
-    --header:       #ccd0da; /* surface 0 */
+  :root {
+    --accent:       #D6EDEA;
+    --background:   #E4E4E4;
+    --base:         #FAFAFA;
+    --text:         #403D6B;
+    --link:         #202EE5;
+    --link-visited: #403DA5;
+    --header:       #C9C9C9;
   }
   
   .dark-text {
