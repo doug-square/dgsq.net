@@ -42,16 +42,18 @@ for subdir, dirs, files in os.walk('src/pages/posts'):
             continue
 
         with open(os.path.join(subdir, file)) as f:
-            raw_html = f.read()
-            html = BeautifulSoup(raw_html, features="lxml")
-            title, _, _ = html.body.find('ul', attrs={'class': 'blog-title'}).find_all('li')
-            title = title.text
+            html = BeautifulSoup(f.read(), features="lxml")
+            title_ul = html.body.find('ul', attrs={'class': 'blog-title'})
+            title = title_ul.find_all('li')[0].text
+
+            # Remove the title/date from the html so we can include content in the rss
+            title_ul.decompose()
 
         base_path = "/".join([""] + subdir.split("/")[2:])
         path = os.path.join(base_path, file)
 
         posts.append((year, month, day, title, path))
-        articles.append(Article(title, f"{year}-{month}-{day}", root + path, raw_html))
+        articles.append(Article(title, f"{year}-{month}-{day}", root + path, str(html)))
 
 posts = list(reversed(sorted(posts)))
 
