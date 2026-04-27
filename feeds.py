@@ -1,10 +1,11 @@
 from feedgen.feed import FeedGenerator
 
 class Article:
-    def __init__(self, title, date, url):
+    def __init__(self, title, date, url, content=None):
         self.title = title
         self.date = date
         self.url = url
+        self.content = content
 
 
 def create_feed(articles):
@@ -24,6 +25,8 @@ def create_feed(articles):
         fe.description(description=article.title)
         fe.link(href=article.url)
         fe.published(article.date + " 12:00:00 CST")
+        if article.content is not None:
+            fe.content(content=article.content)
     
     return fg.rss_str(pretty=True)
 

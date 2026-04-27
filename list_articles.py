@@ -42,7 +42,8 @@ for subdir, dirs, files in os.walk('src/pages/posts'):
             continue
 
         with open(os.path.join(subdir, file)) as f:
-            html = BeautifulSoup(f.read(), features="lxml")
+            raw_html = f.read()
+            html = BeautifulSoup(raw_html, features="lxml")
             title, _, _ = html.body.find('ul', attrs={'class': 'blog-title'}).find_all('li')
             title = title.text
 
@@ -50,7 +51,7 @@ for subdir, dirs, files in os.walk('src/pages/posts'):
         path = os.path.join(base_path, file)
 
         posts.append((year, month, day, title, path))
-        articles.append(Article(title, f"{year}-{month}-{day}", root + path))
+        articles.append(Article(title, f"{year}-{month}-{day}", root + path, raw_html))
 
 posts = list(reversed(sorted(posts)))
 
