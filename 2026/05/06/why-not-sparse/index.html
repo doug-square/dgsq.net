@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Why not sparse? | dgsq</title>
+    <meta name="description" content="I was talking with a colleague the other day about the current industry trend to">
+    <meta property="og:title" content="Why not sparse?">
+    <meta property="og:description" content="I was talking with a colleague the other day about the current industry trend to">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://dgsq.net/2026/05/06/why-not-sparse/">
+    
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Why not sparse?">
+    <meta name="twitter:description" content="I was talking with a colleague the other day about the current industry trend to">
+    
+    
+    <meta name="theme-color" content="#808080">
+    <link rel="stylesheet" href="https://dgsq.net/css/style.css">
+    <link rel="alternate" type="application/rss+xml" title="{{rss_feed}}" href="https://dgsq.net/rss.xml">
+    
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Why not sparse?",
+  "datePublished": "2026-05-06T00:00:00-05:00",
+  "dateModified": "2026-05-06T00:00:00-05:00",
+  "author": {
+    "@type": "Person",
+    "name": "dgsq",
+    "email": "dgsq@dgsq.net"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "dgsq",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://dgsq.net/logo.png"
+    }
+  },
+  "description": "I was talking with a colleague the other day about the current industry trend to",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://dgsq.net/2026/05/06/why-not-sparse/"
+  }}
+}
+</script>
+    
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="site-title"><a href="https://dgsq.net/">dgsq</a></div>
+            <p></p>
+            <nav>
+                <a href="https://dgsq.net/">Home</a> <a href="https://dgsq.net/about/">About</a> <a href="https://dgsq.net/archives/">Archives</a> <a href="https://dgsq.net/rss.xml">RSS</a>
+            </nav>
+        </header>
+        <main> <article class="post">
+  <h1>Why not sparse?</h1>
+<div class="page-meta"><p class="meta">Published on: <time datetime="2026-05-06 00:00:00 -0500">2026-05-06 00:00:00</time> by <strong>dgsq</strong></p><p class="meta reading-time">2 min read</p></div>
+
+<p>I was talking with a colleague the other day about the current industry trend to
+focus so much on further quantizing today's LLM models. I'm sure the reasons for
+pursuing quantization are apparent to most people who work in this industry:
+going from BF16 to FP8 or NVFP4 nets what amounts to a nearly 2x or 4x reduction
+in memory requirements and often a similar speedup.</p>
+<p>But I can't shake the feeling that by focusing so much on finding the lowest
+precision models, we are perhaps neglecting an equally-fundamental limitation of
+our current models: that they are too dense.</p>
+<p>I have been struggling to articulate exactly what I mean by this for a while
+now, until my colleague pointed me to <a href="https://arxiv.org/pdf/1803.03635">The Lottery Ticket
+Hypothesis</a>, by Frankle and Carbin, a paper
+that is probably well known to folks who are more integrated into the machine
+learning community than I. In brief, the main thesis of the paper is:</p>
+<blockquote>
+<p>A randomly-initialized, dense neural network contains a subnet- work that is
+initialized such that—when trained in isolation—it can match the test accuracy
+of the original network after training for at most the same number of
+iterations.</p>
+</blockquote>
+<p>The authors then show how by iteratively training a network, pruning away the
+lowest-weighted connections, and then retraining the resultant network from
+scratch, they can achieve similar performance on a few benchmarks with networks
+down to 1% of the size they began with. Compare this 99% savings to the gains
+that we can get from quantization: many models have already been quantized to 8
+bits, so even assuming we <em>can</em> get them down to 1 bit, we would be saving only
+87.% on what we have today. Worth doing? Sure. But the going is getting harder,
+and I don't think that we'll be getting all the way to 1 bit on every part of
+every model.</p>
+<p>Back to Frankle and Carbin: they also show that randomly selecting sub-networks
+(instead of selecting based on results of training larger versions) does <em>not</em>
+work as well, producing worse accuracy and slower convergence. In their words:</p>
+<blockquote>
+<p>The initialization that gives rise to a winning ticket is arranged in a
+particular sparse architecture. Since we uncover winning tickets through heavy
+use of training data, we hypothesize that the structure of our winning tickets
+encodes an inductive bias customized to the learning task at hand.</p>
+</blockquote>
+<p>I find this very reminiscent of evolutionary methods like
+<a href="https://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf">NEAT</a>, which
+likewise attempted to build bespoke sparse networks, one neuron at a time. The
+difference of course, being that the Frankle and Carbin work backwards from a
+very dense network and NEAT builds up a network from scratch.</p>
+<p>I see this as different from efforts to find sparse attention mechanisms, as
+sparse attention does not tend to affect the size of the model, but only how
+expensive it is to operate with it.</p>
+<p>I hope that once we're done building larger models, we can get to work on
+building sparser models that more efficiently reflect the tasks they need to
+perform than a series of dense operations could. After all, our brains are not
+homogeneous meshes, but some sort of more contrived pattern of connections. I
+have this feeling that the optimal model for most problems exists in this
+sparse-yet-deep subspace, if only we could find it.</p>
+<hr />
+<p>In other news: I'm continuing the pattern of keeping long pauses between posts,
+and changing the website's theme every other post. Bad habits.</p>
+
+</article>
+        </main>
+        <footer>
+            <p>&copy; 2026 dgsq.</p>
+            <p>Generated with <a href="https://bssg.dragas.net">BSSG</a>.</p>
+            <p>
+                <a href="https://dgsq.net/">Home</a> &middot; <a href="https://dgsq.net/about/">About</a> &middot; <a href="https://dgsq.net/archives/">Archives</a> &middot; <a href="https://dgsq.net/rss.xml">Subscribe via RSS</a>
+            </p>
+            <p><a href="#">Back to Top</a></p>
+        </footer>
+    </div>
+</body>
+</html> 

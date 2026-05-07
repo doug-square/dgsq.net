@@ -1,79 +1,70 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="color-scheme" content="dark light">
-    <meta name="robots" content="noindex, nofollow, noai, noimageai">
-    <meta name="darkreader-lock">
-    <meta name="generator" content="my own :3">
-    <meta name="og:type" content="website">
-    <meta name="og:url" content="">
-    <meta name="og:title" content="Nyaaaaaaaa">
-    <meta name="og:site_name" content="lunahd dot neocities">
-    <meta name="og:description" content="Miku's website">
-    <meta name="description" content="Miku's website">
-    <title>dgsq</title>
-    <link rel="stylesheet" href="/style.css">
-    <!-- <link rel="icon" href="icon.png"> -->
-  </head>
-  <body>
-    <nav id="header">
-      <div id="nav-links">
-        <a href="/">home</a>
-        <a href="/posts">posts</a>
-      </div>
-    </nav>
-    <div id="main-container">
-      <div id="sidebar">
-        <div id="links-general">
-          <div class="sb-header">
-            <h2>personal links</h2>
-          </div>
-          <div class="sb-box">
-            <ul>
-              <li><a href="https://github.com/doug-square">github</a></li>
-              <li><a href="https://mastodon.social/@dgsq">mastodon</a></li>
-            </ul>
-            (If there's nothing there it's because I do too much of my work off the public radar)
-          </div>
-        </div>
-        <div id="blogs">
-          <div class="sb-header">
-            <h2>blogs</h2>
-          </div>
-          <div class="sb-box">
-            <ul>
-              <li><a href="https://www.astralcodexten.com/">Astral Codex Ten</a></li>
-              <li><a href="https://tomverbeure.github.io/">Electronics etc...</a></li>
-              <li><a href="https://ludic.mataroa.blog/">Ludicity</a></li>
-              <li><a href="https://scottaaronson.blog/">Shtetl-Optimized</a></li>
-              <li><a href="http://radar.spacebar.org/">Tom 7 Radar</a></li>
-            </ul>
-          </div>
-        </div>
-        <div id="contact">
-          <div class="sb-header">
-            <h2>contact</h2>
-          </div>
-          <div class="sb-box">
-            Maybe I'll add a full suite of options here eventually, but
-            for now, you can <a href="mailto:dgsq@dgsq.net">email me</a>.
-          </div>
-        </div>
-      </div>
-      <article id="content">
-<ul class="blog-title">
-    <li><h1>Speculations about DeepSeek-OCR and Quantization</h1></li>
-    <li></li>
-    <li><h4>October 28, 2025</h4>
-</ul>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speculations about DeepSeek-OCR and Quantization | dgsq</title>
+    <meta name="description" content="Experiments show that when the number of text tokens is within 10 times that of vision tokens (i.e., a">
+    <meta property="og:title" content="Speculations about DeepSeek-OCR and Quantization">
+    <meta property="og:description" content="Experiments show that when the number of text tokens is within 10 times that of vision tokens (i.e., a">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://dgsq.net/2025/10/29/deepseek-ocr/">
+    
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Speculations about DeepSeek-OCR and Quantization">
+    <meta name="twitter:description" content="Experiments show that when the number of text tokens is within 10 times that of vision tokens (i.e., a">
+    
+    
+    <meta name="theme-color" content="#808080">
+    <link rel="stylesheet" href="https://dgsq.net/css/style.css">
+    <link rel="alternate" type="application/rss+xml" title="{{rss_feed}}" href="https://dgsq.net/rss.xml">
+    
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Speculations about DeepSeek-OCR and Quantization",
+  "datePublished": "2025-10-29T00:00:00-05:00",
+  "dateModified": "2025-10-29T00:00:00-05:00",
+  "author": {
+    "@type": "Person",
+    "name": "dgsq",
+    "email": "dgsq@dgsq.net"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "dgsq",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://dgsq.net/logo.png"
+    }
+  },
+  "description": "Experiments show that when the number of text tokens is within 10 times that of vision tokens (i.e., a",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://dgsq.net/2025/10/29/deepseek-ocr/"
+  }}
+}
+</script>
+    
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="site-title"><a href="https://dgsq.net/">dgsq</a></div>
+            <p></p>
+            <nav>
+                <a href="https://dgsq.net/">Home</a> <a href="https://dgsq.net/about/">About</a> <a href="https://dgsq.net/archives/">Archives</a> <a href="https://dgsq.net/rss.xml">RSS</a>
+            </nav>
+        </header>
+        <main> <article class="post">
+  <h1>Speculations about DeepSeek-OCR and Quantization</h1>
+<div class="page-meta"><p class="meta">Published on: <time datetime="2025-10-29 00:00:00 -0500">2025-10-29 00:00:00</time> by <strong>dgsq</strong></p><p class="meta reading-time">2 min read</p></div>
 
 <p>
     Recently, DeepSeek released a <a href="https://github.com/deepseek-ai/DeepSeek-OCR">new model and paper</a>, titled DeepSeek-OCR.
     I've seen a bunch of people talk about it recently, and it's pretty cool stuff.
 </p>
-
 <p>
     I love the idea of using images to compress text.
     As <a href="https://x.com/karpathy/status/1980397031542989305">Andrej points out</a>, the tokenizer is kind of ugly, and it
@@ -82,7 +73,6 @@
     that's sort of how humans do it, with many people pattern-matching several words (or more) at a time when reading quickly, instead of
     parsing text as individual letters/tokens.
 </p>
-
 <p>
     What I've been trying to figure out is how suprising this compression rate should be. From their abstract:
     <blockquote>
@@ -95,7 +85,6 @@ compression ratio of 20x, the OCR accuracy still remains at about 60%.
     This sounds pretty good, but there are other ways to compress transformers. DeepSeek-OCR was released using BF16 weights, and since
     they didn't mention anything about their data precision in the paper, I'm assuming that's what they evaluated on.
 </p>
-
 <p>
     On the other hand, weight quantization in the form of low-precision inference has been making substantial progress.
     I can't find much data on <a href="https://developer.nvidia.com/blog/introducing-nvfp4-for-efficient-and-accurate-low-precision-inference/">NVFP4</a>,
@@ -104,28 +93,31 @@ compression ratio of 20x, the OCR accuracy still remains at about 60%.
     I would be very curious to see whether the image-token-to-text-token compression would remain as high as it is when this model is
     quantized to such low precision. Perhaps image tokens are just able to use this "extra space" better than text tokens.
 </p>
-
 <p>
     Taking this a step further: <i>if</i> this advantage really does decrease from 10x-20x to 2.5x-5x when the model is quantized to 4 bit,
     then this might imply that text tokens should really be quantized to between 0.8 to 1.6 bits. It seems like a somewhat pleasing result
     that this line of reasoning should land in the vicinity of 1-bit quantization.
 </p>
-
 <p>
     On the other hand, it is also interesting to ask which would better for performance: many 1-bit text tokens or 10-20x fewer 16 bit tokens.
     Or maybe something in the middle? It seems clear to me that fewer high-precision tokens would be desirable for low-latency decode, given
     its autoregressive nature, especially given that current GPU hardware targets 16-bit computations. Maybe the tradeoff would be different
     in other circumstances though.
 </p>
-
 <p>
     Anyways, one more disclaimer that this has all been very speculative. I have not carried out any experiments of my own here.
 </p>
-      </article>
+
+</article>
+        </main>
+        <footer>
+            <p>&copy; 2026 dgsq.</p>
+            <p>Generated with <a href="https://bssg.dragas.net">BSSG</a>.</p>
+            <p>
+                <a href="https://dgsq.net/">Home</a> &middot; <a href="https://dgsq.net/about/">About</a> &middot; <a href="https://dgsq.net/archives/">Archives</a> &middot; <a href="https://dgsq.net/rss.xml">Subscribe via RSS</a>
+            </p>
+            <p><a href="#">Back to Top</a></p>
+        </footer>
     </div>
-    <br>
-    <div id="after">
-      I used to have a generic-looking website made in Jekyll, but then I saw <a href="https://lunahd.neocities.org/">Miku's</a> and stole hers (<a href="https://github.com/doug-square/dgsq.net">source</a>).
-    </div>
-  </body>
-</html>
+</body>
+</html> 
