@@ -20,7 +20,7 @@ TEMPLATES_DIR="templates"
 THEMES_DIR="themes"
 STATIC_DIR="static"
 DRAFTS_DIR="drafts" # Directory for drafts
-THEME="default"
+THEME="text-only"
 CACHE_DIR=".bssg_cache" # Default cache directory location (relative to BSSG root)
 
 # Build configuration
@@ -34,11 +34,11 @@ BUILD_MODE="ram" # Options: "normal", "ram". "ram" preloads inputs and keeps bui
 CUSTOM_CSS="" # Optional: Path to custom CSS file relative to output root (e.g., "/css/custom.css"). File should be placed in STATIC_DIR.
 
 # Site information
-SITE_TITLE="My new BSSG site"
-SITE_DESCRIPTION="A complete SSG - written in bash"
-SITE_URL="http://localhost:8000"
-AUTHOR_NAME="Anonymous" 
-AUTHOR_EMAIL="anonymous@example.com"
+SITE_TITLE="dgsq"
+SITE_DESCRIPTION=""
+SITE_URL="https://dgsq.net"
+AUTHOR_NAME="dgsq"
+AUTHOR_EMAIL="dgsq@dgsq.net"
 REL_ME_URL="" # Optional fediverse profile URL for <link rel="me"> verification, e.g. "https://mastodon.example/@john"
 # Optional additional rel="me" verification links. BSSG emits all unique values from
 # REL_ME_URL and REL_ME_URLS.
@@ -59,7 +59,7 @@ TIMEZONE="local"  # Options: "local", "GMT", or a specific timezone like "Americ
 SHOW_TIMEZONE="false" # Options: "true", "false". Whether to display the timezone in rendered dates.
 POSTS_PER_PAGE=10
 RSS_ITEM_LIMIT=15 # Number of items to include in the RSS feed.
-RSS_INCLUDE_FULL_CONTENT="false" # Options: "true", "false". Include full post content in RSS feed.
+RSS_INCLUDE_FULL_CONTENT="true" # Options: "true", "false". Include full post content in RSS feed.
 RSS_FILENAME="rss.xml" # The filename for the main RSS feed (e.g., feed.xml, rss.xml)
 INDEX_SHOW_FULL_CONTENT="false" # Options: "true", "false". Show full post content on homepage instead of just description/excerpt.
 ENABLE_ARCHIVES=true  # Enable or disable archive pages

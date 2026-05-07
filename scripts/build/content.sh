@@ -386,7 +386,7 @@ convert_markdown_to_html() {
             return 1
         fi
     elif [ "$MARKDOWN_PROCESSOR" = "commonmark" ]; then
-        if ! html_content=$(echo "$content" | cmark); then
+        if ! html_content=$(echo "$content" | cmark --unsafe); then
             echo -e "${RED}Error: Markdown conversion failed using cmark.${NC}" >&2
             return 1
         fi
