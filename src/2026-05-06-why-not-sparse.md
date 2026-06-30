@@ -24,7 +24,7 @@ Hypothesis](https://arxiv.org/pdf/1803.03635), by Frankle and Carbin, a paper
 that is probably well known to folks who are more integrated into the machine
 learning community than I. In brief, the main thesis of the paper is:
 
-> A randomly-initialized, dense neural network contains a subnet- work that is
+> A randomly-initialized, dense neural network contains a subnetwork that is
 > initialized such that—when trained in isolation—it can match the test accuracy
 > of the original network after training for at most the same number of
 > iterations.
