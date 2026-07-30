@@ -10,4 +10,6 @@ CHANGELOG.md
 TOCHECK.md
 example/
 .direnv
+public/
+__pycache__
 
