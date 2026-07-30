@@ -5,8 +5,36 @@
     <link>https://dgsq.net/</link>
     <description></description>
     <language>en</language>
-    <lastBuildDate>Tue, 30 Jun 2026 17:52:58 -0500</lastBuildDate>
+    <lastBuildDate>Wed, 29 Jul 2026 20:35:03 -0500</lastBuildDate>
     <atom:link href="https://dgsq.net/rss.xml" rel="self" type="application/rss+xml" />
+    <item>
+        <title>Relearning (?) German</title>
+        <link>https://dgsq.net/2026/07/29/relearning-german/</link>
+        <guid isPermaLink="true">https://dgsq.net/2026/07/29/relearning-german/</guid>
+        <pubDate>Wed, 29 Jul 2026 00:00:00 -0500</pubDate>
+        <atom:updated>2026-07-29T00:00:00-05:00</atom:updated>
+        <description><![CDATA[<p>Seit früher in diesem Jahr habe ich wieder versucht, Deutsch zu lernen.</p>
+<p>Ich wohne im Mittleren Westen, darin wurde Spanisch wahrscheinlich besser für
+das tägliche Leben sein. Aber ich habe ein paar Jahre an der Schule Deutsch
+gelernt. Und ich finde, dass ich ein bisschen Deutsch noch verstehen kann. Nicht
+viel, natürlich (Hochschule war vor fast einem Jahrzehnt und ich habe seitdem
+quasi nichts auf Deutsch gesprochen). Doch ich denke, dass diese Sprache
+leichter zu lernen wäre als eine andere.</p>
+<p>Ich weiß nicht wirklich, wie ich eine Sprache lernen soll, aber ich gucke
+deutsche Videos von YouTube und benutze Anki, um mich an Wörter zu erinnern.</p>
+<p>Wie man sehen kann, kann ich noch nur einfache Sätze schreiben. Und ich habe
+viele grammatische Fehler korrigieren müssen, bevor ich diesen Post
+veröffentlicht habe. Ich habe languagetool.org benutzt, um die Grammatik zu
+prüfen, und fast jeder Satz hat Fehler gehabt. Also, ich muss deutlich mehr
+arbeiten.</p>
+<p>Ich hoffe, dass ich mit der Zeit besser werde, und über interessantere Themen
+auf Deutsch sprechen kann (sogar wenn nicht in diesem Blog).nd benutze Anki, um
+mich an Wörter zu erinnern.</p>
+<hr />
+<p>Not sure if anyone reading this speaks German, but felt like posting this. So
+thanks for bearing with me.</p>]]></description>
+        <dc:creator>dgsq (dgsq@dgsq.net)</dc:creator>
+    </item>
     <item>
         <title>Gen AI and Architecture</title>
         <link>https://dgsq.net/2026/06/30/gen-ai-arch/</link>
@@ -29,6 +57,7 @@ check back to see what it accomplished.</p>
 <p>I will look at the code, which will have too many comments. I will compare its
 performance to other alternatives. I will not understand why it made the
 decisions it made.</p>
+<p><em>Update</em>: pretty much all of the AI output was trash.</p>
 <hr />
 <p>In undergrad, we all went home when COVID struck. I had been looking forward to
 a second summer in Seattle. I instead went back to my parent's house and
