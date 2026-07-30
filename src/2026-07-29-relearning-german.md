@@ -1,6 +1,6 @@
 ---
 title: Relearning (?) German
-date: 2027-07-29 00:00:00 -0500
+date: 2026-07-29 00:00:00 -0500
 tags:
 slug: relearning-german
 description:
