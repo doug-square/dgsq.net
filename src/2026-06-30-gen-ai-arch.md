@@ -29,6 +29,8 @@ I will look at the code, which will have too many comments. I will compare its
 performance to other alternatives. I will not understand why it made the
 decisions it made.
 
+*Update*: pretty much all of the AI output was trash.
+
 ---
 
 In undergrad, we all went home when COVID struck. I had been looking forward to
